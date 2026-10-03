@@ -1,0 +1,196 @@
+[
+  {
+    "side": "client",
+    "message": {
+      "jsonrpc": "2.0",
+      "id": 1,
+      "method": "server/discover",
+      "params": {
+        "_meta": {
+          "io.modelcontextprotocol/protocolVersion": "2026-07-28",
+          "io.modelcontextprotocol/clientCapabilities": {},
+          "io.modelcontextprotocol/clientInfo": {
+            "name": "raw-demo",
+            "version": "0.0.1"
+          }
+        }
+      }
+    }
+  },
+  {
+    "side": "server",
+    "message": {
+      "jsonrpc": "2.0",
+      "id": 1,
+      "result": {
+        "cacheScope": "private",
+        "capabilities": {
+          "prompts": {
+            "listChanged": true
+          },
+          "resources": {
+            "listChanged": true,
+            "subscribe": true
+          },
+          "tools": {
+            "listChanged": true
+          }
+        },
+        "resultType": "complete",
+        "supportedVersions": [
+          "2026-07-28"
+        ],
+        "ttlMs": 0,
+        "_meta": {
+          "io.modelcontextprotocol/serverInfo": {
+            "name": "devbox",
+            "version": "1.0.0"
+          }
+        }
+      }
+    }
+  },
+  {
+    "side": "client",
+    "message": {
+      "jsonrpc": "2.0",
+      "id": 2,
+      "method": "tools/call",
+      "params": {
+        "name": "hash_text",
+        "arguments": {
+          "text": "hello mcp"
+        },
+        "_meta": {
+          "io.modelcontextprotocol/protocolVersion": "2026-07-28",
+          "io.modelcontextprotocol/clientCapabilities": {},
+          "io.modelcontextprotocol/clientInfo": {
+            "name": "raw-demo",
+            "version": "0.0.1"
+          }
+        }
+      }
+    }
+  },
+  {
+    "side": "server",
+    "message": {
+      "jsonrpc": "2.0",
+      "id": 2,
+      "result": {
+        "content": [
+          {
+            "text": "{\n  \"algorithm\": \"sha256\",\n  \"hexdigest\": \"f05440e8d8d43423937fa3e9457053ef01c1ac96dc789cd231dd2dc5567ef622\",\n  \"length\": 9\n}",
+            "type": "text"
+          }
+        ],
+        "isError": false,
+        "resultType": "complete",
+        "structuredContent": {
+          "algorithm": "sha256",
+          "hexdigest": "f05440e8d8d43423937fa3e9457053ef01c1ac96dc789cd231dd2dc5567ef622",
+          "length": 9
+        },
+        "_meta": {
+          "io.modelcontextprotocol/serverInfo": {
+            "name": "devbox",
+            "version": "1.0.0"
+          }
+        }
+      }
+    }
+  },
+  {
+    "side": "client",
+    "message": {
+      "jsonrpc": "2.0",
+      "id": 3,
+      "method": "resources/read",
+      "params": {
+        "uri": "devbox://docs/style-guide",
+        "_meta": {
+          "io.modelcontextprotocol/protocolVersion": "2026-07-28",
+          "io.modelcontextprotocol/clientCapabilities": {},
+          "io.modelcontextprotocol/clientInfo": {
+            "name": "raw-demo",
+            "version": "0.0.1"
+          }
+        }
+      }
+    }
+  },
+  {
+    "side": "server",
+    "message": {
+      "jsonrpc": "2.0",
+      "id": 3,
+      "result": {
+        "cacheScope": "private",
+        "contents": [
+          {
+            "mimeType": "text/markdown",
+            "text": "# 代码风格指南\n\n1. 命名使用完整英文单词。\n2. 公共函数必须书写类型标注。\n",
+            "uri": "devbox://docs/style-guide"
+          }
+        ],
+        "resultType": "complete",
+        "ttlMs": 0,
+        "_meta": {
+          "io.modelcontextprotocol/serverInfo": {
+            "name": "devbox",
+            "version": "1.0.0"
+          }
+        }
+      }
+    }
+  },
+  {
+    "side": "client",
+    "message": {
+      "jsonrpc": "2.0",
+      "id": 4,
+      "method": "prompts/get",
+      "params": {
+        "name": "review_code",
+        "arguments": {
+          "language": "python",
+          "code": "x = 1"
+        },
+        "_meta": {
+          "io.modelcontextprotocol/protocolVersion": "2026-07-28",
+          "io.modelcontextprotocol/clientCapabilities": {},
+          "io.modelcontextprotocol/clientInfo": {
+            "name": "raw-demo",
+            "version": "0.0.1"
+          }
+        }
+      }
+    }
+  },
+  {
+    "side": "server",
+    "message": {
+      "jsonrpc": "2.0",
+      "id": 4,
+      "result": {
+        "description": "生成一份代码评审提示模板。\n\n    Args:\n        language: 被评审代码使用的编程语言。\n        code: 被评审代码的正文。\n    ",
+        "messages": [
+          {
+            "content": {
+              "text": "请对下面这段 python 代码做评审，依次检查正确性、可读性与潜在风险，并给出修改建议：\n\n```python\nx = 1\n```",
+              "type": "text"
+            },
+            "role": "user"
+          }
+        ],
+        "resultType": "complete",
+        "_meta": {
+          "io.modelcontextprotocol/serverInfo": {
+            "name": "devbox",
+            "version": "1.0.0"
+          }
+        }
+      }
+    }
+  }
+]

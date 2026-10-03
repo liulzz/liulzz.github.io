@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>第 3 章：第一个 MCP Server · MCP 教程</title>
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<header class="site-header">
+  <div class="wrap">
+    <a class="brand" href="../index.html">MCP<span> 教程</span></a>
+    <nav class="site-nav">
+      <a href="../index.html">目录</a>
+      <a href="01-what-is-mcp.html">1</a>
+      <a href="02-architecture.html">2</a>
+      <a href="03-first-server.html" class="current">3</a>
+      <a href="04-tools.html">4</a>
+      <a href="05-resources.html">5</a>
+      <a href="06-prompts.html">6</a>
+      <a href="07-transport.html">7</a>
+      <a href="08-lifecycle.html">8</a>
+      <a href="09-advanced.html">9</a>
+      <a href="10-client.html">10</a>
+      <a href="11-security.html">11</a>
+      <a href="12-practice.html">12</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+<div class="wrap">
+
+<div class="toc-inline">
+  <div class="toc-title">本章目录</div>
+  <ol>
+    <li><a href="#env">环境准备</a></li>
+    <li><a href="#minimal-server">最小 Server：FastMCP 版</a></li>
+    <li><a href="#lowlevel">低层 API 版</a></li>
+    <li><a href="#run-test">启动与测试</a></li>
+    <li><a href="#inspector">用 MCP Inspector 调试</a></li>
+  </ol>
+</div>
+
+<h1>第 3 章：第一个 MCP Server</h1>
+
+<h2 id="env">3.1 环境准备</h2>
+
+<p>官方 Python SDK 支持 Python 3.10+。推荐用 <code>uv</code> 管理虚拟环境，因为它速度更快且依赖解析更准确。</p>
+
+<pre><code class="language-bash"># 安装 uv（如果尚未安装）
+curl -Ls https://astral.sh/uv/install.sh | sh
+
+# 创建项目
+mkdir my-mcp-server && cd my-mcp-server
+uv init
+uv add "mcp[cli]"</code></pre>
+
+<p>如果你更习惯 pip，也可以这样安装：</p>
+
+<pre><code class="language-bash">python -m venv .venv
+source .venv/bin/activate
+pip install "mcp[cli]"</code></pre>
+
+<p>安装完成后，验证：</p>
+<pre><code class="language-bash">python -c "import mcp; print(mcp.__version__)"</code></pre>
+
+<h2 id="minimal-server">3.2 最小 Server：FastMCP 版</h2>
+
+<p><code>FastMCP</code> 是官方 SDK 里的高层封装，通过装饰器声明 Tool / Resource / Prompt，大幅减少样板代码。这是推荐的入门方式。</p>
+
+<pre><code class="language-python"># server.py
+from mcp.server.fastmcp import FastMCP
+
+# 创建 Server 实例，名称会出现在 initialize 响应的 serverInfo 字段里
+mcp = FastMCP("demo-server")
+
+
+@mcp.tool()
+def add(a: int, b: int) -> int:
+    """把两个整数相加，返回它们的和。"""
+    return a + b
+
+
+@mcp.tool()
+def greet(name: str) -> str:
+    """返回对指定对象的问候语字符串。"""
+    return f"你好，{name}！"
+
+
+@mcp.resource("greeting://{name}")
+def greeting_resource(name: str) -> str:
+    """提供一个以 URI 参数化的问候语资源。"""
+    return f"这是给 {name} 的问候资源内容。"
+
+
+if __name__ == "__main__":
+    # 默认以 stdio 传输模式启动
+    mcp.run()</code></pre>
+
+<p>这 20 行代码完成了以下工作：</p>
+<ul>
+  <li>注册了两个 Tool（<code>add</code>、<code>greet</code>），函数的 docstring 自动成为 Tool 的描述。</li>
+  <li>注册了一个参数化 Resource，URI 模板为 <code>greeting://{name}</code>。</li>
+  <li>以 stdio 传输启动 Server，等待 Client 连接。</li>
+</ul>
+
+<h2 id="lowlevel">3.3 低层 API 版</h2>
+
+<p>如果你需要更细粒度的控制，可以使用低层 <code>Server</code> 类。理解低层 API 有助于深入理解协议的实际行为。</p>
+
+<pre><code class="language-python"># server_lowlevel.py
+import asyncio
+from mcp.server import Server
+from mcp.server.stdio import stdio_server
+from mcp import types
+
+
+app = Server("demo-lowlevel")
+
+
+@app.list_tools()
+async def list_tools() -> list[types.Tool]:
+    """返回 Server 支持的 Tool 列表。
+    Client 调用 tools/list 时触发此函数。
+    """
+    return [
+        types.Tool(
+            name="add",
+            description="把两个整数相加，返回它们的和。",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "a": {"type": "integer", "description": "第一个加数"},
+                    "b": {"type": "integer", "description": "第二个加数"},
+                },
+                "required": ["a", "b"],
+            },
+        )
+    ]
+
+
+@app.call_tool()
+async def call_tool(name: str, arguments: dict) -> list[types.TextContent]:
+    """处理 tools/call 请求。"""
+    if name == "add":
+        result = arguments["a"] + arguments["b"]
+        return [types.TextContent(type="text", text=str(result))]
+    raise ValueError(f"未知 Tool：{name}")
+
+
+async def main():
+    # stdio_server() 返回 (stdin流, stdout流) 的上下文管理器
+    async with stdio_server() as (read_stream, write_stream):
+        await app.run(read_stream, write_stream, app.create_initialization_options())
+
+
+if __name__ == "__main__":
+    asyncio.run(main())</code></pre>
+
+<div class="box note">
+  <span class="box-title">FastMCP 与低层 API 的选择</span>
+  <p>FastMCP 在内部仍然使用低层 <code>Server</code> 类，因此两者在功能上是等价的。新项目优先选择 FastMCP，仅在需要精细控制初始化选项、自定义错误处理或动态注册原语时才使用低层 API。</p>
+</div>
+
+<h2 id="run-test">3.4 启动与测试</h2>
+
+<p>直接以 stdio 模式启动后，Server 会等待来自 stdin 的 JSON-RPC 消息。因此，测试时最简单的方式是用官方提供的 <code>mcp dev</code> 命令行工具：</p>
+
+<pre><code class="language-bash">mcp dev server.py</code></pre>
+
+<p>这条命令会：</p>
+<ol>
+  <li>在子进程中启动 <code>server.py</code>。</li>
+  <li>启动一个本地的 MCP Inspector Web UI（默认 <code>http://localhost:5173</code>）。</li>
+  <li>自动完成握手，列出所有 Tool / Resource / Prompt。</li>
+</ol>
+
+<p>也可以用 Python 脚本直接测试：</p>
+
+<pre><code class="language-python"># test_client.py
+import asyncio
+from mcp import ClientSession, StdioServerParameters
+from mcp.client.stdio import stdio_client
+
+
+async def main():
+    params = StdioServerParameters(command="python", args=["server.py"])
+    async with stdio_client(params) as (read, write):
+        async with ClientSession(read, write) as session:
+            # 完成握手
+            await session.initialize()
+
+            # 列出所有 Tool
+            tools = await session.list_tools()
+            print("可用 Tool：")
+            for t in tools.tools:
+                print(f"  {t.name}: {t.description}")
+
+            # 调用 add Tool
+            result = await session.call_tool("add", {"a": 3, "b": 5})
+            print(f"\nadd(3, 5) = {result.content[0].text}")
+
+            # 调用 greet Tool
+            result = await session.call_tool("greet", {"name": "世界"})
+            print(f"greet('世界') = {result.content[0].text}")
+
+
+asyncio.run(main())</code></pre>
+
+<pre><code class="language-text">可用 Tool：
+  add: 把两个整数相加，返回它们的和。
+  greet: 返回对指定对象的问候语字符串。
+
+add(3, 5) = 8
+greet('世界') = 你好，世界！</code></pre>
+
+<h2 id="inspector">3.5 用 MCP Inspector 调试</h2>
+
+<p>MCP Inspector 是官方提供的图形化调试工具，通过浏览器界面直接发送 MCP 请求并查看原始 JSON-RPC 报文。</p>
+
+<pre><code class="language-bash"># 安装（需要 Node.js 18+）
+npm install -g @modelcontextprotocol/inspector
+
+# 启动并连接到 Server
+mcp-inspector python server.py</code></pre>
+
+<p>连接后，你可以：</p>
+<ul>
+  <li>在 <strong>Tools</strong> 面板查看所有已注册的 Tool，点击「Run」发送调用请求。</li>
+  <li>在 <strong>Resources</strong> 面板浏览资源列表，点击「Read」获取资源内容。</li>
+  <li>在 <strong>Messages</strong> 面板查看所有原始 JSON-RPC 请求与响应，方便理解协议细节。</li>
+</ul>
+
+<div class="box ok">
+  <span class="box-title">✓ 本章小结</span>
+  <p>用 FastMCP 创建一个 Server 只需三步：创建 <code>FastMCP</code> 实例、用 <code>@mcp.tool()</code> 装饰函数、调用 <code>mcp.run()</code>。函数签名和 docstring 会被自动转换为 JSON Schema 和 Tool 描述。下一章会深入介绍 Tool 的参数定义、返回类型与错误处理。</p>
+</div>
+
+
+<div class="prevnext">
+  <a href="02-architecture.html">← 第 2 章</a>
+  <a href="04-tools.html">第 4 章：Tools（工具） →</a>
+</div>
+
+</div>
+</main>
+
+<footer class="site-footer">
+  <div class="wrap"><a href="../index.html">← 返回目录</a></div>
+</footer>
+<script src="../assets/app.js"></script>
+</body>
+</html>

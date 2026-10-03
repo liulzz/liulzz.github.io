@@ -1,0 +1,650 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Linux 查日志 — The Complete Log Toolkit</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+<style>
+  :root{
+    --font-display:"Space Grotesk",-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;
+    --font-body:"Inter","PingFang SC","Microsoft YaHei",sans-serif;
+    --font-mono:"JetBrains Mono","SF Mono",Consolas,monospace;
+    --ease:cubic-bezier(.22,1,.36,1);
+    --ease-out:cubic-bezier(.16,1,.3,1);
+  }
+  /* ============ DARK (default) ============ */
+  html[data-theme="dark"]{
+    --bg:#08090c; --bg-2:#0d0f14; --surface:#111319; --surface-2:#161922;
+    --border:#1e2230; --border-hi:#2a3142;
+    --ink:#f4f6fb; --ink-soft:#a8b0c2; --ink-mute:#626b80;
+    --accent:#4d8dff; --accent-2:#00e5c4; --accent-glow:rgba(77,141,255,.45);
+    --code-bg:#0a0c11; --code-ink:#8fe3d0; --code-border:#1a1e2a;
+    --grid-line:rgba(255,255,255,.028);
+    --glow-opacity:.55; --noise-opacity:.035;
+  }
+  /* ============ LIGHT ============ */
+  html[data-theme="light"]{
+    --bg:#f4f5f7; --bg-2:#eceef2; --surface:#ffffff; --surface-2:#f7f8fa;
+    --border:#e2e5ea; --border-hi:#d0d5dd;
+    --ink:#0d1117; --ink-soft:#3d4657; --ink-mute:#6b7488;
+    --accent:#2f6bff; --accent-2:#00a88f; --accent-glow:rgba(47,107,255,.22);
+    --code-bg:#f2f4f8; --code-ink:#0a5c66; --code-border:#dde2ea;
+    --grid-line:rgba(10,15,30,.035);
+    --glow-opacity:.28; --noise-opacity:.02;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{scroll-behavior:smooth}
+  body{
+    font-family:var(--font-body);background:var(--bg);color:var(--ink);
+    line-height:1.55;font-size:15px;-webkit-font-smoothing:antialiased;
+    overflow-x:hidden;position:relative;transition:background .5s var(--ease),color .5s var(--ease);
+  }
+  /* animated grid + glow backdrop */
+  .backdrop{position:fixed;inset:0;z-index:0;pointer-events:none;
+    background-image:linear-gradient(var(--grid-line) 1px,transparent 1px),
+      linear-gradient(90deg,var(--grid-line) 1px,transparent 1px);
+    background-size:64px 64px;mask-image:radial-gradient(circle at 50% 0%,#000 0%,transparent 78%);}
+  .glow{position:fixed;border-radius:50%;filter:blur(90px);z-index:0;pointer-events:none;
+    opacity:var(--glow-opacity);transition:opacity .5s}
+  .glow.g1{width:640px;height:640px;background:var(--accent);top:-260px;left:-160px}
+  .glow.g2{width:520px;height:520px;background:var(--accent-2);top:-160px;right:-140px}
+  #cursor-glow{position:fixed;width:520px;height:520px;border-radius:50%;z-index:0;pointer-events:none;
+    background:radial-gradient(circle,var(--accent-glow),transparent 62%);
+    transform:translate(-50%,-50%);opacity:0;transition:opacity .6s;mix-blend-mode:screen}
+  html[data-theme="light"] #cursor-glow{mix-blend-mode:multiply}
+  .wrap{max-width:1280px;margin:0 auto;padding:0 32px;position:relative;z-index:2}
+
+  /* ============ HERO ============ */
+  header{position:relative;z-index:2;padding:72px 0 34px}
+  .eyebrow{display:flex;align-items:center;gap:9px;font-family:var(--font-mono);font-size:12.5px;
+    letter-spacing:.24em;text-transform:uppercase;color:var(--accent-2);margin-bottom:26px;opacity:0;
+    animation:rise .9s var(--ease-out) .1s forwards}
+  .eyebrow i{width:15px;height:15px}
+  h1.hero{font-family:var(--font-display);font-weight:700;line-height:.92;letter-spacing:-.04em;
+    font-size:clamp(56px,11vw,148px);color:var(--ink)}
+  h1.hero .l1,h1.hero .l2{display:block;overflow:hidden}
+  h1.hero .l1 span,h1.hero .l2 span{display:block;transform:translateY(105%);
+    animation:reveal 1.1s var(--ease-out) forwards}
+  h1.hero .l1 span{animation-delay:.18s}
+  h1.hero .l2 span{animation-delay:.32s;
+    background:linear-gradient(100deg,var(--accent),var(--accent-2));
+    -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+  .hero-sub{display:flex;flex-wrap:wrap;align-items:baseline;gap:8px 26px;margin-top:30px;
+    font-size:16px;color:var(--ink-soft);max-width:680px;opacity:0;
+    animation:rise .9s var(--ease-out) .5s forwards}
+  .hero-stats{display:flex;gap:40px;margin-top:44px;flex-wrap:wrap;opacity:0;
+    animation:rise .9s var(--ease-out) .62s forwards}
+  .stat .num{font-family:var(--font-display);font-weight:700;font-size:clamp(34px,4.5vw,52px);
+    line-height:1;letter-spacing:-.03em;
+    background:linear-gradient(180deg,var(--ink),var(--ink-soft));-webkit-background-clip:text;
+    background-clip:text;-webkit-text-fill-color:transparent}
+  .stat .lbl{font-family:var(--font-mono);font-size:11.5px;letter-spacing:.16em;text-transform:uppercase;
+    color:var(--ink-mute);margin-top:9px}
+  .stat .num .u{font-size:.42em;color:var(--accent-2);-webkit-text-fill-color:var(--accent-2);margin-left:3px}
+
+  /* ============ TOOLBAR ============ */
+  .toolbar{position:sticky;top:0;z-index:30;padding:16px 0;margin-top:30px;
+    background:color-mix(in srgb,var(--bg) 78%,transparent);backdrop-filter:blur(18px) saturate(1.4);
+    border-top:1px solid var(--border);border-bottom:1px solid var(--border)}
+  .toolbar .bar{display:flex;gap:14px;align-items:center;flex-wrap:wrap}
+  .search-box{flex:1;min-width:240px;position:relative;display:flex;align-items:center}
+  .search-box i{position:absolute;left:16px;width:18px;height:18px;color:var(--ink-mute);pointer-events:none}
+  #search{width:100%;padding:14px 16px 14px 46px;background:var(--surface);border:1px solid var(--border);
+    border-radius:14px;font-family:var(--font-body);font-size:15px;color:var(--ink);outline:none;
+    transition:.25s var(--ease)}
+  #search::placeholder{color:var(--ink-mute)}
+  #search:focus{border-color:var(--accent);box-shadow:0 0 0 4px var(--accent-glow)}
+  .count{font-family:var(--font-mono);font-size:12.5px;color:var(--ink-mute);white-space:nowrap;
+    display:flex;align-items:center;gap:7px}
+  .count b{color:var(--accent-2);font-weight:600}
+  .theme-btn{width:46px;height:46px;flex:none;display:grid;place-items:center;background:var(--surface);
+    border:1px solid var(--border);border-radius:13px;cursor:pointer;color:var(--ink-soft);
+    transition:.25s var(--ease)}
+  .theme-btn:hover{border-color:var(--accent);color:var(--accent);transform:translateY(-2px)}
+  .theme-btn i{width:19px;height:19px}
+  /* trigger button that opens the palette */
+  .palette-trigger{display:inline-flex;align-items:center;gap:10px;padding:11px 18px 11px 15px;
+    background:var(--surface);border:1px solid var(--border);border-radius:13px;cursor:pointer;
+    font-family:var(--font-mono);font-size:12.5px;letter-spacing:.04em;color:var(--ink-soft);
+    transition:.25s var(--ease)}
+  .palette-trigger:hover{border-color:var(--accent);color:var(--ink);transform:translateY(-1px);
+    box-shadow:0 8px 24px var(--accent-glow)}
+  .palette-trigger .pt-ico{width:17px;height:17px;color:var(--accent)}
+  .palette-trigger .pt-cur{color:var(--ink);font-weight:500}
+  .palette-trigger .pt-kbd{margin-left:4px;font-size:10.5px;padding:2px 7px;border-radius:6px;
+    background:var(--surface-2);border:1px solid var(--border);color:var(--ink-mute)}
+
+  /* ===== category palette overlay ===== */
+  .palette-scrim{position:fixed;inset:0;z-index:90;background:color-mix(in srgb,var(--bg) 55%,transparent);
+    backdrop-filter:blur(10px) saturate(1.2);opacity:0;pointer-events:none;transition:opacity .35s var(--ease)}
+  .palette-scrim.open{opacity:1;pointer-events:auto}
+  .palette{position:fixed;z-index:91;left:50%;top:50%;transform:translate(-50%,-46%) scale(.96);
+    width:min(940px,94vw);max-height:82vh;display:flex;flex-direction:column;
+    background:color-mix(in srgb,var(--surface) 96%,transparent);border:1px solid var(--border-hi);
+    border-radius:24px;overflow:hidden;opacity:0;pointer-events:none;
+    box-shadow:0 40px 120px rgba(0,0,0,.5),0 0 0 1px var(--border) inset;
+    transition:opacity .35s var(--ease),transform .35s var(--ease)}
+  .palette.open{opacity:1;pointer-events:auto;transform:translate(-50%,-50%) scale(1)}
+  .palette-hd{padding:22px 26px 16px;border-bottom:1px solid var(--border);position:relative}
+  .palette-hd .lbl{font-family:var(--font-mono);font-size:11px;letter-spacing:.22em;text-transform:uppercase;
+    color:var(--accent-2);margin-bottom:14px;display:flex;align-items:center;gap:8px}
+  .palette-hd .lbl i{width:14px;height:14px}
+  .palette-search{display:flex;align-items:center;gap:12px}
+  .palette-search i{width:20px;height:20px;color:var(--ink-mute);flex:none}
+  .palette-search input{flex:1;background:none;border:none;outline:none;font-family:var(--font-display);
+    font-size:26px;font-weight:500;letter-spacing:-.02em;color:var(--ink)}
+  .palette-search input::placeholder{color:var(--ink-mute)}
+  .palette-esc{font-family:var(--font-mono);font-size:10.5px;padding:3px 9px;border-radius:7px;
+    background:var(--surface-2);border:1px solid var(--border);color:var(--ink-mute)}
+  .palette-grid{padding:20px 26px 26px;display:grid;grid-template-columns:repeat(4,1fr);gap:12px;
+    grid-auto-rows:minmax(118px,auto);align-items:start;overflow-y:auto}
+  @media(max-width:720px){.palette-grid{grid-template-columns:repeat(2,1fr)}}
+  @media(max-width:440px){.palette-grid{grid-template-columns:1fr}}
+  .pcell{position:relative;display:flex;flex-direction:column;gap:11px;padding:18px 16px 15px;
+    background:var(--surface-2);border:1px solid var(--border);border-radius:16px;cursor:pointer;
+    overflow:hidden;transition:.22s var(--ease);text-align:left}
+  .pcell::before{content:"";position:absolute;inset:0;border-radius:16px;opacity:0;transition:opacity .3s;
+    background:radial-gradient(120px 90px at 30% 0%,var(--accent-glow),transparent 70%)}
+  .pcell:hover,.pcell.kbd{border-color:var(--accent);transform:translateY(-3px);
+    box-shadow:0 14px 34px var(--accent-glow)}
+  .pcell:hover::before,.pcell.kbd::before{opacity:1}
+  .pcell.sel{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 14%,var(--surface-2))}
+  .pcell.sel .pc-ico{background:var(--accent);color:#fff;border-color:var(--accent)}
+  .pc-top{display:flex;align-items:center;justify-content:space-between}
+  .pc-ico{width:42px;height:42px;display:grid;place-items:center;border-radius:12px;
+    background:var(--surface);border:1px solid var(--border);color:var(--accent);transition:.22s var(--ease)}
+  .pc-ico i{width:21px;height:21px}
+  .pc-idx{font-family:var(--font-mono);font-size:11px;font-weight:600;color:var(--ink-mute);
+    letter-spacing:.04em}
+  .pc-name{font-family:var(--font-display);font-size:14.5px;font-weight:600;line-height:1.25;color:var(--ink);
+    position:relative;z-index:1}
+  .pc-cnt{font-family:var(--font-mono);font-size:11px;color:var(--ink-mute);position:relative;z-index:1}
+  .pcell.sel .pc-cnt{color:var(--accent)}
+  .pcell.hide{display:none}
+
+  /* ============ CARDS ============ */
+  main{position:relative;z-index:2;padding:52px 0 100px}
+  .grid{columns:2;column-gap:26px}
+  @media(max-width:900px){.grid{columns:1}}
+  .card{background:color-mix(in srgb,var(--surface) 92%,transparent);
+    border:1px solid var(--border);border-radius:20px;padding:26px 26px 22px;margin-bottom:26px;
+    break-inside:avoid;position:relative;overflow:hidden;
+    opacity:0;transform:translateY(28px);transition:opacity .7s var(--ease),transform .7s var(--ease),border-color .3s}
+  .card.in{opacity:1;transform:translateY(0)}
+  .card::before{content:"";position:absolute;inset:0;border-radius:20px;padding:1px;
+    background:linear-gradient(140deg,var(--accent),transparent 40%);opacity:0;transition:opacity .4s;
+    -webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);
+    -webkit-mask-composite:xor;mask-composite:exclude;pointer-events:none}
+  .card:hover{border-color:var(--border-hi);transform:translateY(-4px)}
+  .card:hover::before{opacity:.7}
+  .card-head{display:flex;align-items:flex-start;gap:15px;margin-bottom:20px}
+  .card-idx{font-family:var(--font-mono);font-size:12px;font-weight:600;color:var(--accent-2);
+    letter-spacing:.05em;padding-top:6px;min-width:26px}
+  .card-ico{width:38px;height:38px;flex:none;display:grid;place-items:center;border-radius:11px;
+    background:var(--surface-2);border:1px solid var(--border);color:var(--accent)}
+  .card-ico i{width:19px;height:19px}
+  .card-titles{flex:1;min-width:0}
+  .card-titles h2{font-family:var(--font-display);font-size:18px;font-weight:600;letter-spacing:-.01em;
+    color:var(--ink);line-height:1.2}
+  .card-titles .meta{font-family:var(--font-mono);font-size:11px;color:var(--ink-mute);margin-top:5px;
+    letter-spacing:.05em}
+  .row{margin-bottom:13px}
+  .row:last-child{margin-bottom:0}
+  .row .desc{font-size:13px;color:var(--ink-soft);margin-bottom:6px;line-height:1.4}
+  .cmd{display:block;background:var(--code-bg);color:var(--code-ink);border:1px solid var(--code-border);
+    border-radius:11px;padding:11px 40px 11px 14px;font-family:var(--font-mono);font-size:13px;
+    line-height:1.5;position:relative;white-space:pre-wrap;word-break:break-all;cursor:pointer;
+    transition:.2s var(--ease)}
+  .cmd:hover{border-color:var(--accent);transform:translateX(3px)}
+  .cmd .copy-i{position:absolute;right:11px;top:50%;transform:translateY(-50%);width:15px;height:15px;
+    color:var(--ink-mute);transition:.2s}
+  .cmd:hover .copy-i{color:var(--accent)}
+  .cmd.copied{border-color:var(--accent-2)}
+  .cmd.copied .copy-i{color:var(--accent-2)}
+  .cmd mark{background:var(--accent);color:#fff;border-radius:3px;padding:0 2px}
+  .no-result{text-align:center;color:var(--ink-mute);padding:80px 0;display:none;
+    font-family:var(--font-mono);font-size:14px}
+  .no-result i{width:34px;height:34px;display:block;margin:0 auto 16px;opacity:.5}
+
+  /* ============ FOOTER ============ */
+  footer{position:relative;z-index:2;border-top:1px solid var(--border);padding:40px 0}
+  footer .in{display:flex;justify-content:space-between;align-items:center;gap:20px;flex-wrap:wrap;
+    font-family:var(--font-mono);font-size:12.5px;color:var(--ink-mute)}
+  footer a{color:var(--accent);text-decoration:none;transition:.2s}
+  footer a:hover{color:var(--accent-2)}
+  footer kbd{background:var(--surface);border:1px solid var(--border);border-bottom-width:2px;
+    border-radius:6px;padding:2px 7px;font-size:11px;font-family:var(--font-mono);color:var(--ink-soft)}
+
+  /* ============ TO-TOP ============ */
+  #toTop{position:fixed;right:30px;bottom:30px;width:50px;height:50px;border-radius:15px;
+    background:var(--accent);color:#fff;border:none;display:grid;place-items:center;cursor:pointer;
+    box-shadow:0 10px 30px var(--accent-glow);opacity:0;transform:translateY(20px) scale(.9);
+    pointer-events:none;transition:.35s var(--ease);z-index:40}
+  #toTop.show{opacity:1;transform:translateY(0) scale(1);pointer-events:auto}
+  #toTop:hover{transform:translateY(-3px) scale(1.05)}
+  #toTop i{width:21px;height:21px}
+  #progress{position:fixed;top:0;left:0;height:2px;width:0;z-index:50;
+    background:linear-gradient(90deg,var(--accent),var(--accent-2));transition:width .1s linear}
+
+  @keyframes reveal{to{transform:translateY(0)}}
+  @keyframes rise{to{opacity:1;transform:translateY(0)}}
+  .eyebrow,.hero-sub,.hero-stats{transform:translateY(16px)}
+  @media(prefers-reduced-motion:reduce){
+    *{animation:none!important;transition:none!important}
+    .card{opacity:1;transform:none}
+    h1.hero span{transform:none!important}
+    .eyebrow,.hero-sub,.hero-stats{opacity:1;transform:none}
+  }
+  @media(max-width:640px){.wrap{padding:0 20px}header{padding:48px 0 24px}}
+</style>
+</head>
+<body>
+<div id="progress"></div>
+<div class="backdrop"></div>
+<div class="glow g1"></div>
+<div class="glow g2"></div>
+<div id="cursor-glow"></div>
+
+<header>
+  <div class="wrap">
+    <div class="eyebrow"><i data-lucide="scroll-text"></i>Linux · Log Hunting · v1.0</div>
+    <h1 class="hero">
+      <span class="l1"><span>查日志</span></span>
+      <span class="l2"><span>Log Toolkit</span></span>
+    </h1>
+    <p class="hero-sub">一份为运维与开发打造的 Linux 查日志命令全集。以 grep 为核心，覆盖 tail / less / awk / sed / journalctl / 压缩日志 / 管道实战 —— 点击任意命令即可复制。</p>
+    <div class="hero-stats">
+      <div class="stat"><div class="num" id="s-cmd">0</div><div class="lbl">Commands</div></div>
+      <div class="stat"><div class="num" id="s-cat">0</div><div class="lbl">Categories</div></div>
+      <div class="stat"><div class="num">100<span class="u">%</span></div><div class="lbl">Copy Ready</div></div>
+    </div>
+  </div>
+</header>
+
+<div class="toolbar">
+  <div class="wrap">
+    <div class="bar">
+      <div class="search-box">
+        <i data-lucide="search"></i>
+        <input id="search" type="text" placeholder="搜索命令或关键词，如 grep / 上下文 / tail / 时间范围 …" autocomplete="off">
+      </div>
+      <span class="count" id="count"></span>
+      <button class="theme-btn" id="themeBtn" title="切换主题"><i data-lucide="moon"></i></button>
+    </div>
+    <button class="palette-trigger" id="paletteTrigger">
+      <i data-lucide="layout-grid" class="pt-ico"></i>
+      <span>分类 · <span class="pt-cur" id="ptCur">全部</span></span>
+      <span class="pt-kbd">C</span>
+    </button>
+  </div>
+</div>
+
+<div class="palette-scrim" id="paletteScrim"></div>
+<div class="palette" id="palette" role="dialog" aria-modal="true" aria-label="选择分类">
+  <div class="palette-hd">
+    <div class="lbl"><i data-lucide="layout-grid"></i>选择分类 · Jump to Category</div>
+    <div class="palette-search">
+      <i data-lucide="search"></i>
+      <input id="paletteInput" type="text" placeholder="输入分类名过滤，↑↓ 选择，回车确认…" autocomplete="off">
+      <span class="palette-esc">ESC</span>
+    </div>
+  </div>
+  <div class="palette-grid" id="paletteGrid"></div>
+</div>
+
+<main>
+  <div class="wrap">
+    <div class="grid" id="grid"></div>
+    <div class="no-result" id="noResult"><i data-lucide="search-x"></i>没有匹配的命令，换个关键词试试</div>
+  </div>
+</main>
+
+<footer>
+  <div class="wrap">
+    <div class="in">
+      <span>Linux Log Toolkit · v1.0</span>
+      <span>涵盖 grep / tail / less / awk / sed / find / journalctl / 管道实战</span>
+      <span>快捷键 <kbd>/</kbd> 搜索 · <kbd>C</kbd> 分类 · <kbd>Esc</kbd> 清空</span>
+    </div>
+  </div>
+</footer>
+
+<button id="toTop" title="回到顶部"><i data-lucide="arrow-up"></i></button>
+
+<script>
+const DATA = [
+  {cat:"grep 基础", items:[
+    {d:"在文件中搜索关键字", c:'grep "error" app.log'},
+    {d:"忽略大小写", c:'grep -i "error" app.log'},
+    {d:"显示匹配行的行号", c:'grep -n "error" app.log'},
+    {d:"只统计匹配的行数", c:'grep -c "error" app.log'},
+    {d:"反向匹配(不含关键字的行)", c:'grep -v "DEBUG" app.log'},
+    {d:"精确匹配整个单词(避免 error 匹配 errorCode)", c:'grep -w "error" app.log'},
+    {d:"只输出匹配到的部分(而非整行)", c:'grep -o "user=[0-9]*" app.log'},
+    {d:"匹配即静默返回(用于脚本判断)", c:'grep -q "error" app.log && echo "发现错误"'},
+  ]},
+  {cat:"多关键字与正则", items:[
+    {d:"匹配多个关键字之一(或)", c:'grep -E "error|warn|fail" app.log'},
+    {d:"同时满足两个词(与, 需两次 grep)", c:'grep "error" app.log | grep "timeout"'},
+    {d:"扩展正则(推荐, 支持 + ? | ())", c:'grep -E "[0-9]{3}" app.log'},
+    {d:"匹配以 ERROR 开头的行", c:'grep "^ERROR" app.log'},
+    {d:"匹配以分号结尾的行", c:'grep ";$" app.log'},
+    {d:"匹配 IP 地址", c:'grep -Eo "([0-9]{1,3}\\.){3}[0-9]{1,3}" app.log'},
+    {d:"固定字符串匹配(不解析正则, 最快)", c:'grep -F "[error].code=500" app.log'},
+    {d:"从文件读取多个匹配模式", c:'grep -f patterns.txt app.log'},
+  ]},
+  {cat:"上下文(排障最常用)", items:[
+    {d:"显示匹配行及其后 5 行", c:'grep -A 5 "Exception" app.log'},
+    {d:"显示匹配行及其前 5 行", c:'grep -B 5 "Exception" app.log'},
+    {d:"显示匹配行前后各 5 行", c:'grep -C 5 "Exception" app.log'},
+    {d:"看堆栈: 找到异常并往后看 20 行", c:'grep -A 20 "NullPointerException" app.log'},
+    {d:"高亮匹配关键字(默认终端已开)", c:'grep --color=auto "error" app.log'},
+  ]},
+  {cat:"多文件与递归搜索", items:[
+    {d:"搜索多个日志文件", c:'grep "error" app.log err.log'},
+    {d:"搜索当前目录下所有 .log", c:'grep "error" *.log'},
+    {d:"递归搜索整个目录", c:'grep -r "error" /var/log/'},
+    {d:"递归 + 只显示文件名(不显示内容)", c:'grep -rl "error" /var/log/'},
+    {d:"递归时指定文件类型", c:'grep -r --include="*.log" "error" /var/log/'},
+    {d:"递归时排除某些目录", c:'grep -r --exclude-dir={tmp,cache} "error" .'},
+    {d:"多文件时显示文件名前缀", c:'grep -H "error" *.log'},
+  ]},
+  {cat:"实时跟踪日志(tail)", items:[
+    {d:"实时跟踪日志新增内容", c:'tail -f app.log'},
+    {d:"实时跟踪 + 只看含 error 的新行", c:'tail -f app.log | grep --line-buffered "error"'},
+    {d:"查看最后 100 行", c:'tail -n 100 app.log'},
+    {d:"从第 100 行开始看到结尾", c:'tail -n +100 app.log'},
+    {d:"跟踪日志(文件被轮转重建也不断)", c:'tail -F app.log'},
+    {d:"同时跟踪多个日志文件", c:'tail -f app.log err.log'},
+    {d:"查看文件开头 50 行", c:'head -n 50 app.log'},
+  ]},
+  {cat:"翻页查看(less)", items:[
+    {d:"打开日志分页查看(推荐大文件)", c:'less app.log'},
+    {d:"打开并跳到文件末尾", c:'less +G app.log'},
+    {d:"打开并实时跟踪(Ctrl+C 停止跟踪可翻页)", c:'less +F app.log'},
+    {d:"less 中搜索: 按 / 输入关键字, n 下一个 N 上一个", c:'/error'},
+    {d:"less 中跳到行首/行尾", c:'g / G'},
+    {d:"less 中显示行号", c:'-N'},
+    {d:"grep 结果保留颜色送入 less", c:'grep --color=always "error" app.log | less -R'},
+  ]},
+  {cat:"压缩日志(gz/zip)", items:[
+    {d:"直接搜索 .gz 压缩日志", c:'zgrep "error" app.log.gz'},
+    {d:"查看 .gz 日志内容", c:'zcat app.log.gz | less'},
+    {d:"查看 .gz 日志末尾", c:'zcat app.log.gz | tail -n 100'},
+    {d:"搜索所有轮转的压缩日志", c:'zgrep "error" app.log-*.gz'},
+    {d:"分页查看压缩日志", c:'zless app.log.gz'},
+    {d:"搜索 .gz 并显示上下文", c:'zgrep -C 5 "Exception" app.log.gz'},
+  ]},
+  {cat:"字段提取(awk)", items:[
+    {d:"打印每行第 1 列", c:"awk '{print $1}' access.log"},
+    {d:"打印第 1 和第 7 列", c:"awk '{print $1, $7}' access.log"},
+    {d:"按关键字过滤并打印列", c:"awk '/error/{print $1, $5}' app.log"},
+    {d:"指定分隔符(如冒号)取字段", c:"awk -F: '{print $1}' /etc/passwd"},
+    {d:"统计某状态码出现次数", c:"awk '{print $9}' access.log | sort | uniq -c | sort -rn"},
+    {d:"打印第 10 行到第 20 行", c:"awk 'NR>=10 && NR<=20' app.log"},
+    {d:"筛选响应时间大于 1 秒的请求", c:"awk '$NF > 1000 {print}' access.log"},
+    {d:"对某列求和", c:"awk '{sum+=$1} END{print sum}' nums.log"},
+  ]},
+  {cat:"文本处理(sed/其他)", items:[
+    {d:"打印第 100 到 200 行", c:"sed -n '100,200p' app.log"},
+    {d:"打印匹配某关键字的行", c:"sed -n '/error/p' app.log"},
+    {d:"删除空行后查看", c:"sed '/^$/d' app.log"},
+    {d:"去重相邻重复行", c:'uniq app.log'},
+    {d:"排序后统计唯一行出现次数", c:'sort app.log | uniq -c | sort -rn'},
+    {d:"统计文件总行数", c:'wc -l app.log'},
+    {d:"截取每行前 200 字符(避免超长行刷屏)", c:'cut -c1-200 app.log'},
+  ]},
+  {cat:"systemd 日志(journalctl)", items:[
+    {d:"查看某服务的全部日志", c:'journalctl -u nginx'},
+    {d:"实时跟踪某服务日志", c:'journalctl -u nginx -f'},
+    {d:"查看最近 100 行", c:'journalctl -u nginx -n 100'},
+    {d:"只看今天的日志", c:'journalctl --since today'},
+    {d:"按时间范围过滤", c:'journalctl --since "2026-07-30 09:00" --until "2026-07-30 18:00"'},
+    {d:"只看错误级别以上的日志", c:'journalctl -p err'},
+    {d:"查看本次开机以来的内核日志", c:'journalctl -k -b'},
+    {d:"journalctl 结果里再 grep 关键字", c:'journalctl -u nginx | grep "timeout"'},
+  ]},
+  {cat:"查找日志文件(find)", items:[
+    {d:"按名称查找日志文件", c:'find /var/log -name "*.log"'},
+    {d:"查找最近 1 天内修改过的日志", c:'find /var/log -name "*.log" -mtime -1'},
+    {d:"查找大于 100MB 的日志", c:'find /var/log -name "*.log" -size +100M'},
+    {d:"查找并对每个文件执行 grep", c:'find /var/log -name "*.log" -exec grep -l "error" {} +'},
+    {d:"查找最近修改的 5 个日志文件", c:"find /var/log -name '*.log' -printf '%T+ %p\\n' | sort -r | head -5"},
+  ]},
+  {cat:"按时间与范围过滤", items:[
+    {d:"grep 匹配某天的日志行", c:'grep "2026-07-30" app.log'},
+    {d:"匹配某小时段(09~10点)", c:'grep -E "2026-07-30 (09|10):" app.log'},
+    {d:"提取两个时间点之间的日志(sed)", c:"sed -n '/09:00:00/,/10:00:00/p' app.log"},
+    {d:"awk 按时间字段过滤", c:"awk '$2 >= \"09:00:00\" && $2 <= \"10:00:00\"' app.log"},
+    {d:"看最近 1000 行里的 error", c:'tail -n 1000 app.log | grep "error"'},
+  ]},
+  {cat:"管道实战组合", items:[
+    {d:"实时监控并只看错误(带缓冲)", c:'tail -f app.log | grep --line-buffered -i "error\\|exception"'},
+    {d:"统计各类错误出现次数排行", c:'grep -oE "ERROR|WARN|FATAL" app.log | sort | uniq -c | sort -rn'},
+    {d:"找出访问量最高的 10 个 IP", c:"awk '{print $1}' access.log | sort | uniq -c | sort -rn | head -10"},
+    {d:"统计 5xx 错误请求数", c:"awk '$9 ~ /^5/' access.log | wc -l"},
+    {d:"提取异常并保存到文件", c:'grep -A 10 "Exception" app.log > errors.txt'},
+    {d:"实时监控错误并桌面提醒", c:'tail -f app.log | grep --line-buffered "FATAL" | while read l; do notify-send "日志告警" "$l"; done'},
+    {d:"多个压缩日志合并搜索并排序", c:'zgrep -h "error" app.log-*.gz | sort | uniq -c | sort -rn'},
+  ]},
+  {cat:"实用技巧", items:[
+    {d:"设置 grep 默认高亮颜色", c:"alias grep='grep --color=auto'"},
+    {d:"搜索时排除二进制文件干扰", c:'grep -a "error" app.log'},
+    {d:"超大文件建议先定位行号再截取", c:'grep -n "error" huge.log | head'},
+    {d:"grep 找不到时返回码为 1(脚本可判断)", c:'grep "error" app.log; echo $?'},
+    {d:"实时监控但只在有匹配时才输出", c:'tail -f app.log | grep --line-buffered -E "ERROR|FATAL"'},
+    {d:"清空当前日志文件(保留句柄)", c:'> app.log'},
+    {d:"查看文件占用磁盘大小", c:'du -h app.log'},
+  ]},
+];
+
+// icon mapping per category (Lucide names)
+const ICONS={
+  "grep 基础":"search","多关键字与正则":"regex","上下文(排障最常用)":"file-search",
+  "多文件与递归搜索":"folder-search","实时跟踪日志(tail)":"radio","翻页查看(less)":"book-open-text",
+  "压缩日志(gz/zip)":"file-archive","字段提取(awk)":"columns-3","文本处理(sed/其他)":"file-pen-line",
+  "systemd 日志(journalctl)":"server-cog","查找日志文件(find)":"folder-tree","按时间与范围过滤":"clock",
+  "管道实战组合":"git-merge","实用技巧":"sparkles"
+};
+const pad=n=>String(n).padStart(2,"0");
+
+const grid=document.getElementById('grid');
+const search=document.getElementById('search');
+const noResult=document.getElementById('noResult');
+const countEl=document.getElementById('count');
+let activeCat="全部";
+let io=null;
+
+const totalCmd=DATA.reduce((s,d)=>s+d.items.length,0);
+
+/* ===== category palette ===== */
+const paletteTrigger=document.getElementById('paletteTrigger');
+const paletteScrim=document.getElementById('paletteScrim');
+const palette=document.getElementById('palette');
+const paletteGrid=document.getElementById('paletteGrid');
+const paletteInput=document.getElementById('paletteInput');
+const ptCur=document.getElementById('ptCur');
+const PCATS=[{cat:"全部",cnt:totalCmd,ico:"layers-3"},...DATA.map(d=>({cat:d.cat,cnt:d.items.length,ico:ICONS[d.cat]||"chevron-right"}))];
+let kbdIdx=0;
+
+function buildPalette(){
+  paletteGrid.innerHTML='';
+  PCATS.forEach((p,i)=>{
+    const cell=document.createElement('button');
+    cell.className='pcell'+(p.cat===activeCat?' sel':'');
+    cell.dataset.cat=p.cat;cell.dataset.i=i;
+    cell.innerHTML=`<div class="pc-top"><div class="pc-ico"><i data-lucide="${p.ico}"></i></div><div class="pc-idx">${i===0?'∗':pad(i)}</div></div>
+      <div class="pc-name">${p.cat}</div><div class="pc-cnt">${p.cnt} commands</div>`;
+    cell.onclick=()=>selectCat(p.cat);
+    paletteGrid.appendChild(cell);
+  });
+  lucide.createIcons();
+}
+function selectCat(cat){
+  activeCat=cat;ptCur.textContent=cat;
+  paletteGrid.querySelectorAll('.pcell').forEach(c=>c.classList.toggle('sel',c.dataset.cat===cat));
+  closePalette();render();window.scrollTo({top:document.querySelector('main').offsetTop-90,behavior:'smooth'});
+}
+function openPalette(){
+  buildPalette();paletteScrim.classList.add('open');palette.classList.add('open');
+  paletteInput.value='';filterPalette();
+  const sel=[...paletteGrid.querySelectorAll('.pcell')].findIndex(c=>c.classList.contains('sel'));
+  kbdIdx=sel<0?0:sel;markKbd();
+  setTimeout(()=>paletteInput.focus(),120);
+}
+function closePalette(){paletteScrim.classList.remove('open');palette.classList.remove('open');paletteTrigger.focus();}
+function filterPalette(){
+  const q=paletteInput.value.trim().toLowerCase();
+  let vis=[];
+  paletteGrid.querySelectorAll('.pcell').forEach(c=>{
+    const hit=!q||c.dataset.cat.toLowerCase().includes(q);
+    c.classList.toggle('hide',!hit);if(hit)vis.push(c);
+  });
+  kbdIdx=0;markKbd(vis);
+}
+function markKbd(vis){
+  const cells=vis||[...paletteGrid.querySelectorAll('.pcell:not(.hide)')];
+  paletteGrid.querySelectorAll('.pcell').forEach(c=>c.classList.remove('kbd'));
+  if(cells[kbdIdx]){cells[kbdIdx].classList.add('kbd');cells[kbdIdx].scrollIntoView({block:'nearest'});}
+}
+paletteTrigger.onclick=openPalette;
+paletteScrim.onclick=closePalette;
+paletteInput.addEventListener('input',filterPalette);
+paletteInput.addEventListener('keydown',e=>{
+  const cells=[...paletteGrid.querySelectorAll('.pcell:not(.hide)')];
+  const cols=window.innerWidth<=440?1:window.innerWidth<=720?2:4;
+  if(e.key==='ArrowDown'){e.preventDefault();kbdIdx=Math.min(kbdIdx+cols,cells.length-1);markKbd(cells);}
+  else if(e.key==='ArrowUp'){e.preventDefault();kbdIdx=Math.max(kbdIdx-cols,0);markKbd(cells);}
+  else if(e.key==='ArrowRight'){e.preventDefault();kbdIdx=Math.min(kbdIdx+1,cells.length-1);markKbd(cells);}
+  else if(e.key==='ArrowLeft'){e.preventDefault();kbdIdx=Math.max(kbdIdx-1,0);markKbd(cells);}
+  else if(e.key==='Enter'){e.preventDefault();if(cells[kbdIdx])selectCat(cells[kbdIdx].dataset.cat);}
+  else if(e.key==='Escape'){e.preventDefault();closePalette();}
+});
+
+
+function esc(s){return s.replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));}
+function hl(text,q){
+  const e=esc(text);
+  if(!q)return e;
+  try{return e.replace(new RegExp('('+q.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+')','ig'),'<mark>$1</mark>');}
+  catch(_){return e;}
+}
+
+function render(){
+  const q=search.value.trim().toLowerCase();
+  // While searching, always search globally (ignore the selected category filter).
+  const effectiveCat=q?"全部":activeCat;
+  grid.innerHTML='';let total=0,idx=0;
+  DATA.forEach(group=>{
+    if(effectiveCat!=="全部"&&group.cat!==effectiveCat)return;
+    const matched=group.items.filter(it=>!q||it.d.toLowerCase().includes(q)||it.c.toLowerCase().includes(q));
+    if(!matched.length)return;total+=matched.length;idx++;
+    const card=document.createElement('div');card.className='card';
+    const ico=ICONS[group.cat]||"chevron-right";
+    let html=`<div class="card-head">
+      <div class="card-idx">${pad(idx)}</div>
+      <div class="card-ico"><i data-lucide="${ico}"></i></div>
+      <div class="card-titles"><h2>${group.cat}</h2><div class="meta">${matched.length} commands</div></div>
+    </div>`;
+    matched.forEach(it=>{
+      html+=`<div class="row"><div class="desc">${hl(it.d,q)}</div>
+        <code class="cmd" data-cmd="${esc(it.c)}">${hl(it.c,q)}<i data-lucide="copy" class="copy-i"></i></code></div>`;
+    });
+    card.innerHTML=html;
+    grid.appendChild(card);
+  });
+  noResult.style.display=total?'none':'block';
+  const shownCats=grid.querySelectorAll('.card').length;
+  const catCount=effectiveCat==="全部"?shownCats:1;
+  countEl.innerHTML=`<b>${total}</b> commands · <b>${catCount}</b> ${catCount>1?'categories':'category'}`;
+  lucide.createIcons();
+  bindCopy();
+  observeCards();
+}
+
+function bindCopy(){
+  document.querySelectorAll('.cmd').forEach(cmd=>{
+    cmd.onclick=()=>{
+      const txt=cmd.getAttribute('data-cmd');
+      navigator.clipboard.writeText(txt);
+      cmd.classList.add('copied');
+      const ic=cmd.querySelector('.copy-i');
+      ic.setAttribute('data-lucide','check');lucide.createIcons();
+      setTimeout(()=>{cmd.classList.remove('copied');ic.setAttribute('data-lucide','copy');lucide.createIcons();},1300);
+    };
+  });
+}
+
+function observeCards(){
+  if(io)io.disconnect();
+  const cards=[...document.querySelectorAll('.card:not(.in)')];
+  // reveal any card already within the viewport immediately (staggered)
+  let shown=0;
+  cards.forEach(c=>{
+    const r=c.getBoundingClientRect();
+    if(r.top<innerHeight+120){setTimeout(()=>c.classList.add('in'),shown*55);shown++;}
+  });
+  io=new IntersectionObserver((es)=>{
+    es.forEach((e,i)=>{if(e.isIntersecting){setTimeout(()=>e.target.classList.add('in'),i*55);io.unobserve(e.target);}});
+  },{threshold:0,rootMargin:'0px 0px -60px 0px'});
+  cards.forEach(c=>{if(!c.classList.contains('in'))io.observe(c);});
+  // failsafe: never leave a card invisible
+  clearTimeout(window.__revealFS);
+  window.__revealFS=setTimeout(()=>document.querySelectorAll('.card:not(.in)').forEach(c=>{
+    const r=c.getBoundingClientRect();if(r.top<innerHeight)c.classList.add('in');
+  }),1200);
+}
+
+// search
+search.addEventListener('input',render);
+document.addEventListener('keydown',e=>{
+  const inField=document.activeElement===search||document.activeElement===paletteInput;
+  if(e.key==='/'&&!inField){e.preventDefault();search.focus();}
+  if((e.key==='c'||e.key==='C')&&!inField&&!palette.classList.contains('open')){e.preventDefault();openPalette();}
+  if(e.key==='Escape'&&document.activeElement===search){search.value='';render();search.blur();}
+});
+
+// theme
+const html=document.documentElement,themeBtn=document.getElementById('themeBtn');
+function setTheme(t){
+  html.setAttribute('data-theme',t);
+  themeBtn.innerHTML=`<i data-lucide="${t==='dark'?'moon':'sun'}"></i>`;
+  lucide.createIcons();localStorage.setItem('log-theme',t);
+}
+setTheme(localStorage.getItem('log-theme')||'dark');
+themeBtn.onclick=()=>setTheme(html.getAttribute('data-theme')==='dark'?'light':'dark');
+
+// cursor glow
+const cg=document.getElementById('cursor-glow');
+let cgOn=false;
+window.addEventListener('mousemove',e=>{
+  cg.style.left=e.clientX+'px';cg.style.top=e.clientY+'px';
+  if(!cgOn){cg.style.opacity='1';cgOn=true;}
+},{passive:true});
+
+// scroll: progress + to-top
+const toTop=document.getElementById('toTop'),progress=document.getElementById('progress');
+window.addEventListener('scroll',()=>{
+  const h=document.documentElement.scrollHeight-innerHeight;
+  progress.style.width=(scrollY/h*100)+'%';
+  toTop.classList.toggle('show',scrollY>500);
+},{passive:true});
+toTop.onclick=()=>scrollTo({top:0,behavior:'smooth'});
+
+// hero count-up
+function countUp(el,target){
+  let cur=0;const step=Math.max(1,Math.ceil(target/40));
+  const t=setInterval(()=>{cur+=step;if(cur>=target){cur=target;clearInterval(t);}el.textContent=cur;},22);
+}
+countUp(document.getElementById('s-cmd'),totalCmd);
+countUp(document.getElementById('s-cat'),DATA.length);
+
+lucide.createIcons();
+render();
+</script>
+</body>
+</html>

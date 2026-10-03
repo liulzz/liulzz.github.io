@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GitHub Pages 由浅入深教程</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;background:#0d1117;color:#c9d1d9;line-height:1.7}
+.container{max-width:900px;margin:0 auto;padding:20px 24px}
+h1{text-align:center;font-size:2.2em;margin:40px 0 8px;background:linear-gradient(135deg,#58a6ff,#3fb950);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.subtitle{text-align:center;color:#8b949e;margin-bottom:40px;font-size:.95em}
+.toc{background:#161b22;border:1px solid #30363d;border-radius:12px;padding:24px 28px;margin-bottom:36px}
+.toc h2{color:#58a6ff;font-size:1.1em;margin-bottom:12px}
+.toc ol{padding-left:20px}
+.toc li{margin:6px 0}
+.toc a{color:#8b949e;text-decoration:none;transition:color .2s}
+.toc a:hover{color:#58a6ff}
+h2{color:#58a6ff;font-size:1.5em;margin:48px 0 16px;padding-bottom:8px;border-bottom:1px solid #21262d}
+h3{color:#bc8cff;font-size:1.15em;margin:28px 0 12px}
+h4{color:#f0883e;font-size:1em;margin:20px 0 8px}
+p{margin:12px 0}
+a{color:#58a6ff}
+pre{background:#161b22;border:1px solid #30363d;border-radius:8px;padding:16px;overflow-x:auto;margin:16px 0;font-size:.88em;line-height:1.5}
+code{font-family:"JetBrains Mono",Consolas,monospace;font-size:.9em}
+p code,li code{background:#21262d;padding:2px 6px;border-radius:4px;color:#f0883e}
+pre code{background:none;padding:0;color:#c9d1d9}
+.cmd{color:#3fb950}
+.comment{color:#6e7681}
+.flag{color:#79c0ff}
+.string{color:#a5d6ff}
+.output{color:#8b949e}
+.highlight{background:#f0883e22;border-left:4px solid #f0883e;padding:12px 16px;margin:16px 0;border-radius:0 8px 8px 0}
+.tip{background:#23863622;border-left:4px solid #3fb950;padding:12px 16px;margin:16px 0;border-radius:0 8px 8px 0}
+.warn{background:#f8514922;border-left:4px solid #f85149;padding:12px 16px;margin:16px 0;border-radius:0 8px 8px 0}
+.tip::before{content:"💡 ";font-size:1.1em}
+.warn::before{content:"⚠️ ";font-size:1.1em}
+.highlight::before{content:"⭐ ";font-size:1.1em}
+table{width:100%;border-collapse:collapse;margin:16px 0;font-size:.9em}
+th{background:#21262d;color:#58a6ff;padding:10px 12px;text-align:left;border-bottom:2px solid #30363d}
+td{padding:10px 12px;border-bottom:1px solid #21262d}
+tr:hover td{background:#161b22}
+.level{display:inline-block;padding:2px 10px;border-radius:12px;font-size:.75em;font-weight:600}
+.lv1{background:#23863633;color:#3fb950;border:1px solid #238636}
+.lv2{background:#1f6feb33;color:#58a6ff;border:1px solid #1f6feb}
+.lv3{background:#f0883e33;color:#f0883e;border:1px solid #f0883e}
+.lv4{background:#f8514933;color:#f85149;border:1px solid #f85149}
+.section-card{background:#161b22;border:1px solid #30363d;border-radius:12px;padding:24px;margin:20px 0}
+.badge{display:inline-block;background:#1f6feb;color:#fff;padding:2px 8px;border-radius:8px;font-size:.75em;font-weight:600}
+.footer{text-align:center;color:#484f58;margin:60px 0 30px;font-size:.8em;border-top:1px solid #21262d;padding-top:20px}
+ul,ol{padding-left:24px;margin:8px 0}
+li{margin:6px 0}
+.step-num{display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;background:#58a6ff;color:#0d1117;border-radius:50%;font-weight:700;font-size:.85em;margin-right:8px;flex-shrink:0}
+.step{display:flex;align-items:flex-start;margin:16px 0}
+.step-content{flex:1}
+.arrow{color:#3fb950;font-size:1.5em;text-align:center;margin:16px 0}
+</style>
+</head>
+<body>
+<div class="container">
+
+<h1>🚀 GitHub Pages 由浅入深教程</h1>
+<p class="subtitle">从零开始，10 分钟拥有你的免费网站 · 2026 年 5 月更新</p>
+
+<div class="toc">
+<h2>📑 目录</h2>
+<ol>
+<li><a href="#what">什么是 GitHub Pages</a></li>
+<li><a href="#quick">5 分钟极速上手（纯网页操作）</a></li>
+<li><a href="#cli">用 gh CLI 部署（命令行玩家）</a></li>
+<li><a href="#custom">自定义域名配置</a></li>
+<li><a href="#jekyll">Jekyll 静态博客</a></li>
+<li><a href="#actions">GitHub Actions 自动部署</a></li>
+<li><a href="#spa">SPA 应用部署（React/Vue）</a></li>
+<li><a href="#pitfalls">踩坑大全</a></li>
+<li><a href="#faq">常见问题</a></li>
+</ol>
+</div>
+
+<!-- ==================== Chapter 1 ==================== -->
+<h2 id="what">一、什么是 GitHub Pages</h2>
+
+<div class="section-card">
+<p>GitHub Pages 是 GitHub 提供的<strong>免费静态网站托管服务</strong>。你只需要把 HTML/CSS/JS 文件推送到 GitHub 仓库，GitHub 就会自动帮你把它们变成一个可以访问的网站。</p>
+
+<h3>核心特性</h3>
+<table>
+<tr><th>特性</th><th>说明</th></tr>
+<tr><td>💰 完全免费</td><td>Public 仓库免费，Pro 用户 Private 仓库也可用</td></tr>
+<tr><td>🌐 自带域名</td><td><code>用户名.github.io/仓库名</code></td></tr>
+<tr><td>🔒 HTTPS</td><td>自动配置 SSL 证书</td></tr>
+<tr><td>🔄 自动部署</td><td>Push 代码即自动更新网站</td></tr>
+<tr><td>📦 支持自定义域名</td><td>可以绑定你自己的域名</td></tr>
+<tr><td>⚡ 全球 CDN</td><td>通过 Fastly CDN 加速访问</td></tr>
+</table>
+
+<h3>使用限制</h3>
+<table>
+<tr><th>限制项</th><th>上限</th></tr>
+<tr><td>仓库大小</td><td>建议 &lt; 1 GB</td></tr>
+<tr><td>网站大小</td><td>&lt; 1 GB</td></tr>
+<tr><td>带宽</td><td>100 GB / 月</td></tr>
+<tr><td>构建次数</td><td>10 次 / 小时</td></tr>
+</table>
+</div>
+
+<!-- ==================== Chapter 2 ==================== -->
+<h2 id="quick">二、5 分钟极速上手（纯网页操作）</h2>
+
+<p>不需要安装任何工具，全程在浏览器里完成。</p>
+
+<div class="step">
+<span class="step-num">1</span>
+<div class="step-content">
+<h4>创建 GitHub 仓库</h4>
+<p>打开 <a href="https://github.com/new" target="_blank">github.com/new</a>，填写：</p>
+<ul>
+<li><strong>Repository name</strong>：<code>my-website</code>（或任意名字）</li>
+<li>选择 <strong>Public</strong></li>
+<li>勾选 <strong>Add a README file</strong></li>
+<li>点击 <span class="badge">Create repository</span></li>
+</ul>
+</div>
+</div>
+
+<div class="arrow">↓</div>
+
+<div class="step">
+<span class="step-num">2</span>
+<div class="step-content">
+<h4>上传你的网页文件</h4>
+<p>在仓库页面点击 <strong>Add file → Create new file</strong>：</p>
+<ul>
+<li>文件名输入 <code>index.html</code></li>
+<li>粘贴以下内容：</li>
+</ul>
+<pre><code>&lt;!DOCTYPE html&gt;
+&lt;html&gt;
+&lt;head&gt;
+  &lt;meta charset="UTF-8"&gt;
+  &lt;title&gt;我的第一个 GitHub Pages 网站&lt;/title&gt;
+  &lt;style&gt;
+    body { font-family: sans-serif; text-align: center; padding: 50px; }
+    h1 { color: #58a6ff; }
+  &lt;/style&gt;
+&lt;/head&gt;
+&lt;body&gt;
+  &lt;h1&gt;🎉 Hello, GitHub Pages!&lt;/h1&gt;
+  &lt;p&gt;这是我的第一个静态网站&lt;/p&gt;
+&lt;/body&gt;
+&lt;/html&gt;</code></pre>
+<p>点击 <span class="badge">Commit changes</span> 保存。</p>
+</div>
+</div>
+
+<div class="arrow">↓</div>
+
+<div class="step">
+<span class="step-num">3</span>
+<div class="step-content">
+<h4>开启 GitHub Pages</h4>
+<ol>
+<li>进入仓库 → <strong>Settings</strong>（设置）</li>
+<li>左侧菜单找到 <strong>Pages</strong></li>
+<li>Source 选择 <strong>Deploy from a branch</strong></li>
+<li>Branch 选择 <code>main</code>，目录选 <code>/ (root)</code></li>
+<li>点击 <span class="badge">Save</span></li>
+</ol>
+</div>
+</div>
+
+<div class="arrow">↓</div>
+
+<div class="step">
+<span class="step-num">4</span>
+<div class="step-content">
+<h4>访问你的网站 🎉</h4>
+<p>等待 1-2 分钟后，访问：</p>
+<pre><code>https://你的用户名.github.io/my-website/</code></pre>
+<div class="tip">如果显示 404，等几分钟再刷新。首次部署需要时间。</div>
+</div>
+</div>
+
+<!-- ==================== Chapter 3 ==================== -->
+<h2 id="cli">三、用 gh CLI 部署（命令行玩家）</h2>
+
+<p>如果你更喜欢终端操作，用 <code>gh</code> CLI 可以一行命令搞定。</p>
+
+<h3>前置准备</h3>
+<pre><code><span class="comment"># 安装 gh CLI（如果还没装）</span>
+<span class="cmd">brew install gh</span>          <span class="comment"># macOS</span>
+<span class="cmd">sudo apt install gh</span>      <span class="comment"># Ubuntu/Debian</span>
+
+<span class="comment"># 登录 GitHub</span>
+<span class="cmd">gh auth login</span></code></pre>
+
+<h3>一键部署</h3>
+<pre><code><span class="comment"># 1. 创建项目目录并写入网页</span>
+<span class="cmd">mkdir my-site && cd my-site</span>
+<span class="cmd">echo '&lt;h1&gt;Hello Pages!&lt;/h1&gt;' > index.html</span>
+
+<span class="comment"># 2. 初始化 Git</span>
+<span class="cmd">git init && git add . && git commit -m "init"</span>
+
+<span class="comment"># 3. 创建 GitHub 仓库并推送（自动创建公开仓库）</span>
+<span class="cmd">gh repo create my-site</span> <span class="flag">--public --source=. --push</span>
+
+<span class="comment"># 4. 开启 GitHub Pages</span>
+<span class="cmd">gh api repos/{owner}/my-site/pages</span> <span class="flag">-X POST</span> <span class="string">--input -</span> &lt;&lt;'EOF'
+{"source":{"branch":"main","path":"/"}}
+EOF</code></pre>
+
+<div class="highlight">关键点：<code>gh repo create</code> 加 <code>--push</code> 会自动推送代码，省去手动设置 remote 的步骤。</div>
+
+<h3>常用 gh pages 命令</h3>
+<pre><code><span class="comment"># 查看 Pages 状态</span>
+<span class="cmd">gh api repos/{owner}/{repo}/pages</span>
+
+<span class="comment"># 修改 Pages 源分支</span>
+<span class="cmd">gh api repos/{owner}/{repo}/pages</span> <span class="flag">-X PUT</span> <span class="string">--input -</span> &lt;&lt;'EOF'
+{"source":{"branch":"main","path":"/"}}
+EOF
+
+<span class="comment"># 关闭 Pages</span>
+<span class="cmd">gh api repos/{owner}/{repo}/pages</span> <span class="flag">-X DELETE</span></code></pre>
+
+<!-- ==================== Chapter 4 ==================== -->
+<h2 id="custom">四、自定义域名配置</h2>
+
+<h3>步骤</h3>
+<ol>
+<li>在域名服务商处添加 CNAME 记录：
+<pre><code>类型: CNAME
+主机记录: www（或 @）
+记录值: 你的用户名.github.io</code></pre>
+</li>
+<li>在仓库根目录创建 <code>CNAME</code> 文件，内容为你的域名：
+<pre><code>www.example.com</code></pre>
+</li>
+<li>进入 Settings → Pages → Custom domain，填入你的域名</li>
+<li>勾选 <strong>Enforce HTTPS</strong>（等证书签发后）</li>
+</ol>
+
+<div class="tip">DNS 解析生效需要几分钟到几小时不等。GitHub 会自动申请 Let's Encrypt SSL 证书。</div>
+
+<h3>APEX 域名（裸域名）配置</h3>
+<p>如果用 <code>example.com</code>（不带 www），需要添加 4 条 A 记录：</p>
+<pre><code>185.199.108.153
+185.199.109.153
+185.199.110.153
+185.199.111.153</code></pre>
+
+<!-- ==================== Chapter 5 ==================== -->
+<h2 id="jekyll">五、Jekyll 静态博客</h2>
+
+<p>GitHub Pages 原生支持 <a href="https://jekyllrb.com" target="_blank">Jekyll</a>，可以用 Markdown 写博客。</p>
+
+<h3>快速开始</h3>
+<pre><code><span class="comment"># 安装 Jekyll</span>
+<span class="cmd">gem install jekyll bundler</span>
+
+<span class="comment"># 创建博客</span>
+<span class="cmd">jekyll new my-blog && cd my-blog</span>
+
+<span class="comment"># 本地预览</span>
+<span class="cmd">bundle exec jekyll serve</span>
+<span class="comment"># 访问 http://localhost:4000</span>
+
+<span class="comment"># 推送到 GitHub</span>
+<span class="cmd">git init && git add . && git commit -m "init"</span>
+<span class="cmd">gh repo create my-blog</span> <span class="flag">--public --source=. --push</span></code></pre>
+
+<h3>目录结构</h3>
+<pre><code>my-blog/
+├── _posts/           <span class="comment"># 博客文章（Markdown）</span>
+│   └── 2026-05-20-hello-world.md
+├── _config.yml       <span class="comment"># Jekyll 配置</span>
+├── index.html        <span class="comment"># 首页模板</span>
+└── Gemfile           <span class="comment"># Ruby 依赖</span></code></pre>
+
+<h3>写一篇文章</h3>
+<pre><code><span class="comment"># _posts/2026-05-20-hello-world.md</span>
+---
+layout: post
+title: "Hello World"
+date: 2026-05-20
+categories: [博客]
+---
+
+这是我的第一篇博客文章。
+
+GitHub Pages + Jekyll = 免费博客 ✨</code></pre>
+
+<div class="tip">推荐主题：<a href="https://github.com/pages-themes" target="_blank">GitHub 官方主题</a>、<a href="https://github.com/mmistakes/minimal-mistakes" target="_blank">Minimal Mistakes</a>、<a href="https://github.com/academic-pages/academic-pages" target="_blank">Academic Pages</a></div>
+
+<!-- ==================== Chapter 6 ==================== -->
+<h2 id="actions">六、GitHub Actions 自动部署</h2>
+
+<p>对于非 Jekyll 项目（如 Vite、Next.js 导出的静态文件），需要用 Actions 自动构建和部署。</p>
+
+<h3>通用模板</h3>
+<pre><code><span class="comment"># .github/workflows/deploy.yml</span>
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: true
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: <span class="string">actions/checkout@v4</span>
+
+      - name: Setup Node
+        uses: <span class="string">actions/setup-node@v4</span>
+        with:
+          node-version: '20'
+
+      - name: Install & Build
+        run: |
+          npm ci
+          npm run build    <span class="comment"># 输出到 dist/ 目录</span>
+
+      - name: Deploy to Pages
+        uses: <span class="string">actions/upload-pages-artifact@v3</span>
+        with:
+          path: <span class="string">./dist</span>
+
+      - name: Deploy
+        uses: <span class="string">actions/deploy-pages@v4</span></code></pre>
+
+<h3>设置</h3>
+<p>Settings → Pages → Source 改为 <strong>GitHub Actions</strong>（而不是 Deploy from a branch）。</p>
+
+<div class="warn">注意：使用 Actions 部署时，Source 必须选 "GitHub Actions"，不能选 "Deploy from a branch"，两者互斥。</div>
+
+<!-- ==================== Chapter 7 ==================== -->
+<h2 id="spa">七、SPA 应用部署（React/Vue）</h2>
+
+<h3>React (Vite)</h3>
+<pre><code><span class="comment"># vite.config.ts</span>
+import { defineConfig } from 'vite'
+import react from '@vitejs/plugin-react'
+
+export default defineConfig({
+  plugins: [react()],
+  base: '/my-repo-name/',   <span class="comment">// ⚠️ 必须设置，否则资源路径 404</span>
+})</code></pre>
+
+<h3>Vue (Vite)</h3>
+<pre><code><span class="comment"># vite.config.ts</span>
+import { defineConfig } from 'vite'
+import vue from '@vitejs/plugin-vue'
+
+export default defineConfig({
+  plugins: [vue()],
+  base: '/my-repo-name/',
+})</code></pre>
+
+<h3>SPA 路由 404 问题</h3>
+<p>SPA 用前端路由（如 React Router），直接访问子路由会 404。解决方案：</p>
+<pre><code><span class="comment"># 在 public/ 目录下创建 404.html，内容重定向到 index.html</span>
+&lt;script&gt;
+  sessionStorage.redirect = location.href;
+&lt;/script&gt;
+&lt;meta http-equiv="refresh" content="0;URL='/'"&gt;</code></pre>
+<pre><code><span class="comment"># 在 index.html 的 &lt;head&gt; 中添加</span>
+&lt;script&gt;
+  (function() {
+    var redirect = sessionStorage.redirect;
+    delete sessionStorage.redirect;
+    if (redirect && redirect != location.href) {
+      history.replaceState(null, null, redirect);
+    }
+  })();
+&lt;/script&gt;</code></pre>
+
+<!-- ==================== Chapter 8 ==================== -->
+<h2 id="pitfalls">八、踩坑大全</h2>
+
+<div class="section-card">
+
+<h3>🕳️ 坑 1：分支名 master vs main</h3>
+<div class="warn">GitHub Pages 默认查找 <code>main</code> 分支。如果你的本地默认分支是 <code>master</code>，部署后会 404。</div>
+<pre><code><span class="comment"># 解决：重命名分支</span>
+<span class="cmd">git branch -m master main</span>
+<span class="cmd">git push origin main</span>
+
+<span class="comment"># 如果远程已有 master，需要修改默认分支</span>
+<span class="cmd">gh api repos/{owner}/{repo}</span> <span class="flag">-X PATCH</span> <span class="string">-f default_branch=main</span></code></pre>
+
+<h3>🕳️ 坑 2：base 路径问题</h3>
+<div class="warn">仓库名为 <code>my-site</code> 时，网站路径是 <code>用户名.github.io/my-site/</code>。所有资源路径必须包含 <code>/my-site/</code> 前缀。</div>
+<pre><code><span class="comment"># ❌ 错误：资源 404</span>
+&lt;link href="/style.css"&gt;
+&lt;img src="/logo.png"&gt;
+
+<span class="comment"># ✅ 正确：加上仓库名前缀</span>
+&lt;link href="/my-site/style.css"&gt;
+&lt;img src="/my-site/logo.png"&gt;</code></pre>
+
+<h3>🕳️ 坑 3：大小写敏感</h3>
+<p>GitHub Pages 的文件名<strong>区分大小写</strong>（即使你本地 macOS/Windows 不区分）。</p>
+<pre><code><span class="comment"># ❌ 本地能访问，部署后 404</span>
+&lt;img src="Photo.JPG"&gt;   <span class="comment"># 实际文件名是 photo.jpg</span></code></pre>
+
+<h3>🕳️ 坑 4：Jekyll 忽略下划线开头的文件</h3>
+<p>Jekyll 会忽略 <code>_</code> 开头的目录（如 <code>_assets/</code>、<code>_components/</code>）。</p>
+<pre><code><span class="comment"># 解决：在根目录创建 .nojekyll 文件</span>
+<span class="cmd">touch .nojekyll</span>
+<span class="cmd">git add .nojekyll && git commit -m "disable jekyll"</span></code></pre>
+<div class="tip">React/Vue 等框架构建出的文件通常含 <code>_</code> 前缀（如 <code>_app/</code>），<strong>必须</strong>添加 <code>.nojekyll</code>。</div>
+
+<h3>🕳️ 坑 5：Pages 部署来源冲突</h3>
+<p>Settings → Pages 的 Source 有两种模式：</p>
+<table>
+<tr><th>模式</th><th>适用场景</th></tr>
+<tr><td>Deploy from a branch</td><td>直接部署分支中的静态文件（含 Jekyll 构建）</td></tr>
+<tr><td>GitHub Actions</td><td>自定义构建流程（Vite/Webpack/Next.js 等）</td></tr>
+</table>
+<p>两种模式<strong>互斥</strong>，切换后之前的配置会失效。</p>
+
+<h3>🕳️ 坑 6：404 页面</h3>
+<p>GitHub Pages 支持自定义 404 页面：在根目录放一个 <code>404.html</code> 文件即可。</p>
+
+</div>
+
+<!-- ==================== Chapter 9 ==================== -->
+<h2 id="faq">九、常见问题</h2>
+
+<div class="section-card">
+<h3>❓ Private 仓库能用 GitHub Pages 吗？</h3>
+<p>可以，但需要 <strong>GitHub Pro</strong>（$4/月）。Free 用户只能用 Public 仓库。</p>
+
+<h3>❓ 支持后端/API 吗？</h3>
+<p>不支持。GitHub Pages 只能托管静态文件。需要后端请用 Vercel、Netlify、Cloudflare Pages 等。</p>
+
+<h3>❓ 支持 HTTPS 吗？</h3>
+<p>支持，自动配置。自定义域名也会自动申请 Let's Encrypt 证书。</p>
+
+<h3>❓ 部署后多久生效？</h3>
+<p>首次部署 1-5 分钟，后续更新通常 1 分钟内。</p>
+
+<h3>❓ 怎么查看部署状态？</h3>
+<p>仓库 → <strong>Actions</strong> 标签页查看构建状态。或者 <code>gh run list</code>。</p>
+
+<h3>❓ 能用 Vue/React/Angular 吗？</h3>
+<p>能。需要先构建为静态文件（<code>npm run build</code>），然后用 GitHub Actions 部署 <code>dist/</code> 目录。</p>
+
+<h3>❓ 和 Vercel/Netlify 比，选哪个？</h3>
+<table>
+<tr><th></th><th>GitHub Pages</th><th>Vercel</th><th>Netlify</th></tr>
+<tr><td>免费额度</td><td>100GB/月</td><td>100GB/月</td><td>100GB/月</td></tr>
+<tr><td>自定义域名</td><td>✅</td><td>✅</td><td>✅</td></tr>
+<tr><td>Serverless Functions</td><td>❌</td><td>✅</td><td>✅</td></tr>
+<tr><td>PR 预览</td><td>❌</td><td>✅</td><td>✅</td></tr>
+<tr><td>构建速度</td><td>较慢</td><td>快</td><td>快</td></tr>
+<tr><td>适合场景</td><td>个人博客、文档、展示页</td><td>前端项目、全栈</td><td>前端项目、表单</td></tr>
+</table>
+</div>
+
+<!-- Footer -->
+<div class="footer">
+<p>📚 GitHub Pages 官方文档：<a href="https://docs.github.com/pages" target="_blank">docs.github.com/pages</a></p>
+<p>Made with ❤️ by Hermes Agent · 2026-05-20</p>
+</div>
+
+</div>
+</body>
+</html>
