@@ -1,0 +1,75 @@
+<h2>10.1 本章场景：代码评审流水线</h2>
+<div class="box box-scenario">
+  <div class="box-title"><span class="ico">🎬</span>场景任务</div>
+  <p>主智能体收到一句模糊的指令：“把这个仓库整理得更好。”直接执行既危险又低效。正确做法是：先进入<b>计划模式</b>把工作拆解成步骤并与用户对齐，再把“代码评审”这样的专业环节<b>委派给子智能体</b>。因此，本章引入 Harness 的两个协作特性：子智能体（Subagent）与计划模式（Plan Mode）。</p>
+</div>
+
+<h2>10.2 理论：子智能体是“可以委派的同事”</h2>
+<p>子智能体是拥有独立上下文、独立工具集、（可选）独立工作区的完整智能体。主智能体通过两个内置工具与它们协作：</p>
+<ul>
+  <li><code>agent_spawn</code>：创建并启动一个子智能体执行任务；</li>
+  <li><code>agent_send</code>：向运行中的子智能体追加消息或追问结果。</li>
+</ul>
+<p>与“把所有事塞进一个大提示词”相比，委派模式的优势在于上下文隔离：子智能体产生的中间输出不会占据主智能体的上下文窗口，因此主智能体始终保留全局视野。子智能体有两种声明方式：</p>
+<ol>
+  <li><b>声明式（推荐）</b>：在工作区 <code>subagents/</code> 目录放置 Markdown 文件，文件名即 agent_id；</li>
+  <li><b>编程式</b>：用 <code>SubagentDeclaration.builder()</code> 构建对象，适合动态生成；远程子智能体还可以通过 <code>url</code> 指向独立部署的服务。</li>
+</ol>
+
+<h2>10.3 实践：声明一个评审子智能体</h2>
+<pre><code class="code-title">.agentscope/workspace/subagents/code-reviewer.md</code><code class="language-markdown">---
+description: 代码评审专家。当用户需要 review 代码、检查风格或审查 PR 时使用。
+model: dashscope:qwen-plus       # 可选；不写则继承主智能体
+steps: 8                          # 可选；单次任务最大推理-行动轮数
+temperature: 0.2                  # 可选；覆盖默认生成参数
+hidden: false                     # true 时模型不可见（只能程序化 spawn）
+expose_to_user: true              # 可选；控制是否在用户界面展示
+tools:                            # 可选；继承工具的白名单
+  - read_file
+  - grep_files
+---
+
+你是专注代码评审的子智能体。请按以下流程工作：
+1. 先使用 read_file / grep_files 收集上下文
+2. 按文件与行号给出具体建议
+3. 末尾给出 1-5 的总体评分</code></pre>
+<p>声明完成后无需注册代码——HarnessAgent 构建时自动扫描 <code>subagents/</code> 目录，并且把可用子智能体的名称与 description 注入主智能体上下文，由模型自主决定何时委派。运行时对话里就会出现类似这样的工具调用：</p>
+<pre><code class="code-title">模型自动发起的委派</code><code class="language-text">agent_spawn agent_id="code-reviewer" task="评审 utils/ 目录下的全部改动"</code></pre>
+
+<h2>10.4 子智能体的会话与隔离</h2>
+<p>子智能体同样拥有会话持久化：它的运行日志保存在 <code>.agentscope/workspace/agents/&lt;agentId&gt;/sessions/</code> 下，因此“上一次评审到哪一步”可以被恢复与审计。工作区隔离模式（<code>workspace</code> 声明项）则决定子智能体是共享主工作区还是使用独立目录——涉及文件写入的任务建议隔离。</p>
+
+<h2>10.5 理论：计划模式</h2>
+<p>计划模式让智能体在“动手”之前先“立字据”：进入该模式后，框架提供 <code>plan_enter</code> / <code>plan_write</code> / <code>plan_exit</code> 与 <code>todo_write</code> 等计划工具，智能体把拆解好的步骤写入 <code>plans/</code> 目录下的计划文件，与用户对齐后再切换到执行状态。它的价值在于：</p>
+<ul>
+  <li>复杂任务先对齐方案，减少返工与误操作；</li>
+  <li>计划即审计材料——每个任务的状态（待办、进行中、完成）都有据可查；</li>
+  <li>可与权限系统联动：计划评审通过后，才放行写操作权限。</li>
+</ul>
+
+<h2>10.6 实践：开启计划模式</h2>
+<pre><code class="code-title">构建时开启</code><code class="language-java">import java.nio.file.Paths;
+
+HarnessAgent agent = HarnessAgent.builder()
+        .name("repo-steward")
+        .model("dashscope:qwen-plus")
+        .workspace(Paths.get(".agentscope/workspace"))
+        .planFileDirectory("plans")
+        .enablePlanMode(true)
+        .build();</code></pre>
+<pre><code class="code-title">运行时控制（管理接口）</code><code class="language-java">// 需要用户先看方案时，程序也可以主动进入/退出计划模式
+agent.enterPlanMode(ctx);
+// agent.isPlanModeActive(ctx)  → true
+agent.exitPlanMode(ctx);</code></pre>
+
+<div class="box box-practice">
+  <div class="box-title"><span class="ico">✍️</span>动手练习 10</div>
+  <ol>
+    <li>为 10.3 的评审子智能体增加 <code>tools</code> 白名单以外的工具，观察声明是否把它从模型可见列表中排除；</li>
+    <li>开启计划模式后输入“帮我整理这个仓库”，查看 <code>plans/</code> 目录生成的计划文件，并且验证 <code>todo_write</code> 更新任务状态；</li>
+    <li>再声明一个 <code>hidden: true</code> 的子智能体，验证模型无法自主 spawn 它，但是通过程序仍然可以调用。</li>
+  </ol>
+</div>
+
+<h2>10.7 本章小结</h2>
+<p>子智能体把“专业环节”封装为可委派、可隔离、可审计的单元；计划模式把“先对齐再执行”固化为产品能力。两者结合，智能体开始具备团队协作的雏形。但是评审者凭什么懂你们团队的规范？下一章用技能系统解决这个问题。</p>

@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>第 9 章 记忆与上下文压缩 · AgentScope Java 2.0 新手入门教程</title>
+<meta name="description" content="场景驱动的 AgentScope Java 2.0 中文新手教程：由浅入深，先理论后实践，Java 代码示例。">
+<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/java.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/xml.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/markdown.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/yaml.min.js"></script>
+</head>
+<body>
+<header class="site-header">
+  <button id="nav-toggle" aria-label="打开目录">☰</button>
+  <a class="logo" href="index.html"><span class="dot"></span>AgentScope Java 2.0 入门教程</a>
+  <span class="tagline">第 9 章 · 记忆与上下文压缩</span>
+  <span class="spacer"></span>
+  <a class="gh-link" href="https://github.com/agentscope-ai/agentscope-java" target="_blank" rel="noopener">GitHub ↗</a>
+</header>
+<div class="layout">
+<nav class="sidebar" id="sidebar">
+  <div class="group">
+    <div class="group-title">开始</div>
+    <a class="item" href="index.html"><span class="no">序</span>教程导读与特性全景</a>
+  </div>
+  <div class="group">
+    <div class="group-title">第一部分 · 理论筑基</div>
+    <a class="item" href="01-overview.html"><span class="no">第1章</span>认识 AgentScope 2.0</a>
+    <a class="item" href="02-quickstart.html"><span class="no">第2章</span>环境搭建与第一个智能体</a>
+    <a class="item" href="03-message-model.html"><span class="no">第3章</span>消息与模型接入</a>
+  </div>
+  <div class="group">
+    <div class="group-title">第二部分 · 核心构件</div>
+    <a class="item" href="04-agent.html"><span class="no">第4章</span>ReActAgent 深入</a>
+    <a class="item" href="05-tool.html"><span class="no">第5章</span>工具</a>
+    <a class="item" href="06-permission.html"><span class="no">第6章</span>权限系统与 HITL</a>
+    <a class="item" href="07-middleware.html"><span class="no">第7章</span>中间件</a>
+  </div>
+  <div class="group">
+    <div class="group-title">第三部分 · Harness 能力</div>
+    <a class="item" href="08-harness.html"><span class="no">第8章</span>Harness 与工作区</a>
+    <a class="item" href="09-memory.html"><span class="no">第9章</span>记忆与上下文压缩</a>
+    <a class="item" href="10-subagent-plan.html"><span class="no">第10章</span>子智能体与计划模式</a>
+    <a class="item" href="11-skill.html"><span class="no">第11章</span>技能系统</a>
+    <a class="item" href="12-sandbox.html"><span class="no">第12章</span>文件系统与沙箱</a>
+  </div>
+  <div class="group">
+    <div class="group-title">第四部分 · 工程化</div>
+    <a class="item" href="13-channel.html"><span class="no">第13章</span>Channel 与 Gateway</a>
+    <a class="item" href="14-production.html"><span class="no">第14章</span>上生产</a>
+    <a class="item" href="15-project.html"><span class="no">结业</span>综合实战项目</a>
+  </div>
+</nav>
+<main class="content">
+<h1><span class="chapter-no">第 9 章</span>记忆与上下文压缩</h1>
+<h2>9.1 本章场景：长期项目助理</h2>
+<div class="box box-scenario">
+  <div class="box-title"><span class="ico">🎬</span>场景任务</div>
+  <p>一个项目助理要服务整个项目周期（以月计）：它要记住“项目代号、关键干系人、已定决策”，而不是每次会话结束就失忆；同时，随着对话越来越长，模型上下文不能无限膨胀，否则又慢又贵。因此本章解决两个互补的问题：<b>长期记忆（Memory）负责跨会话积累，上下文压缩（Compaction）负责单会话瘦身</b>。</p>
+</div>
+
+<h2>9.2 理论：记忆系统的三层结构</h2>
+<p>HarnessAgent 的记忆分布在三处，各司其职：</p>
+<table>
+  <tr><th style="width:28%">位置</th><th>内容</th><th>写入者</th></tr>
+  <tr><td><code>memory/YYYY-MM-DD.md</code></td><td>每日事实流水账</td><td>智能体在对话结束后自动抽取（flush）</td></tr>
+  <tr><td><code>MEMORY.md</code></td><td>整理后的长期事实（策划层）</td><td>后台整合任务把流水账合并进此文件</td></tr>
+  <tr><td><code>memory_search</code> 等工具</td><td>运行时按需检索历史会话</td><td>框架内置记忆工具（可关闭）</td></tr>
+</table>
+<p>与上下文（第 4 章的 AgentState）不同，记忆是<b>面向“值得记住的事实”</b>的：状态回答“我们聊到哪了”，记忆回答“这个用户是谁、项目有什么约定”。</p>
+
+<h2>9.3 实践：配置记忆写入节奏</h2>
+<p>记忆 flush 默认在对话结束后触发抽取。节流模式适合高频短对话的生产环境：</p>
+<pre><code class="code-title">MemoryConfig</code><code class="language-java">HarnessAgent agent = HarnessAgent.builder()
+    .name("project-assistant")
+    .model(model)
+    .workspace(workspace)
+    .memory(MemoryConfig.builder()
+        .flushTrigger(MemoryConfig.FlushTrigger.throttled(Duration.ofMinutes(10)))
+        .build())
+    .build();
+
+// 完全关闭自动写入（例如只读演示环境）：
+.memory(MemoryConfig.builder()
+    .flushTrigger(MemoryConfig.FlushTrigger.never())
+    .build())</code></pre>
+
+<h2>9.4 实践：自定义抽取与整合提示词</h2>
+<p>抽取什么、保留什么，都可以用提示词定制。下面的例子让 flush 过程遵守合规要求：</p>
+<pre><code class="code-title">flush 提示词追加规则</code><code class="language-java">.memory(MemoryConfig.builder()
+    .flushPrompt(MemoryFlushManager.DEFAULT_FLUSH_PROMPT + """
+
+        Additional project rules:
+        - Never record customer PII (names, emails, phone numbers).
+        - Always use Chinese for project-internal vocabulary.
+        """)
+    .build())</code></pre>
+<pre><code class="code-title">整合（consolidation）定制</code><code class="language-java">.memory(MemoryConfig.builder()
+    .consolidationPrompt("""
+        You are merging daily memory ledgers into MEMORY.md.
+        Keep within %d tokens (~%d chars). Output the complete file in markdown.
+        ... your custom rules ...
+        """)
+    .consolidationMinGap(Duration.ofHours(2))   // 整合至少间隔 2 小时
+    .dailyFileRetentionDays(30)                 // 30 天后归档流水账
+    .sessionRetentionDays(60)                   // 60 天后清理 session JSONL
+    .consolidationMaxTokens(8_000)              // MEMORY.md 上限放宽到 8K tokens
+    .build())</code></pre>
+
+<h2>9.5 实践：记忆与压缩的专用小模型</h2>
+<p>记忆抽取、整合与压缩摘要都是内部任务，不必消耗主力模型。因此常见做法是“主模型管推理，小模型管家务”：</p>
+<pre><code class="code-title">分级模型配置</code><code class="language-java">HarnessAgent.builder()
+    .model("openai:o3")                    // 主推理模型
+    .memory(MemoryConfig.builder()
+        .model("openai:gpt-4.1-mini")      // 记忆操作用小模型
+        .build())
+    .compaction(CompactionConfig.builder()
+        .model("openai:gpt-4.1-mini")      // 压缩摘要也用小模型
+        .build())
+    .build();</code></pre>
+
+<h2>9.6 实践：上下文压缩（Compaction）</h2>
+<p>压缩解决“单次会话过长”的问题：消息条数达到阈值时，框架把较早的对话压缩为摘要，只保留最近若干条原文。原始日志仍完整保存在 <code>sessions/</code> 中，因此压缩只影响进入模型上下文的内容，不影响审计。</p>
+<pre><code class="code-title">CompactionConfig</code><code class="language-java">HarnessAgent agent = HarnessAgent.builder()
+    .name("project-assistant")
+    .model(model)
+    .workspace(workspace)
+    .compaction(CompactionConfig.builder()
+        .triggerMessages(30)     // 消息条数到 30 触发
+        .keepMessages(10)        // 压缩后保留最近 10 条
+        .build())
+    .build();</code></pre>
+<p>工具调用密集的会话还有两个瘦身手段。其一，截断超长工具参数：</p>
+<pre><code class="code-title">参数截断</code><code class="language-java">CompactionConfig.builder()
+    .triggerMessages(80)
+    .truncateArgs(CompactionConfig.TruncateArgsConfig.builder()
+        .maxArgLength(2000)
+        .truncationText("... [truncated] ...")
+        .build())
+    .build();</code></pre>
+<p>其二，淘汰陈旧工具结果：</p>
+<pre><code class="code-title">工具结果淘汰</code><code class="language-java">HarnessAgent.builder()
+    ...
+    .toolResultEviction(ToolResultEvictionConfig.defaults())
+    .build();</code></pre>
+
+<h2>9.7 关闭记忆的两种粒度</h2>
+<pre><code class="code-title">粒度控制</code><code class="language-java">HarnessAgent.builder()
+    ...
+    .disableMemoryHooks()   // 关掉 flush + 后台维护（并去掉「对话结束自动抽取」引导）
+    .disableMemoryTools()   // 不注册 memory_search / memory_get / memory_save / session_search
+    .build();</code></pre>
+
+<div class="box box-practice">
+  <div class="box-title"><span class="ico">✍️</span>动手练习 9</div>
+  <ol>
+    <li>与助理进行两段对话（间隔开不同 session），第二段追问第一段提到的事实，验证跨会话记忆；然后打开 <code>memory/</code> 目录阅读自动生成的流水账；</li>
+    <li>把 <code>triggerMessages</code> 调到 8、<code>keepMessages</code> 调到 3，人为制造一次压缩，观察回答质量变化；</li>
+    <li>用 9.4 的方式在 flush 提示词中加入“只记录与工作相关的决定”，对比流水账内容差异。</li>
+  </ol>
+</div>
+
+<h2>9.8 本章小结</h2>
+<p>记忆系统是“流水账 → 策划”的双层写入，压缩是“摘要 + 保留窗口”的单层瘦身，两者共用小模型即可显著降本。现在智能体已经能长期服务了；但是复杂任务往往超出单智能体能力圈，因此下一章引入子智能体与计划模式。</p>
+
+<nav class="pager">
+<a href="08-harness.html"><span class="dir">← 上一章</span><span class="pt">HarnessAgent 与工作区</span></a>
+<a class="next" href="10-subagent-plan.html"><span class="dir">下一章 →</span><span class="pt">子智能体与计划模式</span></a>
+</nav>
+</main>
+</div>
+<footer class="site-footer">
+  AgentScope Java 2.0 新手入门教程 · 基于 AgentScope Java v2.0.3 官方文档编写 · 2026
+  <br>官网 <a href="https://java.agentscope.io" target="_blank" rel="noopener">java.agentscope.io</a>
+  ｜仓库 <a href="https://github.com/agentscope-ai/agentscope-java" target="_blank" rel="noopener">agentscope-ai/agentscope-java</a>
+</footer>
+<script>
+document.getElementById('nav-toggle').addEventListener('click', function () {
+  document.getElementById('sidebar').classList.toggle('open');
+});
+window.addEventListener('DOMContentLoaded', function () {
+  document.querySelectorAll('pre code').forEach(function (el) {
+    try { hljs.highlightElement(el); } catch (e) {}
+  });
+});
+</script>
+</body>
+</html>

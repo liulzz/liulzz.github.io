@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>第 13 章 Channel 与 Gateway：对外服务 · AgentScope Java 2.0 新手入门教程</title>
+<meta name="description" content="场景驱动的 AgentScope Java 2.0 中文新手教程：由浅入深，先理论后实践，Java 代码示例。">
+<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/java.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/xml.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/markdown.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/yaml.min.js"></script>
+</head>
+<body>
+<header class="site-header">
+  <button id="nav-toggle" aria-label="打开目录">☰</button>
+  <a class="logo" href="index.html"><span class="dot"></span>AgentScope Java 2.0 入门教程</a>
+  <span class="tagline">第 13 章 · Channel 与 Gateway：对外服务</span>
+  <span class="spacer"></span>
+  <a class="gh-link" href="https://github.com/agentscope-ai/agentscope-java" target="_blank" rel="noopener">GitHub ↗</a>
+</header>
+<div class="layout">
+<nav class="sidebar" id="sidebar">
+  <div class="group">
+    <div class="group-title">开始</div>
+    <a class="item" href="index.html"><span class="no">序</span>教程导读与特性全景</a>
+  </div>
+  <div class="group">
+    <div class="group-title">第一部分 · 理论筑基</div>
+    <a class="item" href="01-overview.html"><span class="no">第1章</span>认识 AgentScope 2.0</a>
+    <a class="item" href="02-quickstart.html"><span class="no">第2章</span>环境搭建与第一个智能体</a>
+    <a class="item" href="03-message-model.html"><span class="no">第3章</span>消息与模型接入</a>
+  </div>
+  <div class="group">
+    <div class="group-title">第二部分 · 核心构件</div>
+    <a class="item" href="04-agent.html"><span class="no">第4章</span>ReActAgent 深入</a>
+    <a class="item" href="05-tool.html"><span class="no">第5章</span>工具</a>
+    <a class="item" href="06-permission.html"><span class="no">第6章</span>权限系统与 HITL</a>
+    <a class="item" href="07-middleware.html"><span class="no">第7章</span>中间件</a>
+  </div>
+  <div class="group">
+    <div class="group-title">第三部分 · Harness 能力</div>
+    <a class="item" href="08-harness.html"><span class="no">第8章</span>Harness 与工作区</a>
+    <a class="item" href="09-memory.html"><span class="no">第9章</span>记忆与上下文压缩</a>
+    <a class="item" href="10-subagent-plan.html"><span class="no">第10章</span>子智能体与计划模式</a>
+    <a class="item" href="11-skill.html"><span class="no">第11章</span>技能系统</a>
+    <a class="item" href="12-sandbox.html"><span class="no">第12章</span>文件系统与沙箱</a>
+  </div>
+  <div class="group">
+    <div class="group-title">第四部分 · 工程化</div>
+    <a class="item" href="13-channel.html"><span class="no">第13章</span>Channel 与 Gateway</a>
+    <a class="item" href="14-production.html"><span class="no">第14章</span>上生产</a>
+    <a class="item" href="15-project.html"><span class="no">结业</span>综合实战项目</a>
+  </div>
+</nav>
+<main class="content">
+<h1><span class="chapter-no">第 13 章</span>Channel 与 Gateway：对外服务</h1>
+<h2>13.1 本章场景：网页版客服对话</h2>
+<div class="box box-scenario">
+  <div class="box-title"><span class="ico">🎬</span>场景任务</div>
+  <p>前面的章节都在“命令行里自说自话”。现在要给客服智能体做一个网页聊天界面：用户登录后自动定位到自己的会话；回答逐字流式显示；并且当客服把工单转给“退款专员”子智能体时，界面上要能区分发言人。因此，本章介绍框架的对外服务层——<b>Channel 与 Gateway</b>。</p>
+</div>
+
+<h2>13.2 理论：Channel 是什么</h2>
+<p>Channel 是智能体与外部用户之间的通信抽象：它负责把“用户 ID + 会话 ID + 文本”交给智能体，并且把回复（或流式事件）送回。框架内置 <code>ChatUiChannel</code>，专为自建网页 / App 前端设计，它的好处是<b>会话路由自动化</b>——每个 userId 自动获得独立 session，无需你手工管理 RuntimeContext：</p>
+<pre><code class="code-title">三行接入聊天</code><code class="language-java">HarnessAgent agent = HarnessAgent.builder()
+    .name("assistant")
+    .sysPrompt("你是一个有用的助手。")
+    .model("dashscope:qwen-plus")
+    .build();
+
+// 绑定一个 ChatUI channel
+ChatUiChannel chat = agent.channel(ChatUiChannel.create());
+
+// 发送消息。每个 userId 自动获得独立的 session
+Msg reply = chat.send(SendOptions.userId("user-1"), "你好！").block();
+
+// 同一个用户，同一个 session——对话继续
+Msg followUp = chat.send(SendOptions.userId("user-1"), "再多说一些。").block();</code></pre>
+
+<h2>13.3 实践：多用户与多会话路由</h2>
+<p>同一用户可以有多个并行话题（多个会话），用 <code>SendOptions.of(userId, sessionId)</code> 显式指定：</p>
+<pre><code class="code-title">同一用户，两个独立对话</code><code class="language-java">chat.send(SendOptions.of("user-1", "session-a"), "话题 A").block();
+chat.send(SendOptions.of("user-1", "session-b"), "话题 B").block();</code></pre>
+<p>流式输出对应 <code>sendStream</code>：返回事件流，前端按事件类型渲染即可（文本增量对应打字机效果，工具调用对应“正在查询……”的状态提示）。</p>
+
+<h2>13.4 实践：Gateway 与子智能体事件</h2>
+<p>当一个智能体不够用时（例如客服 + 退款专员 + 物流查询员），<code>GatewayBootstrap</code> 负责把多个 agent 挂到同一个服务入口：</p>
+<pre><code class="code-title">Gateway 多智能体挂载</code><code class="language-java">GatewayBootstrap gw = GatewayBootstrap.builder()
+        .agent("support", csAgent)             // 主客服
+        .mainAgent("support")                  // 未指定 agent 时的默认
+        .runtimeContextResolver(req ->         // 从请求解析租户上下文
+                RuntimeContext.builder(req.callerContext())
+                        .put("tenant", resolveTenant(req))
+                        .build())
+        .build();
+
+ChatUiChannel chat = gw.chatUiChannel();</code></pre>
+<p>主智能体把任务转给子智能体时，子智能体的输出会以独立事件流回前端；配合第 10 章的 <code>expose_to_user: true</code>，界面上就能展示“退款专员”的发言身份。渠道层与子智能体之间的桥接需要显式挂载：调用 <code>gw.gatewayBridge()</code> 取得 <code>SubagentGatewayBridge</code>，再通过 <code>setGatewayBridge()</code> 传给智能体，<code>agent_spawn</code> 的 <code>expose_to_user</code> 才能在网关场景生效。</p>
+
+<h2>13.5 前端对接建议</h2>
+<p>网页端只需一个 SSE（Server-Sent Events）连接，把事件按类型渲染：</p>
+<table>
+  <tr><th style="width:38%">事件</th><th>前端处理</th></tr>
+  <tr><td>文本增量</td><td>追加到当前气泡（打字机效果）</td></tr>
+  <tr><td>工具调用开始 / 结束</td><td>显示状态条（“正在查询工单…”）</td></tr>
+  <tr><td>需要用户确认</td><td>渲染确认按钮（第 6 章 HITL）</td></tr>
+  <tr><td>子智能体发言</td><td>切换气泡头像与昵称</td></tr>
+</table>
+
+<div class="box box-practice">
+  <div class="box-title"><span class="ico">✍️</span>动手练习 13</div>
+  <ol>
+    <li>写一个最小 Spring Boot 接口：把 HTTP 消息通过 <code>chat.send()</code> 转给智能体，返回 <code>Msg</code> 文本；</li>
+    <li>把接口升级为 SSE，用 <code>sendStream</code> 推送文本增量，在浏览器观察打字机效果；</li>
+    <li>用两个浏览器隐身窗口模拟 user-1 与 user-2，验证会话互不串扰；再为 user-1 开两个标签页（不同 sessionId）验证话题隔离。</li>
+  </ol>
+</div>
+
+<h2>13.6 本章小结</h2>
+<p>Channel 把“用户-智能体”的通信标准化，ChatUiChannel 三行接入、会话自动路由；Gateway 则支持多智能体共享入口与子智能体透明转发。至此单实例能力全部讲完——下一章面对真实的流量、故障与租户：上生产。</p>
+
+<nav class="pager">
+<a href="12-sandbox.html"><span class="dir">← 上一章</span><span class="pt">文件系统与沙箱</span></a>
+<a class="next" href="14-production.html"><span class="dir">下一章 →</span><span class="pt">上生产：分布式与多租户</span></a>
+</nav>
+</main>
+</div>
+<footer class="site-footer">
+  AgentScope Java 2.0 新手入门教程 · 基于 AgentScope Java v2.0.3 官方文档编写 · 2026
+  <br>官网 <a href="https://java.agentscope.io" target="_blank" rel="noopener">java.agentscope.io</a>
+  ｜仓库 <a href="https://github.com/agentscope-ai/agentscope-java" target="_blank" rel="noopener">agentscope-ai/agentscope-java</a>
+</footer>
+<script>
+document.getElementById('nav-toggle').addEventListener('click', function () {
+  document.getElementById('sidebar').classList.toggle('open');
+});
+window.addEventListener('DOMContentLoaded', function () {
+  document.querySelectorAll('pre code').forEach(function (el) {
+    try { hljs.highlightElement(el); } catch (e) {}
+  });
+});
+</script>
+</body>
+</html>

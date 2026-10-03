@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>第 11 章 技能系统 · AgentScope Java 2.0 新手入门教程</title>
+<meta name="description" content="场景驱动的 AgentScope Java 2.0 中文新手教程：由浅入深，先理论后实践，Java 代码示例。">
+<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/java.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/xml.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/markdown.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/yaml.min.js"></script>
+</head>
+<body>
+<header class="site-header">
+  <button id="nav-toggle" aria-label="打开目录">☰</button>
+  <a class="logo" href="index.html"><span class="dot"></span>AgentScope Java 2.0 入门教程</a>
+  <span class="tagline">第 11 章 · 技能系统</span>
+  <span class="spacer"></span>
+  <a class="gh-link" href="https://github.com/agentscope-ai/agentscope-java" target="_blank" rel="noopener">GitHub ↗</a>
+</header>
+<div class="layout">
+<nav class="sidebar" id="sidebar">
+  <div class="group">
+    <div class="group-title">开始</div>
+    <a class="item" href="index.html"><span class="no">序</span>教程导读与特性全景</a>
+  </div>
+  <div class="group">
+    <div class="group-title">第一部分 · 理论筑基</div>
+    <a class="item" href="01-overview.html"><span class="no">第1章</span>认识 AgentScope 2.0</a>
+    <a class="item" href="02-quickstart.html"><span class="no">第2章</span>环境搭建与第一个智能体</a>
+    <a class="item" href="03-message-model.html"><span class="no">第3章</span>消息与模型接入</a>
+  </div>
+  <div class="group">
+    <div class="group-title">第二部分 · 核心构件</div>
+    <a class="item" href="04-agent.html"><span class="no">第4章</span>ReActAgent 深入</a>
+    <a class="item" href="05-tool.html"><span class="no">第5章</span>工具</a>
+    <a class="item" href="06-permission.html"><span class="no">第6章</span>权限系统与 HITL</a>
+    <a class="item" href="07-middleware.html"><span class="no">第7章</span>中间件</a>
+  </div>
+  <div class="group">
+    <div class="group-title">第三部分 · Harness 能力</div>
+    <a class="item" href="08-harness.html"><span class="no">第8章</span>Harness 与工作区</a>
+    <a class="item" href="09-memory.html"><span class="no">第9章</span>记忆与上下文压缩</a>
+    <a class="item" href="10-subagent-plan.html"><span class="no">第10章</span>子智能体与计划模式</a>
+    <a class="item" href="11-skill.html"><span class="no">第11章</span>技能系统</a>
+    <a class="item" href="12-sandbox.html"><span class="no">第12章</span>文件系统与沙箱</a>
+  </div>
+  <div class="group">
+    <div class="group-title">第四部分 · 工程化</div>
+    <a class="item" href="13-channel.html"><span class="no">第13章</span>Channel 与 Gateway</a>
+    <a class="item" href="14-production.html"><span class="no">第14章</span>上生产</a>
+    <a class="item" href="15-project.html"><span class="no">结业</span>综合实战项目</a>
+  </div>
+</nav>
+<main class="content">
+<h1><span class="chapter-no">第 11 章</span>技能系统</h1>
+<h2>11.1 本章场景：把团队规范交给智能体</h2>
+<div class="box box-scenario">
+  <div class="box-title"><span class="ico">🎬</span>场景任务</div>
+  <p>团队有一份 40 页的《代码评审规范》，并且规范每季度更新。第 10 章的评审子智能体需要“懂”这份规范，但是把全文塞进 system prompt 既浪费上下文，更新也不及时。因此，本章使用<b>技能（Skill）</b>：以 Markdown 文件承载领域知识，让模型按需加载，并且支持从 Git 仓库、注册中心等来源热更新。</p>
+</div>
+
+<h2>11.2 理论：技能 = 指令 + 参考资料 + 脚本</h2>
+<p>一个技能是一个目录，核心是 <code>SKILL.md</code>：</p>
+<pre><code class="code-title">技能目录结构</code><code class="language-text">code-reviewer/
+├── SKILL.md           # 必需：YAML frontmatter（name + description）+ 给模型看的指令
+├── references/        # 可选：长篇参考资料，模型按需读取
+│   └── style-guide.md
+└── scripts/           # 可选：模型可通过 shell 执行的脚本
+    └── run-checks.sh</code></pre>
+<pre><code class="code-title">SKILL.md 示例</code><code class="language-markdown">---
+name: code-reviewer
+description: 当用户需要代码评审、风格反馈或 PR 审核时使用。
+---
+
+# Code Reviewer
+
+步骤：
+1. 读 references/style-guide.md 获取项目规范
+2. 执行 scripts/run-checks.sh &lt;目标路径&gt;，把结果汇总给用户</code></pre>
+<p>两个设计要点值得注意。其一，<b>description 是模型选择技能的依据</b>，因此要用“什么场景下使用”的句式来写；其二，技能是<b>渐进加载</b>的——默认只有 name 与 description 进入上下文，正文与参考资料在模型决定使用时才读取，所以技能数量多也不会撑爆上下文。</p>
+
+<h2>11.3 实践：技能的四种来源</h2>
+<p>AgentScope 把技能的存储抽象为 <code>SkillRepository</code>，同一个智能体可以同时挂载多个来源：</p>
+<pre><code class="code-title">1. 类路径 —— 适合随应用打包的内置技能</code><code class="language-java">HarnessAgent.builder()
+        .skillRepository(new ClasspathSkillRepository("skills"))
+        .build();</code></pre>
+<pre><code class="code-title">2. Git 仓库 —— 团队技能库，拉取即更新</code><code class="language-java">HarnessAgent.builder()
+        .skillRepository(
+            new GitSkillRepository("https://github.com/your-org/team-skills.git"))
+        .build();</code></pre>
+<pre><code class="code-title">3. Nacos —— 配置中心托管，运行时可热更新</code><code class="language-java">HarnessAgent.builder()
+        .skillRepository(nacosSkillRepository)
+        .build();</code></pre>
+<pre><code class="code-title">4. MySQL —— 数据库存储，支持多租户读写</code><code class="language-java">MysqlSkillRepository registry = MysqlSkillRepository.builder(dataSource)
+        .databaseName("agentscope")
+        .skillsTableName("skills")
+        .createIfNotExist(true)
+        .writeable(true)
+        .build();
+
+HarnessAgent.builder()
+        .skillRepository(registry)
+        .build();</code></pre>
+<p>多个来源可以叠加，同名技能按声明顺序决定优先级：</p>
+<pre><code class="code-title">多来源叠加</code><code class="language-java">HarnessAgent.builder()
+        .skillRepository(communityMarket)   // 社区技能
+        .skillRepository(internalRegistry)  // 公司注册中心
+        .skillRepository(teamGitRepo)       // 团队 Git 仓库
+        .build();</code></pre>
+
+<h2>11.4 工作区技能目录</h2>
+<p>除了代码声明的来源，工作区的 <code>skills/</code> 目录始终生效（见第 8 章），并且支持用户级覆盖——结合 8.6 节的两级解析，个人可以定制自己的技能版本：</p>
+<pre><code class="code-title">工作区技能</code><code class="language-text">workspace/skills/
+└── code-reviewer/
+    ├── SKILL.md
+    ├── references/
+    │   └── style-guide.md
+    └── scripts/
+        └── run-checks.sh</code></pre>
+<p>那么，“技能”与“工具”如何选择？经验法则是：<b>工具是“能力”</b>（需要代码执行、有确定输入输出）；<b>技能是“知识”</b>（需要人维护、以文本为主）。评审规范属于后者，因此做成技能；查数据库属于前者，做成工具。</p>
+
+<div class="box box-practice">
+  <div class="box-title"><span class="ico">✍️</span>动手练习 11</div>
+  <ol>
+    <li>把你们团队（或自拟）的规范写成一个技能，放到工作区 <code>skills/</code>，验证模型在评审请求时自动引用它；</li>
+    <li>把技能正文故意写得与 description 矛盾，观察模型行为——体会 description 的重要性；</li>
+    <li>给技能增加 <code>scripts/</code> 与 <code>references/</code>，验证模型会按需读取而非一次性载入。</li>
+  </ol>
+</div>
+
+<h2>11.5 本章小结</h2>
+<p>技能用“Markdown + 渐进加载”把易变的知识与稳定的代码分离，四种仓库来源覆盖从内置打包到多租户运营的完整谱系。至此，智能体的“内功”齐了；但是让它自主执行脚本前，还差最后一块安全拼图——下一章：文件系统与沙箱。</p>
+
+<nav class="pager">
+<a href="10-subagent-plan.html"><span class="dir">← 上一章</span><span class="pt">子智能体与计划模式</span></a>
+<a class="next" href="12-sandbox.html"><span class="dir">下一章 →</span><span class="pt">文件系统与沙箱</span></a>
+</nav>
+</main>
+</div>
+<footer class="site-footer">
+  AgentScope Java 2.0 新手入门教程 · 基于 AgentScope Java v2.0.3 官方文档编写 · 2026
+  <br>官网 <a href="https://java.agentscope.io" target="_blank" rel="noopener">java.agentscope.io</a>
+  ｜仓库 <a href="https://github.com/agentscope-ai/agentscope-java" target="_blank" rel="noopener">agentscope-ai/agentscope-java</a>
+</footer>
+<script>
+document.getElementById('nav-toggle').addEventListener('click', function () {
+  document.getElementById('sidebar').classList.toggle('open');
+});
+window.addEventListener('DOMContentLoaded', function () {
+  document.querySelectorAll('pre code').forEach(function (el) {
+    try { hljs.highlightElement(el); } catch (e) {}
+  });
+});
+</script>
+</body>
+</html>
