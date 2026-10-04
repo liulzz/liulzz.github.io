@@ -1,0 +1,555 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>拆解 AgentScope Harness：设计思想与源码实现原理</title>
+<meta name="description" content="以 agentscope-java 源码为基准，拆解 HarnessAgent 的分层设计、中间件协议、装配流水线与状态流转。">
+<style>
+:root {
+  --bg: #ffffff; --bg-soft: #f6f8fa; --bg-code: #0f172a;
+  --fg: #1f2933; --fg-muted: #5b6b7b;
+  --accent: #2563eb; --accent-soft: #eff6ff; --accent-border: #bfdbfe;
+  --border: #e5e9f0;
+  --green: #16a34a; --green-soft: #f0fdf4;
+  --amber: #b45309; --amber-soft: #fffbeb; --amber-border: #fde68a;
+  --purple: #7c3aed; --purple-soft: #f5f3ff;
+  --toc-w: 240px;
+}
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+  margin: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans CJK SC", sans-serif;
+  color: var(--fg); background: var(--bg); line-height: 1.8; font-size: 16px;
+}
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+
+.site-header {
+  position: sticky; top: 0; z-index: 50; display: flex; align-items: center; gap: 12px;
+  padding: 0 20px; height: 56px; background: rgba(255,255,255,.92); backdrop-filter: blur(8px);
+  border-bottom: 1px solid var(--border);
+}
+.site-header .logo { font-weight: 700; font-size: 17px; display: flex; align-items: center; gap: 8px; }
+.site-header .logo .dot { width: 10px; height: 10px; border-radius: 3px; background: var(--accent); }
+.site-header .tagline { color: var(--fg-muted); font-size: 13px; }
+.site-header .spacer { flex: 1; }
+.site-header .gh-link { font-size: 13px; }
+
+.layout { display: flex; max-width: 1280px; margin: 0 auto; }
+.toc {
+  width: var(--toc-w); flex-shrink: 0; position: sticky; top: 56px; height: calc(100vh - 56px);
+  overflow-y: auto; padding: 28px 12px 40px 20px; border-right: 1px solid var(--border); font-size: 14px;
+}
+.toc .toc-title { font-weight: 700; color: var(--fg-muted); font-size: 12px; letter-spacing: .05em; margin: 0 8px 8px; text-transform: uppercase; }
+.toc a { display: block; padding: 5px 10px; border-radius: 8px; color: var(--fg); line-height: 1.5; }
+.toc a:hover { background: var(--bg-soft); text-decoration: none; }
+.toc a.sub { padding-left: 24px; color: var(--fg-muted); font-size: 13px; }
+
+.content { flex: 1; min-width: 0; padding: 40px 48px 90px; max-width: 880px; }
+.content h1 { font-size: 30px; line-height: 1.35; margin: 0 0 10px; }
+.content h1 .kicker { display: block; font-size: 14px; color: var(--accent); font-weight: 700; letter-spacing: .08em; margin-bottom: 8px; text-transform: uppercase; }
+.content h2 { font-size: 24px; margin: 48px 0 14px; padding-top: 16px; border-top: 1px solid var(--border); }
+.content h2:first-of-type { border-top: none; }
+.content h3 { font-size: 18.5px; margin: 32px 0 10px; }
+.content p { margin: 12px 0; }
+.content ul, .content ol { padding-left: 26px; margin: 10px 0; }
+.content li { margin: 6px 0; }
+.lead { font-size: 17px; color: var(--fg-muted); }
+.meta-line { color: var(--fg-muted); font-size: 13.5px; margin-bottom: 26px; }
+
+blockquote {
+  margin: 14px 0; padding: 10px 16px; border-left: 3px solid var(--accent);
+  background: var(--accent-soft); border-radius: 0 8px 8px 0; color: var(--fg);
+}
+blockquote .src { display: block; margin-top: 6px; font-size: 12.5px; color: var(--fg-muted); }
+
+code:not(pre code) { background: var(--bg-soft); border: 1px solid var(--border); border-radius: 5px; padding: 1px 6px; font-size: .88em; font-family: "SF Mono", ui-monospace, Menlo, Consolas, monospace; }
+pre {
+  background: var(--bg-code); color: #e2e8f0; border-radius: 10px; padding: 16px 18px;
+  overflow-x: auto; font-size: 13.5px; line-height: 1.65; margin: 14px 0;
+}
+pre code { font-family: "SF Mono", ui-monospace, Menlo, Consolas, monospace; background: none; border: none; padding: 0; color: inherit; }
+pre .cm { color: #94a3b8; font-style: italic; }
+pre .kw { color: #7dd3fc; }
+pre .st { color: #fca5a5; }
+pre .an { color: #c4b5fd; }
+pre .fn { color: #fcd34d; }
+.code-src { display: block; margin: -8px 0 14px; font-size: 12.5px; color: var(--fg-muted); }
+
+table { width: 100%; border-collapse: collapse; margin: 14px 0; font-size: 14.5px; }
+th, td { border: 1px solid var(--border); padding: 9px 12px; text-align: left; vertical-align: top; }
+th { background: var(--bg-soft); font-weight: 600; }
+td code { white-space: nowrap; }
+
+.callout { border-radius: 10px; padding: 14px 18px; margin: 16px 0; font-size: 15px; }
+.callout.blue { background: var(--accent-soft); border: 1px solid var(--accent-border); }
+.callout.amber { background: var(--amber-soft); border: 1px solid var(--amber-border); }
+.callout.green { background: var(--green-soft); border: 1px solid #bbf7d0; }
+.callout b.tag { display: inline-block; font-size: 12px; border-radius: 5px; padding: 1px 8px; margin-right: 8px; color: #fff; }
+.callout.blue b.tag { background: var(--accent); }
+.callout.amber b.tag { background: var(--amber); }
+.callout.green b.tag { background: var(--green); }
+
+.fig { margin: 20px 0; border: 1px solid var(--border); border-radius: 12px; padding: 18px 14px 8px; background: #fcfdff; }
+.fig svg { width: 100%; height: auto; display: block; }
+.fig figcaption { text-align: center; color: var(--fg-muted); font-size: 13px; padding: 8px 0 6px; }
+
+footer { border-top: 1px solid var(--border); margin-top: 60px; padding-top: 18px; color: var(--fg-muted); font-size: 13.5px; }
+@media (max-width: 1080px) { .toc { display: none; } .content { padding: 28px 20px 70px; } }
+</style>
+</head>
+<body>
+<header class="site-header">
+  <div class="logo"><span class="dot"></span>AgentScope 源码拆解</div>
+  <div class="tagline">Harness 设计思想与实现原理</div>
+  <div class="spacer"></div>
+  <a class="gh-link" href="https://github.com/agentscope-ai/agentscope-java" target="_blank" rel="noopener">agentscope-java ↗</a>
+</header>
+
+<div class="layout">
+<nav class="toc">
+  <p class="toc-title">目录</p>
+  <a href="#intro">0 · 引言：为什么需要 Harness</a>
+  <a href="#map">1 · 全景：模块版图与定位</a>
+  <a href="#principles">2 · 设计思想三原则</a>
+  <a href="#build">3 · build()：装配流水线解剖</a>
+  <a href="#state">4 · 一次 call() 的状态流转</a>
+  <a href="#subsystems">5 · 关键子系统拆解</a>
+  <a href="#s-prompt" class="sub">5.1 系统提示装配</a>
+  <a href="#s-compact" class="sub">5.2 上下文压缩</a>
+  <a href="#s-fs" class="sub">5.3 文件系统抽象</a>
+  <a href="#s-sandbox" class="sub">5.4 沙箱</a>
+  <a href="#s-subagent" class="sub">5.5 子代理编排</a>
+  <a href="#s-skill" class="sub">5.6 技能与自学习</a>
+  <a href="#summary">6 · 总结：问题到机制的映射</a>
+  <a href="#facts">7 · 事实源与版本说明</a>
+</nav>
+
+<main class="content">
+<h1><span class="kicker">源码深度拆解</span>AgentScope Harness：设计思想与实现原理</h1>
+<p class="meta-line">基准：agentscope-java 主分支源码（2026-10-05 浅克隆）与官方文档 v2.0.3 ｜ 全部结论均给出源码锚点（文件:行号）</p>
+
+<h2 id="intro">0 · 引言：为什么需要 Harness</h2>
+<p class="lead">设想一个已经通过单元测试的 ReActAgent 被部署为在线服务，同时服务多名用户。此时问题清单立刻出现：第二轮对话如何恢复上一轮的上下文？上下文逼近模型窗口上限时如何收缩？用户 A 的文件与记忆如何对用户 B 隔离？危险的 shell 命令由谁审查？团队积累的领域经验如何沉淀并被复用？</p>
+<p>裸的 <code>ReActAgent</code> 只解决"一次请求 → 推理 → 工具 → 回复"这个单循环。官方架构文档对 Harness 的定位因此非常明确：</p>
+<blockquote>
+  <p><code>HarnessAgent</code> is a thin wrapper around <code>ReActAgent</code> that packages the engineering capabilities long-running agents need — workspace-driven persona, long-term memory, subagent orchestration, sandbox isolation, skill composition, plan mode, channel routing — into a single builder.</p>
+  <span class="src">— docs/v2/en/docs/harness/architecture.md（仓库内 Mintlify 文档原稿）</span>
+</blockquote>
+<p>换句话说，<strong>Harness 不重新发明推理循环，它回答循环之外的所有工程问题</strong>：跨调用续接、上下文有界、多租户隔离、危险动作审查、能力沉淀。本文以源码为唯一事实源，逐层拆解它是如何做到的。</p>
+
+<h2 id="map">1 · 全景：模块版图与定位</h2>
+<p>仓库根目录的 <code>AGENTS.md</code> 给出官方模块边界规则：</p>
+<ul>
+  <li>可复用的 agent 行为 → <code>agentscope-core</code>（ReAct 循环、消息/事件、工具、中间件、状态、权限）；</li>
+  <li>高层能力 → <code>agentscope-harness</code>（HarnessAgent、workspace、记忆、子代理、技能、通道、沙箱、文件系统）；</li>
+  <li>模型/服务提供方专属代码 → <code>agentscope-extensions</code>；</li>
+  <li>应用装配 → examples 或 <code>agentscope-service</code>。</li>
+</ul>
+
+<figure class="fig">
+<svg viewBox="0 0 920 340" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="AgentScope Java 模块分层图">
+  <defs>
+    <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#5b6b7b"/>
+    </marker>
+  </defs>
+  <style>
+    .box { fill: #ffffff; stroke: #e5e9f0; stroke-width: 1.5; }
+    .core { fill: #eff6ff; stroke: #bfdbfe; }
+    .harn { fill: #f5f3ff; stroke: #ddd6fe; }
+    .ext { fill: #f6f8fa; stroke: #e5e9f0; }
+    .lbl { font: 600 15px -apple-system, "PingFang SC", sans-serif; fill: #1f2933; }
+    .sm { font: 12.5px -apple-system, "PingFang SC", sans-serif; fill: #5b6b7b; }
+    .tiny { font: 11.5px ui-monospace, monospace; fill: #5b6b7b; }
+    .h { font: 700 13px -apple-system, sans-serif; fill: #2563eb; letter-spacing: .04em; }
+  </style>
+
+  <text class="h" x="24" y="30">APPLICATION 装配层</text>
+  <rect class="box ext" x="24" y="42" width="410" height="52" rx="10"/>
+  <text class="lbl" x="40" y="74">agentscope-examples / agentscope-service</text>
+
+  <text class="h" x="24" y="132">HARNESS 能力层（io.agentscope.harness.agent，270 个类）</text>
+  <rect class="box harn" x="24" y="144" width="872" height="64" rx="10"/>
+  <text class="lbl" x="40" y="170">HarnessAgent（门面）</text>
+  <text class="sm" x="40" y="192">workspace · memory/compaction · subagent · skill · sandbox · filesystem · gateway/channel · plan · team</text>
+
+  <text class="h" x="24" y="246">CORE 引擎层（io.agentscope.core）</text>
+  <rect class="box core" x="24" y="258" width="560" height="60" rx="10"/>
+  <text class="lbl" x="40" y="284">ReActAgent（推理循环）· Toolkit · MiddlewareBase</text>
+  <text class="sm" x="40" y="305">Message/Event · AgentState/StateStore · Permission · Formatter · Model 接口</text>
+
+  <text class="h" x="620" y="246">EXTENSIONS 提供方层</text>
+  <rect class="box ext" x="620" y="258" width="276" height="60" rx="10"/>
+  <text class="lbl" x="636" y="284">模型扩展（DashScope 等）</text>
+  <text class="sm" x="636" y="305">Spring Boot starter · 技能仓库扩展</text>
+
+  <line x1="229" y1="94" x2="229" y2="140" stroke="#5b6b7b" stroke-width="1.6" marker-end="url(#arr)"/>
+  <line x1="304" y1="258" x2="304" y2="214" stroke="#5b6b7b" stroke-width="1.6" marker-end="url(#arr)"/>
+  <text class="tiny" x="238" y="120">builder 装配</text>
+  <text class="tiny" x="312" y="240">委托 getDelegate()</text>
+</svg>
+<figcaption>图 1 · 模块分层：Harness 组装 core 的引擎，扩展层按提供方拆分</figcaption>
+</figure>
+
+<p>类关系的核心是一条委托链：<code>HarnessAgent</code> 实现 <code>Agent</code> 接口，内部持有一个由 <code>ReActAgent.Builder</code> 构建的 <code>ReActAgent delegate</code>，<code>getDelegate()</code> 将其暴露（<code>HarnessAgent.java</code> L492）。构建完成时输出一条日志，概括了它装配出的三要素：</p>
+<pre><code><span class="st">"HarnessAgent '{}' built [workspace={}, filesystem={}, subagents={}]"</span></code></pre>
+<span class="code-src">HarnessAgent.java L2952（build 末尾日志）</span>
+
+<div class="callout blue"><b class="tag">线程安全契约</b>HarnessAgent 在两次 call() 之间无状态，单实例即可服务多用户多会话；状态按 <code>(userId, sessionId)</code> 隔离，<strong>同一会话自动串行，跨会话并行</strong>（L164–167 Javadoc；串行机制见第 4 节 call gate）。</div>
+
+<h2 id="principles">2 · 设计思想三原则</h2>
+<p>通读 harness 模块后可以提炼出三条贯穿性的设计原则。它们同时出现在官方架构文档与源码结构中，因此可以作为理解全部子系统的骨架。</p>
+
+<h3>原则一：能力注册在循环的钩子上，不修改循环本体</h3>
+<p>core 的 <code>MiddlewareBase</code>（242 行）定义了全部 6 个扩展点，分为三种模式：</p>
+<table>
+<tr><th>扩展点</th><th>模式</th><th>签名要点</th><th>介入时机</th></tr>
+<tr><td><code>onAgent</code></td><td>洋葱型（next 委托）</td><td><code>Flux&lt;AgentEvent&gt; onAgent(next, agent, ctx, msgs)</code></td><td>整次调用的最外层</td></tr>
+<tr><td><code>onReasoning</code></td><td>洋葱型</td><td>同上，作用于推理阶段</td><td>每次推理前后</td></tr>
+<tr><td><code>onActing</code></td><td>洋葱型</td><td>同上，作用于工具执行</td><td>工具调用前后</td></tr>
+<tr><td><code>onModelCall</code></td><td>洋葱型</td><td>同上，作用于模型 API 调用</td><td>请求发出前后（流式增量可改写）</td></tr>
+<tr><td><code>onSystemPrompt</code></td><td>管道型</td><td><code>Mono&lt;String&gt; onSystemPrompt(agent, ctx, currentPrompt)</code></td><td>系统提示重建时，链式变换</td></tr>
+<tr><td><code>onAgentStateReady</code></td><td>通知型</td><td><code>void onAgentStateReady(agent, ctx, state, inputMessages)</code></td><td>AgentState 绑定后、进入流水线前（单次通知）</td></tr>
+</table>
+<pre><code><span class="cm">// MiddlewareBase.java —— 三种模式的典型签名（摘录）</span>
+<span class="kw">default</span> Flux&lt;AgentEvent&gt; onAgent(Agent agent, RuntimeContext ctx,
+        List&lt;Msg&gt; msgs, NextFluxListener next) { <span class="kw">return</span> next.onAgent(agent, ctx, msgs); }
+
+<span class="kw">default</span> Mono&lt;String&gt; onSystemPrompt(Agent agent, RuntimeContext ctx, String currentPrompt) {
+    <span class="kw">return</span> Mono.just(currentPrompt); }
+
+<span class="kw">default</span> <span class="kw">void</span> onAgentStateReady(Agent agent, RuntimeContext ctx,
+        AgentState state, List&lt;Msg&gt; inputMessages) {}</code></pre>
+<span class="code-src">MiddlewareBase.java（签名摘录，注释见 L229–241）</span>
+<p>两个控制维度同样定义在此：<code>activePoints()</code> 声明中间件参与哪些钩子（构造时定型，运行期不再判断），<code>order()</code> 决定层级——<strong>数值越大越靠外层，默认 1</strong>。</p>
+<p>这一协议的收益在 harness 模块里体现得非常直观：压缩、记忆冲刷、会话记录、子代理、技能、计划模式、沙箱生命周期、消息收件箱……<strong>十七项能力全部实现为中间件</strong>，通过 build() 顺序注册到内部 ReActAgent 上（清单见第 3 节）。引擎侧没有任何 <code>if (harness)</code> 式的条件分支；新增能力等价于新增一个中间件类。</p>
+
+<h3>原则二：能力互不依赖，共享三个对象</h3>
+<p>官方架构文档指出，各能力之间不相互引用，而是共享三个对象：</p>
+<ul>
+  <li><strong>RuntimeContext</strong> —— 谁在说话（userId、sessionId、attributes）；</li>
+  <li><strong>workspace</strong> —— 谁读写哪些文件（工作区根目录与文件系统后端）；</li>
+  <li><strong>AgentStateStore</strong> —— 状态如何跨调用恢复。</li>
+</ul>
+<p>源码印证相当一致：文件系统接口的<strong>每一个方法都以 RuntimeContext 作为首参</strong>（见 5.3 节），身份随每次 I/O 流动；WorkspaceContextMiddleware 只持有 WorkspaceManager；CompactionMiddleware 只持有 ConversationCompactor 与 MemoryFlushManager；build() 装配出的各中间件之间没有字段级引用。因此，<code>disableMemoryTools</code>、<code>disableSubagents</code>、<code>leafSubagent</code> 这类开关可以自由组合而不会产生矩阵式依赖。</p>
+
+<h3>原则三：内置能力定序装配，用户中间件始终在外层</h3>
+<p>builder 的 <code>.middleware(...)</code> 直接写入内部 ReActAgent.Builder（L1613–1624），而全部内置中间件在 build() 阶段才按固定顺序注册（L2533 起）。ReActAgent 侧的 order 语义保证：先注册者在外层，因此<strong>用户中间件先于内置中间件看到输入、后于它们看到输出</strong>。那么鉴权、审计、限流这类横切逻辑就可以在 harness 内置逻辑之前完成拦截，无需继承或改造任何内置类。</p>
+<div class="callout amber"><b class="tag">约束</b>通知型钩子 <code>onAgentStateReady</code> 在同会话重入时会在 call gate 上死锁。MiddlewareBase 的 Javadoc 明确要求该钩子<strong>非阻塞、快速失败</strong>（L229–241）。这是三模式中唯一带有死锁警示的扩展点，也说明通知型钩子的执行时机位于会话串行窗口之内。</div>
+
+<h2 id="build">3 · build()：装配流水线解剖</h2>
+<p><code>HarnessAgent.Builder.build()</code>（L2369–2982，约 600 行）是整个 harness 的枢纽。它本质上是一条<strong>构造期校验 + 依赖接线 + 能力注册</strong>的流水线：</p>
+
+<figure class="fig">
+<svg viewBox="0 0 920 400" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="build 装配流水线">
+  <defs>
+    <marker id="arr3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#5b6b7b"/>
+    </marker>
+  </defs>
+  <style>
+    .step { fill: #ffffff; stroke: #e5e9f0; stroke-width: 1.5; }
+    .s1 { fill: #eff6ff; stroke: #bfdbfe; } .s2 { fill: #fffbeb; stroke: #fde68a; }
+    .s3 { fill: #f0fdf4; stroke: #bbf7d0; } .s4 { fill: #f5f3ff; stroke: #ddd6fe; }
+    .n { font: 700 13px ui-monospace, monospace; fill: #2563eb; }
+    .t { font: 600 14px -apple-system, "PingFang SC", sans-serif; fill: #1f2933; }
+    .d { font: 11.5px -apple-system, "PingFang SC", sans-serif; fill: #5b6b7b; }
+  </style>
+  <g>
+    <rect class="step s1" x="20" y="20" width="280" height="64" rx="10"/>
+    <text class="n" x="34" y="42">01 校验</text>
+    <text class="t" x="34" y="62">Toolkit 深拷贝 · Spec 互斥校验</text>
+    <text class="d" x="34" y="78">toolkit.copy()；三类 FilesystemSpec 至多其一</text>
+  </g>
+  <g>
+    <rect class="step s1" x="320" y="20" width="280" height="64" rx="10"/>
+    <text class="n" x="334" y="42">02 分布式接线</text>
+    <text class="t" x="334" y="62">DistributedStore 自动注入</text>
+    <text class="d" x="334" y="78">state/remote/snapshot/guard/bus/async；PeriodicGate 选型</text>
+  </g>
+  <g>
+    <rect class="step s1" x="620" y="20" width="280" height="64" rx="10"/>
+    <text class="n" x="634" y="42">03 一致性红线</text>
+    <text class="t" x="634" y="62">远端 fs × 本地 state ⇒ 异常</text>
+    <text class="d" x="634" y="78">L2444–2452 直接抛 IllegalStateException</text>
+  </g>
+  <g>
+    <rect class="step s2" x="20" y="120" width="280" height="64" rx="10"/>
+    <text class="n" x="34" y="142">04 文件系统</text>
+    <text class="t" x="34" y="162">Spec → Filesystem 实例</text>
+    <text class="d" x="34" y="178">sandbox / remote / local；routes → CompositeFilesystem</text>
+  </g>
+  <g>
+    <rect class="step s2" x="320" y="120" width="280" height="64" rx="10"/>
+    <text class="n" x="334" y="142">05 沙箱装配</text>
+    <text class="t" x="334" y="162">SandboxManager + 快照存储</text>
+    <text class="d" x="334" y="178">SessionSandboxStateStore · ExecutionGuard · 生命周期中间件</text>
+  </g>
+  <g>
+    <rect class="step s2" x="620" y="120" width="280" height="64" rx="10"/>
+    <text class="n" x="634" y="142">06 工作区</text>
+    <text class="t" x="634" y="162">WorkspaceManager.validate()</text>
+    <text class="d" x="634" y="178">并为 (userId, sessionId) 建 workspaceFactory（用户覆盖层）</text>
+  </g>
+  <g>
+    <rect class="step s3" x="20" y="220" width="280" height="64" rx="10"/>
+    <text class="n" x="34" y="242">07 中间件栈</text>
+    <text class="t" x="34" y="262">15 组按序注册（见表）</text>
+    <text class="d" x="34" y="278">由 Sandbox → Trace → Workspace → … → Skill</text>
+  </g>
+  <g>
+    <rect class="step s3" x="320" y="220" width="280" height="64" rx="10"/>
+    <text class="n" x="334" y="242">08 工具注册</text>
+    <text class="t" x="334" y="262">memory/fs/shell/web/plan/skill/spawn</text>
+    <text class="d" x="334" y="278">shell 工具仅在沙箱文件系统下注册</text>
+  </g>
+  <g>
+    <rect class="step s3" x="620" y="220" width="280" height="64" rx="10"/>
+    <text class="n" x="634" y="242">09 tools.json + MCP</text>
+    <text class="t" x="634" y="262">ToolsConfigLoader → MCP → ToolFilter</text>
+    <text class="d" x="634" y="278">最后应用 allow/deny 过滤，平台工具豁免</text>
+  </g>
+  <g>
+    <rect class="step s4" x="20" y="320" width="880" height="60" rx="10"/>
+    <text class="n" x="34" y="344">10 收束</text>
+    <text class="t" x="34" y="366">inner.toolkit(agentToolkit) → inner.build() 得到 delegate → new HarnessAgent(...)</text>
+    <text class="d" x="34" y="382">技能自学习组件（Promoter/Curator/UsageStore/AuditLog）随构造器一并持有；L2959–2981</text>
+  </g>
+  <line x1="300" y1="52" x2="318" y2="52" stroke="#5b6b7b" stroke-width="1.4" marker-end="url(#arr3)"/>
+  <line x1="600" y1="52" x2="618" y2="52" stroke="#5b6b7b" stroke-width="1.4" marker-end="url(#arr3)"/>
+  <line x1="460" y1="84" x2="460" y2="118" stroke="#5b6b7b" stroke-width="1.4" marker-end="url(#arr3)"/>
+  <line x1="160" y1="184" x2="160" y2="218" stroke="#5b6b7b" stroke-width="1.4" marker-end="url(#arr3)"/>
+  <line x1="760" y1="184" x2="760" y2="218" stroke="#5b6b7b" stroke-width="1.4" marker-end="url(#arr3)"/>
+  <line x1="460" y1="284" x2="460" y2="318" stroke="#5b6b7b" stroke-width="1.4" marker-end="url(#arr3)"/>
+</svg>
+<figcaption>图 2 · build() 的十段装配流水线（行号区间 L2369–2982）</figcaption>
+</figure>
+
+<h3>中间件栈的固定顺序</h3>
+<p>下表按 build() 中的实际注册顺序排列（行号为注册语句位置）。顺序即行为：越靠前的越先处理输入。</p>
+<table>
+<tr><th>#</th><th>中间件 / 组件</th><th>职责</th><th>build() 行号</th></tr>
+<tr><td>1</td><td><code>SandboxLifecycleMiddleware</code></td><td>沙箱启动/回收生命周期（含技能市场预物化回调）</td><td>L2533</td></tr>
+<tr><td>2</td><td><code>AgentTraceMiddleware</code></td><td>全链路追踪日志（可关）</td><td>L2536</td></tr>
+<tr><td>3</td><td><code>WorkspaceContextMiddleware</code></td><td>系统提示装配（AGENTS/MEMORY/KNOWLEDGE）</td><td>L2551</td></tr>
+<tr><td>4</td><td><code>AtPathExpansionMiddleware</code></td><td>@路径展开为文件引用</td><td>L2554</td></tr>
+<tr><td>5</td><td><code>TranscriptMiddleware</code></td><td>会话记录（文件系统或对象存储）</td><td>L2571–2583</td></tr>
+<tr><td>6</td><td><code>MemoryFlushMiddleware</code></td><td>记忆冲刷（PeriodicGate 节流）</td><td>L2603</td></tr>
+<tr><td>7</td><td><code>MemoryMaintenanceMiddleware</code></td><td>MEMORY.md 合并维护、过期清理</td><td>L2603</td></tr>
+<tr><td>8</td><td><code>CompactionMiddleware</code>（钩子=onReasoning）</td><td>上下文压缩</td><td>L2620</td></tr>
+<tr><td>9</td><td><code>ToolResultEvictionMiddleware</code></td><td>超大工具结果落盘与占位符替换</td><td>L2624</td></tr>
+<tr><td>10</td><td><code>InboxMiddleware</code></td><td>消息总线收件箱（容量 100）</td><td>L2628</td></tr>
+<tr><td>11</td><td><code>TeamsMiddleware</code></td><td>团队协作工具</td><td>L2638</td></tr>
+<tr><td>12</td><td><code>DynamicSubagentsMiddleware</code> 或 <code>SubagentsMiddleware</code></td><td>子代理声明/注册与 spawn 工具</td><td>L2645–2677</td></tr>
+<tr><td>13</td><td><code>AsyncToolMiddleware</code></td><td>异步工具注册表（wait_async_results）</td><td>L2680</td></tr>
+<tr><td>14</td><td><code>PlanModeMiddleware</code></td><td>计划模式只读白名单与三工具</td><td>L2748–2768</td></tr>
+<tr><td>15</td><td>技能相关三件套</td><td>SkillUsage / SkillCurator / HarnessSkillMiddleware</td><td>L2791–2930</td></tr>
+</table>
+
+<div class="callout green"><b class="tag">默认值策略</b>本地部署开箱即用：<code>AgentStateStore</code> 默认 <code>JsonFileAgentStateStore(~/.agentscope/state/&lt;agentId&gt;/)</code>；MessageBus 与 AsyncToolRegistry 默认存放在工作区 <code>.agentscope/bus</code> 与 <code>.agentscope/bus/async-tools</code>——它们经由文件系统抽象存取，因此切换到远端文件系统后无需改代码即可获得分布式语义。</div>
+
+<div class="callout amber"><b class="tag">构造期红线</b>配置 <code>RemoteFilesystemSpec</code> 而状态存储仍是本地 JSON 时，build() 直接抛出 <code>IllegalStateException</code>（L2444–2452），而不是在运行期产生难以排查的分裂状态。声明式 Spec + 构造期失败，是这套装配逻辑最值得借鉴的习惯之一。</div>
+
+<h2 id="state">4 · 一次 call() 的状态流转</h2>
+<p>官方架构文档将状态划分为三层，源码结构与之一一对应：</p>
+<table>
+<tr><th>层级</th><th>内容</th><th>载体</th></tr>
+<tr><td>单次调用内</td><td>AgentState + RuntimeContext</td><td>core ReActAgent 循环内的活动状态</td></tr>
+<tr><td>跨调用</td><td>会话快照、全量日志、子任务记录、沙箱元数据</td><td><code>AgentStateStore</code>（默认 <code>~/.agentscope/state/&lt;agentId&gt;/</code>，按 (userId, sessionId) 寻址）</td></tr>
+<tr><td>长期记忆</td><td><code>memory/YYYY-MM-DD.md</code> 追加 → 周期性合并进 <code>MEMORY.md</code> → 每步推理注入系统提示</td><td>workspace 文件系统</td></tr>
+</table>
+
+<figure class="fig">
+<svg viewBox="0 0 920 300" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="call 状态流转">
+  <defs>
+    <marker id="arr2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#2563eb"/>
+    </marker>
+  </defs>
+  <style>
+    .lane { font: 700 13px -apple-system, sans-serif; fill: #2563eb; letter-spacing: .04em; }
+    .bx { fill: #ffffff; stroke: #e5e9f0; stroke-width: 1.5; }
+    .tt { font: 600 13.5px -apple-system, "PingFang SC", sans-serif; fill: #1f2933; }
+    .dd { font: 11.5px -apple-system, "PingFang SC", sans-serif; fill: #5b6b7b; }
+    .fl { stroke: #2563eb; stroke-width: 1.6; }
+  </style>
+  <text class="lane" x="24" y="26">调用内（in-call）</text>
+  <rect class="bx" x="24" y="36" width="872" height="56" rx="10"/>
+  <text class="tt" x="40" y="60">call(stream) 进入 → 同会话 call gate 串行 → onAgentStateReady 通知 → 中间件流水线 → ReAct 循环（onReasoning ⇄ onActing）</text>
+  <text class="dd" x="40" y="80">AgentState 在循环内活动；interrupt() 可随时注入中断</text>
+
+  <text class="lane" x="24" y="126">跨调用（cross-call）</text>
+  <rect class="bx" x="24" y="136" width="424" height="70" rx="10"/>
+  <text class="tt" x="40" y="160">AgentStateStore 快照</text>
+  <text class="dd" x="40" y="180">agents/&lt;agentId&gt;/state/…（按 userId+sessionId 寻址，可换 Redis/MySQL）</text>
+  <rect class="bx" x="472" y="136" width="424" height="70" rx="10"/>
+  <text class="tt" x="488" y="160">SessionTree 双文件</text>
+  <text class="dd" x="488" y="180">sessions/&lt;id&gt;.jsonl（LLM 上下文，会被压缩）＋ &lt;id&gt;.log.jsonl（全量审计，永不压缩）</text>
+
+  <text class="lane" x="24" y="240">长期记忆（long-term）</text>
+  <rect class="bx" x="24" y="250" width="872" height="40" rx="10"/>
+  <text class="tt" x="40" y="275">memory/YYYY-MM-DD.md 追加 →（节流的后台任务）→ 合并进 MEMORY.md → 下一轮系统提示可见</text>
+
+  <line class="fl" x1="200" y1="94" x2="200" y2="134" marker-end="url(#arr2)"/>
+  <line class="fl" x1="684" y1="94" x2="684" y2="134" marker-end="url(#arr2)"/>
+  <line class="fl" x1="460" y1="208" x2="460" y2="248" marker-end="url(#arr2)"/>
+  <text class="dd" x="470" y="230">节流合并（PeriodicGate）</text>
+</svg>
+<figcaption>图 3 · 状态三层：调用内活动状态、跨调用持久化、长期记忆</figcaption>
+</figure>
+
+<p>三个官方确认的不变量值得单独记录：</p>
+<ol>
+  <li><strong>系统提示每步推理都重建</strong>——因此修改 AGENTS.md 或 MEMORY.md 后下一轮立即生效，无需重启；</li>
+  <li><strong>压缩、记忆蒸馏、后台维护均经过 PeriodicGate 节流</strong>——分布式部署用 StoreBackedPeriodicGate 保证跨节点只触发一次，本地用 LocalPeriodicGate；</li>
+  <li><strong>AgentState 持久化只由 core 的 ReActAgent + AgentStateStore 完成</strong>——harness 不追加自己的持久化钩子，状态写入点因此唯一。</li>
+</ol>
+<p>会话串行的实现锚点在 core：<code>ReActAgent.slotKey(userId, sessionId)</code>（L408）将每会话状态放入独立槽位，配合 call gate 保证同会话调用排队执行。MiddlewareBase 的死锁警示（第 2 节）正是针对这个门——在通知钩子里同步发起同会话调用会永久等待自身。</p>
+
+<h2 id="subsystems">5 · 关键子系统拆解</h2>
+
+<h3 id="s-prompt">5.1 系统提示装配：每步重建、token 预算、按部署面分支渲染</h3>
+<p>WorkspaceContextMiddleware 通过管道钩子 <code>onSystemPrompt</code> 把工作区内容注入系统提示：</p>
+<pre><code><span class="an">@Override</span>
+<span class="kw">public</span> Mono&lt;String&gt; onSystemPrompt(Agent agent, RuntimeContext ctx, String currentPrompt) {
+    <span class="kw">return</span> Mono.fromCallable(() -&gt; {
+        RuntimeContext rc = ctx != <span class="kw">null</span> ? ctx : RuntimeContext.empty();
+        String base = currentPrompt != <span class="kw">null</span> ? currentPrompt : <span class="st">""</span>;
+        String section = buildWorkspaceSection(rc);
+        String separator = base.isEmpty() || base.endsWith(<span class="st">"\n"</span>) ? <span class="st">""</span> : <span class="st">"\n"</span>;
+        <span class="kw">return</span> base + separator + section;
+    }).subscribeOn(Schedulers.boundedElastic());
+}</code></pre>
+<span class="code-src">WorkspaceContextMiddleware.java L207–217</span>
+<p><code>buildWorkspaceSection</code> 的装配顺序是：会话上下文段 → 指引段（记忆召回/持久化说明）→ 工作区说明段 → 已加载内容段（AGENTS.md、MEMORY.md、KNOWLEDGE.md、附加上下文）。其中有一个精细的预算控制：</p>
+<pre><code><span class="kw">int</span> fixedTokens = estimateTokens(sessionContext) + estimateTokens(agentsContent)
+        + estimateTokens(knowledgeBlock) + estimateTokens(additionalBlock);
+<span class="kw">if</span> (includeMemoryContext) {
+    <span class="kw">int</span> memoryTokens = estimateTokens(memoryContent);
+    <span class="kw">int</span> available = maxContextTokens - fixedTokens;
+    <span class="kw">if</span> (available &gt; <span class="kw">0</span> &amp;&amp; memoryTokens &gt; available) {
+        memoryContent = truncateToTokenBudget(memoryContent, available);  <span class="cm">// MEMORY.md 优先级最低</span>
+    }
+}</code></pre>
+<span class="code-src">WorkspaceContextMiddleware.java L236–247</span>
+<p>另一处值得注意的细节：工作区说明段<strong>按文件系统类型分支渲染</strong>（本地 overlay / 沙箱 / 远端 composite / 其他四种），让模型看到的自我描述与真实部署面一致（L314–345 的 Javadoc 与实现）。沙箱分支会明确告知"文件无法离开沙箱"，或者提示使用 <code>deliver_artifact</code> 工具（若已配置）。</p>
+
+<h3 id="s-compact">5.2 上下文压缩：非 LLM 修剪在前，LLM 摘要在后，逐级降级</h3>
+<p>压缩由 <code>CompactionMiddleware</code> 在 onReasoning 钩子触发（L84），核心算法在 <code>ConversationCompactor.compactIfNeeded</code>：</p>
+<pre><code><span class="cm">// 第 1 步：非 LLM 修剪（轻量、零成本）</span>
+List&lt;Msg&gt; messages = pruneToolResults(
+        truncateArgs(conversationMessages, config.getTruncateArgsConfig()),
+        config.getPruneConfig());
+
+<span class="kw">int</span> totalTokens = TokenCounterUtil.calculateToken(messages);
+<span class="kw">if</span> (!shouldCompact(messages, totalTokens, config)) { <span class="kw">return</span> Mono.just(Optional.empty()); }
+
+<span class="kw">int</span> cutoff = determineCutoffIndex(messages, totalTokens, config);
+<span class="kw">if</span> (cutoff &lt;= <span class="kw">0</span>) { <span class="kw">return</span> Mono.just(Optional.empty()); }   <span class="cm">// 安全截断点为 0：跳过</span>
+
+List&lt;Msg&gt; summaryInput = <span class="kw">new</span> ArrayList&lt;&gt;(messages.subList(<span class="kw">0</span>, cutoff));
+List&lt;Msg&gt; flushInput   = filterSummaryMessages(summaryInput);  <span class="cm">// 旧摘要不再重复冲刷</span>
+List&lt;Msg&gt; tail         = <span class="kw">new</span> ArrayList&lt;&gt;(messages.subList(cutoff, messages.size()));
+
+<span class="cm">// 第 2/3 步：记忆冲刷（best-effort）+ 原始消息卸载 JSONL（失败降级为无文件引用）</span>
+<span class="cm">// 第 4 步：LLM 汇总（summaryInput 包含既往摘要 ⇒ 滚动摘要）</span>
+<span class="kw">return</span> flushStep.then(offloadStep).flatMap(offloadPath -&gt;
+        summarizePrefix(summaryInput, config).map(summary -&gt; {
+            Msg summaryMsg = buildSummaryMessage(summary, filePath);
+            List&lt;Msg&gt; compacted = <span class="kw">new</span> ArrayList&lt;&gt;();
+            compacted.add(summaryMsg);
+            compacted.addAll(tail);          <span class="cm">// 结果 = [摘要] + 保留尾部</span>
+            ...
+        }));</code></pre>
+<span class="code-src">ConversationCompactor.java L92–205（结构摘录，注释为原文）</span>
+<p>关键参数（CompactionConfig Builder 默认值）：<code>triggerMessages = 50</code>、<code>keepMessages = 20</code>；模型未上报上下文窗口时启用 token 回退阈值；<code>-1</code> 表示动态尾部保留模式。设计上有两处明显意图：</p>
+<ul>
+  <li><strong>成本分级</strong>——参数截断与工具结果修剪不需要 LLM，先执行；只有确实超过阈值才进入摘要调用；</li>
+  <li><strong>优雅降级</strong>——记忆冲刷失败仅记 warn（best-effort），消息卸载失败退化为无文件引用的普通摘要，cutoff 为 0 则整体跳过。压缩是增益路径而非正确性依赖。</li>
+</ul>
+<p>配套的 <code>ToolResultEvictionMiddleware</code> 处理单条超大结果：默认超过 <code>80_000</code> 字符即写盘到 <code>large_tool_results/</code>，原位置保留 <code>2_000</code> 字符预览（ToolResultEvictionConfig L46–52），并维护默认排除工具集。</p>
+
+<h3 id="s-fs">5.3 文件系统抽象：一张接口承载全部 I/O</h3>
+<p><code>AbstractFilesystem</code> 是 harness 的底座接口。工作区、会话记录、消息总线、异步工具注册表、技能缓存、任务存储——全部经由它存取：</p>
+<pre><code><span class="kw">public interface</span> AbstractFilesystem {
+    LsResult        ls(RuntimeContext runtimeContext, String path);
+    ReadResult      read(RuntimeContext runtimeContext, String filePath, <span class="kw">int</span> offset, <span class="kw">int</span> limit);
+    WriteResult     write(RuntimeContext runtimeContext, String filePath, String content);
+    EditResult      edit(...);
+    GrepResult      grep(RuntimeContext runtimeContext, String pattern, String path, String glob);
+    GlobResult      glob(RuntimeContext runtimeContext, String pattern, String path);
+    List&lt;FileUploadResponse&gt;   uploadFiles(...);
+    List&lt;FileDownloadResponse&gt; downloadFiles(RuntimeContext runtimeContext, List&lt;String&gt; paths);
+    WriteResult     delete(RuntimeContext runtimeContext, String path);
+    WriteResult     move(RuntimeContext runtimeContext, String fromPath, String toPath);
+    <span class="kw">boolean</span>         exists(RuntimeContext runtimeContext, String path);
+    <span class="kw">static void</span>     validatePath(String path) { ... }
+}</code></pre>
+<span class="code-src">AbstractFilesystem.java L53–178（签名摘录）</span>
+<p>三个实现分支对应三种部署形态：本地 <code>LocalFilesystem</code>（及其带 shell 的 <code>LocalFilesystemWithShell</code> overlay 变体）、沙箱 <code>BaseSandboxFilesystem</code> 系（Docker 等）、远端 <code>RemoteFilesystem</code>（对象存储-backed）与组合式 <code>CompositeFilesystem</code>（按路径前缀路由）。接口方法全部以 RuntimeContext 为首参——<strong>身份与租户信息随每次 I/O 流动</strong>，而不是在文件系统对象里保存当前用户。这是多租户正确性的关键取舍。</p>
+<p>部署形态由三种 Spec 声明（<code>SandboxFilesystemSpec</code> / <code>RemoteFilesystemSpec</code> / <code>LocalFilesystemSpec</code>，互斥），也可以直接传入 <code>AbstractFilesystem</code> 实例作为逃生舱。builder 负责把 Spec 翻译成运行时组件（图 2 第 04 步）。</p>
+
+<h3 id="s-sandbox">5.4 沙箱：生命周期中间件 + 快照恢复 + 执行守护</h3>
+<p>沙箱子系统由四个协作件组成：<code>SandboxManager</code>（容器管理，含 Docker 实现 <code>DockerSandbox</code>，775 行）、<code>SessionSandboxStateStore</code>（跨调用快照与恢复）、<code>SandboxExecutionGuard</code>（执行前守护，默认 no-op，可插拔策略）以及注册在栈首的 <code>SandboxLifecycleMiddleware</code>。技能市场的数据库技能由 <code>MarketplaceStager</code> 预物化到工作区 <code>.skills-cache</code>，物化动作通过 <code>sandboxLifecycleMw.setBeforeStartCallback(...)</code> 在沙箱启动前执行。</p>
+<p>一个安全上的默认值得强调：<strong>ShellExecuteTool 只在文件系统为 AbstractSandboxFilesystem 时注册</strong>。也就是说，默认本地文件系统下模型没有 shell 工具；要给模型 shell 能力，必须显式声明沙箱。默认面收窄，危险面才可控。</p>
+
+<h3 id="s-subagent">5.5 子代理编排：同步/后台语义与"不静默升级"</h3>
+<p><code>AgentSpawnTool</code>（1795 行）实现 spawn 工具。其超时语义在 Javadoc 中写得很明确：</p>
+<blockquote>
+  <p>If the sync wait exceeds the timeout, the subagent is interrupted and the tool returns <code>status: timeout</code> — it is <em>not</em> promoted to an async background task.</p>
+  <span class="src">— AgentSpawnTool.java L169–171</span>
+</blockquote>
+<ul>
+  <li><code>timeout_seconds = 0</code> ⇒ 纯后台模式；</li>
+  <li>同步等待超时 ⇒ 子代理被中断、返回 timeout 状态，<strong>不升级为后台任务</strong>——禁止在调用方无感知的情况下改变执行模式；</li>
+  <li>调用方可通过 RuntimeContext 覆盖：<code>CTX_FORCE_SYNC = "agentscope.subagent.force_sync"</code> 与 <code>CTX_FORCE_SYNC_TIMEOUT_SECONDS</code>（L185–204）；</li>
+  <li>后台任务用 <code>wait_async_results(task_ids=...)</code> 或 <code>wait_all=true</code> 统一等待。</li>
+</ul>
+<p>结构上，每个子代理拥有独立会话，条目通过 <code>id/parentId</code> 构成会话树（SessionTree）。另有一个克制的设计：<strong>被 spawn 出的叶子代理不再安装 SubagentsMiddleware</strong>（build() 条件 <code>!leafSubagent</code>，L2646），即子代理默认不能再 spawn 子代理，递归扩散被构造期关断。</p>
+
+<h3 id="s-skill">5.6 技能体系与自学习：默认拒绝晋升的人工闸门</h3>
+<p>技能以 <code>SKILL.md</code>（YAML frontmatter + 指令正文，可选 references/ 与 scripts/）为单位，仓库支持四层叠加：ClasspathSkillRepository、GitSkillRepository、NacosSkillRepository、MysqlSkillRepository，经 <code>composeSkillRepositories</code> 合成统一视图。运行期由 <code>HarnessSkillMiddleware</code> 加载（frozen 或 dynamic 两种模式）。</p>
+<p>自学习回路由四个组件构成：SkillUsageStore（使用记录）→ SkillAuditLog（审计）→ SkillCurator（后台策展，PeriodicGate 节流，<code>runCuratorOnce()</code> 可手动触发）→ SkillPromoter（把 <code>propose_skill</code> 产生的草案晋升为正式技能）。其中晋升闸门默认是 <code>RejectAllGate</code>——<strong>新技能默认不会被自动晋升，必须显式配置晋升策略或人工审批</strong>。模型可以提议，但不能自证合格；这个默认值体现了对"模型自主修改自身能力面"的谨慎。</p>
+<p>外围还有两组能力：计划模式（PlanModeManager + <code>plan_enter/plan_write/plan_exit</code> 三工具，PlanModeMiddleware 用 <code>isReadOnly()</code> 收紧工具白名单，<code>allowShellInPlanMode</code> 可为沙箱加例外）与通道路由（<code>channel(T)</code> 注册、<code>gateway()</code> 懒建并复用 volatile 内部网关，DistributedStore 支撑跨节点 SubagentRegistry 恢复）。</p>
+
+<h2 id="summary">6 · 总结：问题到机制的映射</h2>
+<table>
+<tr><th>工程问题</th><th>Harness 机制</th><th>源码锚点</th></tr>
+<tr><td>能力如何扩展而不污染引擎</td><td>MiddlewareBase 6 钩子三模式；17 项能力全部中间件化</td><td>MiddlewareBase.java；HarnessAgent.java L2533–2930</td></tr>
+<tr><td>多租户隔离与同会话串行</td><td>(userId, sessionId) 槽位 + call gate；文件系统方法携带 RuntimeContext</td><td>ReActAgent.java L408；AbstractFilesystem.java L53–178</td></tr>
+<tr><td>上下文逼近窗口上限</td><td>压缩四步流水线（修剪→判定→冲刷/卸载→滚动摘要）+ 80K 工具结果落盘</td><td>ConversationCompactor.java L92–205；ToolResultEvictionConfig L46–52</td></tr>
+<tr><td>跨调用续接</td><td>AgentStateStore 快照；系统提示每步重建</td><td>HarnessAgent.java build()；architecture.md 不变量</td></tr>
+<tr><td>危险动作审查</td><td>shell 工具仅沙箱注册；SandboxExecutionGuard；计划模式只读白名单</td><td>build() 工具注册段；PlanModeMiddleware</td></tr>
+<tr><td>能力沉淀与复用</td><td>四层技能仓库 + propose/promote/curate 回路，默认 RejectAllGate</td><td>build() L2791–2871</td></tr>
+<tr><td>长任务不阻塞对话</td><td>spawn 后台模式 + wait_async_results；超时不静默升级</td><td>AgentSpawnTool.java L162–204</td></tr>
+<tr><td>审计与可回放</td><td>SessionTree 双文件：压缩上下文与全量日志分离</td><td>SessionTree.java L56–62</td></tr>
+<tr><td>分布式一致性</td><td>DistributedStore 自动接线；远端 fs × 本地 state 构造期报错；StoreBackedPeriodicGate 防重复触发</td><td>build() L2389–2452</td></tr>
+</table>
+
+<p>对 Java 工程师而言，这套代码的迁移价值不止于 agent 领域本身：</p>
+<ol>
+  <li><strong>钩子协议优先于特性开关</strong>——扩展点固定且语义单一，新能力以新实现加入，而不是在主流程上增加分支；</li>
+  <li><strong>文件系统作通用底座</strong>——把状态、消息、任务全部收敛到一张 I/O 接口上，本地/沙箱/远端三态切换便只剩装配差异；</li>
+  <li><strong>构造期失败优于运行期异常</strong>——互斥校验与一致性红线都在 build() 完成；</li>
+  <li><strong>禁止静默模式切换</strong>——同步超时就返回超时，绝不悄悄变成后台任务；</li>
+  <li><strong>有损与无损分离</strong>——上下文可以压缩（有损），审计日志永不压缩（无损）；</li>
+  <li><strong>高危自动化默认关闭</strong>——模型可以提议新技能，但晋升默认被全部拒绝。</li>
+</ol>
+
+<h2 id="facts">7 · 事实源与版本说明</h2>
+<ul>
+  <li>源码：github.com/agentscope-ai/agentscope-java 主分支（2026-10-05 浅克隆，仅用于本文核对；行号以当日 main 为准，后续提交可能移动行号）；</li>
+  <li>文档：仓库内 <code>docs/v2/en/docs/harness/architecture.md</code> 及 harness 板块各页（与 java.agentscope.io 线上文档同源）；发布版本基准 v2.0.3（2026-09-07）；</li>
+  <li>本文所有类名、行号、默认值均逐条对照源码核对；引文保持原文（英文），解读部分为作者归纳；</li>
+  <li>相关阅读：本站姊妹篇 <a href="https://liulzz.github.io/agentscope-tutorial/">AgentScope Java 2.0 新手教程（15 章）</a>。</li>
+</ul>
+
+<footer>
+  拆解系列 · 以源码为唯一事实源 ｜ 姊妹站：<a href="https://liulzz.github.io/agentscope-tutorial/">agentscope-tutorial</a> ｜ 2026-10-05
+</footer>
+</main>
+</div>
+</body>
+</html>
