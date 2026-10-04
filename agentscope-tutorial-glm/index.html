@@ -1,0 +1,984 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AgentScope Java 2.0 新手入门完整版 · 21 章场景式学习</title>
+<style>
+  :root{--bg:#0d1117;--bg-card:#161b22;--bg-code:#0a0e14;--border:#30363d;
+    --text:#e6edf3;--text-dim:#9aa4b2;--accent:#58a6ff;--accent2:#7ee787;
+    --warn:#f78166;--tag:#bc8cff;--new:#ffa657}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:-apple-system,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;
+    background:var(--bg);color:var(--text);line-height:1.75}
+  .layout{display:flex;min-height:100vh}
+  nav.sidebar{width:264px;flex-shrink:0;background:var(--bg-card);
+    border-right:1px solid var(--border);padding:24px 16px;position:sticky;
+    top:0;height:100vh;overflow-y:auto}
+  nav.sidebar .logo{font-size:17px;font-weight:700;color:var(--accent);margin-bottom:4px}
+  nav.sidebar .sub{font-size:12px;color:var(--text-dim);margin-bottom:20px}
+  nav.sidebar a{display:block;padding:6px 12px;margin:1px 0;color:var(--text-dim);
+    text-decoration:none;border-radius:6px;font-size:13.5px;transition:all .15s}
+  nav.sidebar a:hover{background:#21262d;color:var(--text)}
+  nav.sidebar a.active{background:#1f6feb33;color:var(--accent);border-left:3px solid var(--accent)}
+  nav.sidebar .group{font-size:10.5px;color:var(--text-dim);text-transform:uppercase;
+    letter-spacing:1px;margin:16px 8px 6px}
+  main{flex:1;padding:36px 52px;max-width:920px}
+  .hero{padding-bottom:28px;border-bottom:1px solid var(--border);margin-bottom:28px}
+  .hero h1{font-size:32px;margin-bottom:12px}
+  .hero p.tagline{color:var(--text-dim);font-size:15px}
+  .badge{display:inline-block;padding:3px 10px;margin:4px 4px 0 0;border-radius:12px;
+    font-size:12px;background:#1f6feb33;color:var(--accent);border:1px solid #1f6feb55}
+  .badge.green{background:#23863633;color:var(--accent2);border-color:#23863655}
+  .badge.purple{background:#8957e533;color:var(--tag);border-color:#8957e555}
+  .badge.new{background:#d2992233;color:var(--new);border-color:#d2992255}
+  section{margin-bottom:52px;scroll-margin-top:20px}
+  section h2{font-size:25px;padding-bottom:10px;margin-bottom:18px;border-bottom:2px solid var(--border)}
+  section h2 .ch{color:var(--accent);margin-right:10px}
+  section h3{font-size:18px;margin:22px 0 10px;color:var(--accent2)}
+  section h4{font-size:15.5px;margin:16px 0 8px;color:var(--accent)}
+  p{margin-bottom:11px}ul,ol{margin:0 0 11px 22px}li{margin-bottom:5px}
+  strong{color:#fff}em{color:var(--tag);font-style:normal}
+  .card{background:var(--bg-card);border:1px solid var(--border);border-radius:10px;
+    padding:16px 20px;margin:14px 0}
+  .card h4{margin-top:0}
+  .scene{background:linear-gradient(135deg,#1c2431,#16231d);border:1px solid #2ea04355;
+    border-left:4px solid var(--accent2);border-radius:10px;padding:16px 20px;margin:18px 0}
+  .scene .label{display:inline-block;font-size:11.5px;font-weight:600;color:var(--accent2);
+    background:#23863633;padding:2px 10px;border-radius:10px;margin-bottom:6px}
+  .tip,.warn{padding:11px 15px;border-radius:8px;font-size:13.5px;margin:12px 0}
+  .tip{background:#1f6feb18;border-left:3px solid var(--accent)}
+  .warn{background:#f7816618;border-left:3px solid var(--warn)}
+  pre{background:var(--bg-code);border:1px solid var(--border);border-radius:8px;
+    padding:14px 16px;overflow-x:auto;font-size:13px;line-height:1.6;margin:12px 0;
+    font-family:"JetBrains Mono",Consolas,"Courier New",monospace}
+  pre .c{color:#8b949e;font-style:italic}pre .k{color:#ff7b72}
+  pre .s{color:#a5d6ff}pre .f{color:#d2a8ff}pre .n{color:#7ee787}
+  code{font-family:"JetBrains Mono",Consolas,monospace;background:#21262d;
+    padding:2px 5px;border-radius:4px;font-size:12.5px;color:#ffa657}
+  pre code{background:none;padding:0;color:var(--text)}
+  table{width:100%;border-collapse:collapse;margin:12px 0;font-size:13.5px}
+  th,td{padding:7px 11px;border:1px solid var(--border);text-align:left}
+  th{background:var(--bg-card);color:var(--accent);font-weight:600}
+  .step{display:flex;gap:13px;margin:11px 0}
+  .step .num{flex-shrink:0;width:25px;height:25px;border-radius:50%;background:var(--accent);
+    color:#fff;text-align:center;line-height:25px;font-size:12.5px;font-weight:600}
+  .step .body{flex:1}
+  footer{padding:28px 52px;color:var(--text-dim);font-size:13px;border-top:1px solid var(--border)}
+  @media(max-width:900px){nav.sidebar{display:none}main{padding:22px}}
+</style>
+</head>
+<body>
+<div class="layout">
+
+<nav class="sidebar">
+  <div class="logo">AgentScope Java 2.0</div>
+  <div class="sub">完整版 · 21 章 · 场景式学习</div>
+  <div class="group">基础</div>
+  <a href="#intro">0. 框架是什么</a>
+  <a href="#install">1. 环境安装</a>
+  <a href="#concepts">2. 核心概念</a>
+  <div class="group">实战（入门）</div>
+  <a href="#lab1">3. 第一个 Agent</a>
+  <a href="#lab2">4. 工具调用 @Tool</a>
+  <a href="#lab3">5. 流式事件</a>
+  <a href="#lab4">6. 多 Agent MsgHub</a>
+  <a href="#lab5">7. HITL 与权限</a>
+  <a href="#lab6">8. 状态持久化</a>
+  <a href="#memory">8.5 记忆系统</a>
+  <div class="group">进阶</div>
+  <a href="#structured">9. 结构化输出</a>
+  <a href="#rag">10. RAG 知识库</a>
+  <a href="#mcp">11. MCP 工具集成</a>
+  <a href="#plan">12. Plan 模式</a>
+  <a href="#skill">13. Skill 技能系统</a>
+  <a href="#subagent">14. Subagent 子代理</a>
+  <a href="#fs">15. Filesystem 与沙箱</a>
+  <a href="#channel">16. Channel / Gateway</a>
+  <a href="#agui">17. AG-UI 前端协议</a>
+  <a href="#a2a">18. A2A 协议</a>
+  <a href="#springboot">19. Spring Boot 集成</a>
+  <div class="group">参考</div>
+  <a href="#faq">20. 常见问题</a>
+  <a href="#roadmap">21. 学习路线图</a>
+</nav>
+
+<main>
+
+<div class="hero">
+  <h1>AgentScope Java 2.0 新手入门完整版</h1>
+  <p class="tagline">21 章 · 基础 + 7 个入门场景 + 11 个进阶能力 · 基于官方 GitHub 与 java.agentscope.io/v2</p>
+  <div>
+    <span class="badge">JDK 17+</span><span class="badge">Maven 3.9+</span>
+    <span class="badge green">ReActAgent / HarnessAgent</span>
+    <span class="badge purple">MsgHub / Subagent</span>
+    <span class="badge">Memory / RAG / MCP</span>
+    <span class="badge new">Plan / Skill / Channel / AG-UI / A2A</span>
+  </div>
+</div>
+
+<!-- ============ 第 0 章 ============ -->
+<section id="intro">
+<h2><span class="ch">00</span>AgentScope Java 2.0 是什么</h2>
+<p>阿里开源的<strong>生产级 Java Agent 框架</strong>，Maven 坐标 <code>io.agentscope:agentscope-harness</code>，已在阿里 13+ 业务单元生产运行。2.0 的核心是<strong>Harness 工程层</strong>——在 ReActAgent 推理内核之上，注入 Workspace / 记忆 / 会话 / 沙箱 / 技能 / 子代理等企业级能力<span data-allow-html class="search-source-placeholder" data-keys="turn0fetch1,turn0fetch2" data-label="java.agentscope.io +1"><span class="search-source-item-label"><a data-allow-html href="https://java.agentscope.io/v2/en/docs/harness/subagent" target="_blank" rel="noopener noreferrer">java.agentscope.io</a></span><span class="source-item-num-count"> +1</span></span>。</p>
+
+<div class="card">
+<h4>2.0 六大核心能力</h4>
+<ul>
+<li><strong>Event System</strong>：31 类类型化事件流，支撑实时 UI 与 HITL<span data-allow-html class="search-source-placeholder" data-keys="turn0fetch2" data-label="java.agentscope.io"><span class="search-source-item-label"><a data-allow-html href="https://java.agentscope.io/v2/en/docs/harness/filesystem.html" target="_blank" rel="noopener noreferrer">java.agentscope.io</a></span><span class="source-item-num-count"></span></span>。</li>
+<li><strong>Permission System</strong>：工具调用三态闸门 ALLOW / ASK / DENY。</li>
+<li><strong>Middleware</strong>：AOP 风格五阶段钩子（onAgent / onReasoning / onActing / onModelCall / onSystemPrompt）。</li>
+<li><strong>Workspace &amp; Sandbox</strong>：本地 / Docker / K8s / E2B / AgentRun 云沙箱隔离。</li>
+<li><strong>Multi-Agent Orchestration</strong>：agent_spawn / agent_send + 实时事件转发。</li>
+<li><strong>Distributed Deployment</strong>：Redis / MySQL / PostgreSQL / OSS 分布式会话与记忆。</li>
+</ul>
+</div>
+
+<h3>双层架构</h3>
+<pre><code>┌────────────────────────────────────────────────────────┐
+│ HarnessAgent（推荐入口）                                │
+│  = ReActAgent + Workspace + 记忆 + 会话 + 沙箱 + 技能    │
+│    + Subagent + 上下文压缩 + Plan Mode                  │
+├────────────────────────────────────────────────────────┤
+│ ReActAgent（无状态推理-行动循环内核）                     │
+│  ├── Model      (DashScope/OpenAI/Anthropic/Gemini…)   │
+│  ├── Toolkit    (@Tool / MCP / ToolGroup / Skill)      │
+│  ├── Permission (ALLOW/ASK/DENY)                       │
+│  ├── Middleware (五阶段钩子)                            │
+│  └── AgentState (上下文+摘要+权限规则，可持久化)         │
+└────────────────────────────────────────────────────────┘</code></pre>
+</section>
+
+<!-- ============ 第 1 章 ============ -->
+<section id="install">
+<h2><span class="ch">01</span>环境安装</h2>
+<h3>方式 A · 一体化包（推荐入门）</h3>
+<pre><code>&lt;dependency&gt;
+    &lt;groupId&gt;io.agentscope&lt;/groupId&gt;
+    &lt;artifactId&gt;agentscope&lt;/artifactId&gt;
+    &lt;version&gt;2.0.3&lt;/version&gt;
+&lt;/dependency&gt;
+<span class="c">&lt;!-- 内置 OpenAI/Anthropic/Gemini/DashScope/Ollama + MCP SDK --&gt;</span></code></pre>
+
+<h3>方式 B · 核心 + 按需扩展（推荐生产）</h3>
+<pre><code>&lt;dependency&gt;
+    &lt;groupId&gt;io.agentscope&lt;/groupId&gt;
+    &lt;artifactId&gt;agentscope-harness&lt;/artifactId&gt;
+    &lt;version&gt;2.0.3&lt;/version&gt;
+&lt;/dependency&gt;
+&lt;dependency&gt;
+    &lt;groupId&gt;io.agentscope&lt;/groupId&gt;
+    &lt;artifactId&gt;agentscope-extensions-model-dashscope&lt;/artifactId&gt;
+    &lt;version&gt;2.0.3&lt;/version&gt;
+&lt;/dependency&gt;</code></pre>
+
+<h3>API Key 环境变量</h3>
+<pre><code><span class="c"># macOS / Linux</span>
+export DASHSCOPE_API_KEY=sk-xxxxxxxx
+<span class="c"># Windows (PowerShell)</span>
+$env:DASHSCOPE_API_KEY = <span class="s">"sk-xxxxxxxx"</span></code></pre>
+<p>验证：<code>mvn compile exec:java -Dexec.mainClass=FirstAgent</code><span data-allow-html class="search-source-placeholder" data-keys="turn1fetch0" data-label="java.agentscope.io"><span class="search-source-item-label"><a data-allow-html href="https://java.agentscope.io/v2/en/integration/protocol/agui" target="_blank" rel="noopener noreferrer">java.agentscope.io</a></span><span class="source-item-num-count"></span></span>。</p>
+</section>
+
+<!-- ============ 第 2 章 ============ -->
+<section id="concepts">
+<h2><span class="ch">02</span>核心概念</h2>
+<div class="card"><h4>① Message / ContentBlock</h4><p>最基本数据结构，内容由 <code>TextBlock / ThinkingBlock / ToolUseBlock / ToolResultBlock / ImageBlock</code> 等块列表承载，构造时做严格角色校验。</p></div>
+<div class="card"><h4>② Model</h4><p>统一 <code>ChatModelBase</code> 抽象，官方扩展模块覆盖 Qwen/OpenAI/Anthropic/Gemini/DeepSeek/GLM/Kimi/MiniMax/Ollama；支持最大重试 + Fallback 模型。多 Agent 场景用 <code>DashScopeMultiAgentFormatter</code>。</p></div>
+<div class="card"><h4>③ Toolkit</h4><p>注册工具 / MCP / 技能，反射生成 JSON Schema。方法标 <code>@Tool</code>+<code>@ToolParam</code> 后 <code>toolkit.registerTool(new XxxTools())</code>。</p></div>
+<div class="card"><h4>④ Agent（ReActAgent / HarnessAgent）</h4><p>三个核心方法：<code>call(List&lt;Msg&gt;, ctx)</code> → <code>Mono&lt;Msg&gt;</code>；<code>streamEvents(List&lt;Msg&gt;, ctx)</code> → <code>Flux&lt;AgentEvent&gt;</code>；<code>observe(Msg)</code> 只放上下文不触发推理。</p></div>
+<div class="card"><h4>⑤ Event</h4><p>31 类事件流：TEXT_BLOCK_DELTA / TOOL_CALL_START / RequireUserConfirmEvent / SubagentExposedEvent 等。</p></div>
+<div class="card"><h4>⑥ RuntimeContext 与 AgentState</h4><p><strong>RuntimeContext</strong> 单次调用元数据包；<strong>AgentState</strong> 跨调用持久状态，由 <code>AgentStateStore</code> 按 (userId, sessionId) 加载/保存。</p></div>
+<pre><code>输入 ─► 追加上下文 ─► [ReAct 循环]
+                      Reasoning: LLM → 文本 或 工具调用
+                      Acting:    Toolkit 派发 → 权限 → 执行 → 回填
+                    ─► 返回最终 Msg 或 事件流</code></pre>
+</section>
+
+<!-- ============ 第 3 章 ============ -->
+<section id="lab1">
+<h2><span class="ch">03</span>实战 1 · 第一个 Agent：智能问答助手</h2>
+<div class="scene"><span class="label">小场景 1</span><p>用 HarnessAgent 构建 "Friday"，同一 sessionId 下多轮对话自动记住上下文。</p></div>
+<pre><code><span class="k">import</span> io.agentscope.core.agent.RuntimeContext;
+<span class="k">import</span> io.agentscope.core.message.UserMessage;
+<span class="k">import</span> io.agentscope.harness.agent.HarnessAgent;
+<span class="k">import</span> java.nio.file.Paths;
+
+<span class="k">public class</span> <span class="f">FirstAgent</span> {
+    <span class="k">public static void</span> <span class="f">main</span>(String[] args) {
+        HarnessAgent agent = HarnessAgent.builder()
+                .name(<span class="s">"Friday"</span>)
+                .sysPrompt(<span class="s">"你是智能助手 Friday，回答要简洁友好，用中文。"</span>)
+                .model(<span class="s">"dashscope:qwen-plus"</span>)   <span class="c">// 自动读 DASHSCOPE_API_KEY</span>
+                .workspace(Paths.get(<span class="s">".agentscope/workspace"</span>))
+                .build();
+
+        RuntimeContext ctx = RuntimeContext.builder()
+                .sessionId(<span class="s">"demo"</span>).userId(<span class="s">"alice"</span>).build();
+
+        agent.call(<span class="k">new</span> UserMessage(<span class="s">"我叫 Alice，在准备 ReAct 技术分享。"</span>), ctx).block();
+        String answer = agent.call(
+                <span class="k">new</span> UserMessage(<span class="s">"我叫什么名字？在做什么？"</span>), ctx
+        ).block().getTextContent();
+        System.out.println(<span class="s">"Friday&gt; "</span> + answer);
+        <span class="c">// → 你叫 Alice，在准备 ReAct 技术分享。</span>
+    }
+}</code></pre>
+</section>
+
+<!-- ============ 第 4 章 ============ -->
+<section id="lab2">
+<h2><span class="ch">04</span>实战 2 · 工具调用：天气查询 Agent</h2>
+<div class="scene"><span class="label">小场景 2</span><p>通过 @Tool 注解让 Agent 查"实时"天气（Map 模拟）。</p></div>
+<pre><code><span class="k">import</span> io.agentscope.core.ReActAgent;
+<span class="k">import</span> io.agentscope.core.agent.RuntimeContext;
+<span class="k">import</span> io.agentscope.core.message.UserMessage;
+<span class="k">import</span> io.agentscope.core.tool.*;
+<span class="k">import</span> java.util.Map;
+
+<span class="k">public class</span> <span class="f">WeatherAgent</span> {
+    <span class="k">public static class</span> <span class="f">WeatherTools</span> {
+        <span class="k">private static final</span> Map&lt;String,String&gt; DB = Map.of(
+                <span class="s">"杭州|今天"</span>,<span class="s">"晴，26°C，东南风 3 级"</span>,
+                <span class="s">"北京|今天"</span>,<span class="s">"晴，18°C，空气质量优"</span>);
+        <span class="f">@Tool</span>(description = <span class="s">"查询指定城市在指定日期的天气。"</span>)
+        <span class="k">public</span> String <span class="f">getWeather</span>(
+                <span class="f">@ToolParam</span>(name=<span class="s">"city"</span>, description=<span class="s">"中文城市名"</span>) String city,
+                <span class="f">@ToolParam</span>(name=<span class="s">"date"</span>, description=<span class="s">"今天/明天，默认今天"</span>) String date) {
+            <span class="k">return</span> DB.getOrDefault(city+<span class="s">"|"</span>+date, <span class="s">"暂无数据"</span>);
+        }
+    }
+    <span class="k">public static void</span> <span class="f">main</span>(String[] args) {
+        Toolkit toolkit = <span class="k">new</span> Toolkit();
+        toolkit.registerTool(<span class="k">new</span> WeatherTools());
+        ReActAgent agent = ReActAgent.builder()
+                .name(<span class="s">"WeatherAgent"</span>)
+                .sysPrompt(<span class="s">"天气问题必须调用 get_weather。"</span>)
+                .model(<span class="s">"dashscope:qwen-plus"</span>).toolkit(toolkit).build();
+        RuntimeContext ctx = RuntimeContext.builder()
+                .sessionId(<span class="s">"w1"</span>).userId(<span class="s">"alice"</span>).build();
+        System.out.println(agent.call(
+                <span class="k">new</span> UserMessage(<span class="s">"今天杭州和北京哪个适合跑步？"</span>), ctx
+        ).block().getTextContent());
+    }
+}</code></pre>
+<div class="warn">⚠️ <code>@ToolParam.name</code> <strong>必须显式指定</strong>（Java 默认不保留参数名），否则注册失败。</div>
+</section>
+
+<!-- ============ 第 5 章 ============ -->
+<section id="lab3">
+<h2><span class="ch">05</span>实战 3 · 流式事件</h2>
+<div class="scene"><span class="label">小场景 3</span><p>用 <code>streamEvents</code> 实时打印文本增量和工具调用。</p></div>
+<pre><code>agent.streamEvents(<span class="k">new</span> UserMessage(task), ctx)
+     .doOnNext(event -&gt; {
+         <span class="k">switch</span> (event.getType()) {
+             <span class="k">case</span> TEXT_BLOCK_DELTA -&gt;
+                 System.out.print(((TextBlockDeltaEvent) event).getDelta());
+             <span class="k">case</span> TOOL_CALL_START -&gt;
+                 System.out.println(<span class="s">"\n🔧 "</span> + ((ToolCallStartEvent) event).getToolCallName());
+             <span class="k">default</span> -&gt; { }
+         }
+     })
+     .blockLast();</code></pre>
+</section>
+
+<!-- ============ 第 6 章 ============ -->
+<section id="lab4">
+<h2><span class="ch">06</span>实战 4 · 多 Agent MsgHub 辩论赛</h2>
+<div class="scene"><span class="label">小场景 4</span><p>正方/反方/主持人三方辩论，MsgHub 广播 + 结构化输出判分。</p></div>
+<pre><code><span class="k">import</span> io.agentscope.core.ReActAgent;
+<span class="k">import</span> io.agentscope.core.memory.InMemoryMemory;
+<span class="k">import</span> io.agentscope.core.message.*;
+<span class="k">import</span> io.agentscope.core.pipeline.MsgHub;
+<span class="k">import</span> io.agentscope.extensions.model.dashscope.*;
+<span class="k">import</span> io.agentscope.extensions.model.dashscope.formatter.*;
+
+<span class="k">public class</span> <span class="f">DebateExample</span> {
+    <span class="k">public static class</span> <span class="f">JudgeResult</span> {
+        <span class="k">public boolean</span> finished; <span class="k">public</span> String correctAnswer;
+    }
+    <span class="k">public static void</span> <span class="f">main</span>(String[] args) {
+        DashScopeChatModel model = DashScopeChatModel.builder()
+                .apiKey(System.getenv(<span class="s">"DASHSCOPE_API_KEY"</span>)).modelName(<span class="s">"qwen-plus"</span>)
+                .formatter(<span class="k">new</span> DashScopeMultiAgentFormatter()).build();
+
+        ReActAgent pro = ReActAgent.builder().name(<span class="s">"正方"</span>)
+                .sysPrompt(<span class="s">"支持远程办公，每次一个论点不超过 60 字。"</span>)
+                .model(model).memory(<span class="k">new</span> InMemoryMemory()).build();
+        ReActAgent con = ReActAgent.builder().name(<span class="s">"反方"</span>)
+                .sysPrompt(<span class="s">"反对远程办公，每次一个论点不超过 60 字。"</span>)
+                .model(model).memory(<span class="k">new</span> InMemoryMemory()).build();
+        ReActAgent mod = ReActAgent.builder().name(<span class="s">"主持人"</span>)
+                .sysPrompt(<span class="s">"判定辩论是否可以得出结论。"</span>)
+                .model(model).memory(<span class="k">new</span> InMemoryMemory()).build();
+
+        <span class="k">for</span> (<span class="k">int</span> round=1; round&lt;=3; round++) {
+            <span class="k">try</span> (MsgHub hub = MsgHub.builder().participants(pro, con).build()) {
+                hub.enter().block();
+                Msg m1 = pro.call(<span class="k">new</span> UserMessage(<span class="s">"请亮出观点。"</span>)).block();
+                System.out.println(<span class="s">"【正方】"</span> + m1.getTextContent());
+                Msg m2 = con.call(<span class="k">new</span> UserMessage(<span class="s">"请反驳。"</span>)).block();
+                System.out.println(<span class="s">"【反方】"</span> + m2.getTextContent());
+            }
+            Msg judge = mod.call(<span class="k">new</span> UserMessage(<span class="s">"能否得出结论？"</span>), JudgeResult.class).block();
+            JudgeResult r = judge.getStructuredData(JudgeResult.class);
+            <span class="k">if</span> (r.finished) { System.out.println(<span class="s">"结论："</span> + r.correctAnswer); <span class="k">return</span>; }
+        }
+    }
+}</code></pre>
+<div class="tip">💡 多 Agent 必须用 <code>MultiAgentFormatter</code> + 各自独立 <code>InMemoryMemory</code>，否则历史串扰。</div>
+</section>
+
+<!-- ============ 第 7 章 ============ -->
+<section id="lab5">
+<h2><span class="ch">07</span>实战 5 · HITL 与权限系统</h2>
+<div class="scene"><span class="label">小场景 5</span><p>敏感工具执行前暂停，用户批准后继续 / 拒绝则回传"已取消"。</p></div>
+<pre><code><span class="k">import</span> io.agentscope.core.ReActAgent;
+<span class="k">import</span> io.agentscope.core.hook.Hook;
+<span class="k">import</span> io.agentscope.core.hook.event.PostReasoningEvent;
+<span class="k">import</span> io.agentscope.core.message.*;
+<span class="k">import</span> io.agentscope.core.tool.*;
+<span class="k">import</span> reactor.core.publisher.Mono;
+<span class="k">import</span> java.util.List; <span class="k">import</span> java.util.Scanner;
+
+<span class="k">public class</span> <span class="f">SensitiveOpAgent</span> {
+    <span class="k">public static class</span> <span class="f">MailTools</span> {
+        <span class="f">@Tool</span>(description=<span class="s">"发送邮件"</span>)
+        <span class="k">public</span> String <span class="f">sendEmail</span>(
+                <span class="f">@ToolParam</span>(name=<span class="s">"to"</span>, description=<span class="s">"收件人"</span>) String to,
+                <span class="f">@ToolParam</span>(name=<span class="s">"subject"</span>, description=<span class="s">"主题"</span>) String subject) {
+            <span class="k">return</span> <span class="s">"已发送 "</span> + to;
+        }
+    }
+    <span class="k">public static void</span> <span class="f">main</span>(String[] args) {
+        Hook confirm = <span class="k">new</span> Hook() {
+            <span class="f">@Override</span> <span class="k">public</span> &lt;T&gt; Mono&lt;T&gt; <span class="f">onEvent</span>(T e) {
+                <span class="k">if</span> (e <span class="k">instanceof</span> PostReasoningEvent ev) {
+                    <span class="k">boolean</span> hit = ev.getReasoningMessage()
+                        .getContentBlocks(ToolUseBlock.class).stream()
+                        .anyMatch(t -&gt; t.getName().equals(<span class="s">"send_email"</span>));
+                    <span class="k">if</span> (hit) ev.stopAgent();   <span class="c">// 挂起等审批</span>
+                }
+                <span class="k">return</span> Mono.just(e);
+            }
+        };
+        Toolkit tk = <span class="k">new</span> Toolkit(); tk.registerTool(<span class="k">new</span> MailTools());
+        ReActAgent agent = ReActAgent.builder().name(<span class="s">"OpsBot"</span>)
+                .sysPrompt(<span class="s">"运维助手"</span>).model(<span class="s">"dashscope:qwen-plus"</span>)
+                .toolkit(tk).hook(confirm).build();
+
+        Msg resp = agent.call(List.of(<span class="k">new</span> UserMessage(
+                <span class="s">"给 bob@example.com 发一封主题'周报'的邮件"</span>))).block();
+        Scanner in = <span class="k">new</span> Scanner(System.in);
+        <span class="k">while</span> (resp.hasContentBlocks(ToolUseBlock.class)) {
+            resp.getContentBlocks(ToolUseBlock.class)
+                .forEach(t -&gt; System.out.println(<span class="s">"待执行："</span> + t.getName() + <span class="s">" "</span> + t.getInput()));
+            System.out.print(<span class="s">"批准？[y/N] "</span>);
+            <span class="k">boolean</span> ok = in.nextLine().trim().equalsIgnoreCase(<span class="s">"y"</span>);
+            resp = ok ? agent.call().block()
+                      : agent.call(List.of(Msg.builder().role(MsgRole.TOOL)
+                          .content(resp.getContentBlocks(ToolUseBlock.class).stream()
+                              .map(t -&gt; ToolResultBlock.of(t.getId(), t.getName(),
+                                  TextBlock.builder().text(<span class="s">"用户已取消"</span>).build()))
+                              .toArray(ToolResultBlock[]::new)).build())).block();
+        }
+        System.out.println(resp.getTextContent());
+    }
+}</code></pre>
+<p>GenerateReason 三种暂停原因：<code>REASONING_STOP_REQUESTED</code> / <code>ACTING_STOP_REQUESTED</code> / <code>PERMISSION_ASKING</code>。无人值守用 <code>PermissionMode.DONT_ASK</code>（ASK 自动降级为 DENY）。</p>
+</section>
+
+<!-- ============ 第 8 章 ============ -->
+<section id="lab6">
+<h2><span class="ch">08</span>实战 6 · 状态持久化</h2>
+<div class="scene"><span class="label">小场景 6</span><p>重启 JVM 后接着上次话题聊——AgentStateStore 按 (userId, sessionId) 自动加载/保存。</p></div>
+<pre><code>ReActAgent agent = ReActAgent.builder()
+        .name(<span class="s">"Friday"</span>).sysPrompt(<span class="s">"能记住之前聊过的内容"</span>)
+        .model(<span class="s">"dashscope:qwen-plus"</span>).toolkit(<span class="k">new</span> Toolkit())
+        .stateStore(<span class="k">new</span> JsonFileAgentStateStore(
+                Paths.get(System.getProperty(<span class="s">"user.home"</span>), <span class="s">".agentscope/sessions"</span>)))
+        .build();</code></pre>
+<p>生产环境切换 <code>RedisAgentStateStore</code> / <code>MysqlDistributedStore</code> / <code>PostgresDistributedStore</code>，跨副本无缝恢复。优雅停机用 <code>agent.interrupt(ctx)</code>。</p>
+</section>
+
+<!-- ============ 第 8.5 章 ============ -->
+<section id="memory">
+<h2><span class="ch">08+</span>记忆系统：短期 / 长期 / Harness 双层</h2>
+<table>
+<tr><th>层级</th><th>类 / 机制</th><th>生命周期</th><th>典型场景</th></tr>
+<tr><td>① 短期</td><td><code>InMemoryMemory</code></td><td>单次会话</td><td>当前对话消息喂给 LLM</td></tr>
+<tr><td>② 会话持久化</td><td><code>AgentStateStore</code></td><td>跨进程</td><td>重启 JVM 后接着聊</td></tr>
+<tr><td>③ 长期</td><td><code>LongTermMemory</code> + Mem0/ReMe/Bailian</td><td>跨会话</td><td>向量库自动提取+检索</td></tr>
+<tr><td>④ Harness 双层</td><td><code>MemoryFlushHook</code> + <code>MEMORY.md</code></td><td>跨会话</td><td>纯本地 Markdown 事实沉淀</td></tr>
+</table>
+
+<h3>小场景 7 · Mem0 跨会话记住偏好</h3>
+<pre><code><span class="c">&lt;dependency&gt;
+  &lt;groupId&gt;io.agentscope&lt;/groupId&gt;
+  &lt;artifactId&gt;agentscope-extensions-mem0&lt;/artifactId&gt;
+  &lt;version&gt;${agentscope.version}&lt;/version&gt;
+&lt;/dependency&gt;</span></code></pre>
+<pre><code><span class="k">import</span> io.agentscope.core.ReActAgent;
+<span class="k">import</span> io.agentscope.core.agent.RuntimeContext;
+<span class="k">import</span> io.agentscope.core.memory.LongTermMemoryMode;
+<span class="k">import</span> io.agentscope.core.memory.mem0.*;
+<span class="k">import</span> io.agentscope.core.message.UserMessage;
+<span class="k">import</span> java.util.Map;
+
+Mem0LongTermMemory memory = Mem0LongTermMemory.builder()
+        .agentName(<span class="s">"travel-bot"</span>).userId(<span class="s">"alice"</span>)
+        .apiBaseUrl(<span class="s">"http://localhost:8000"</span>)
+        .apiType(Mem0ApiType.SELF_HOSTED)
+        .metadata(Map.of(<span class="s">"category"</span>, <span class="s">"travel"</span>))
+        .build();
+
+ReActAgent agent = ReActAgent.builder()
+        .name(<span class="s">"TravelBot"</span>).sysPrompt(<span class="s">"旅行助手，记住并主动使用用户偏好。"</span>)
+        .model(<span class="s">"dashscope:qwen-plus"</span>)
+        .longTermMemory(memory)
+        .longTermMemoryMode(LongTermMemoryMode.BOTH)   <span class="c">// STATIC/AGENT/BOTH</span>
+        .build();
+
+agent.call(<span class="k">new</span> UserMessage(<span class="s">"我旅行喜欢住民宿不喜欢酒店。"</span>),
+    RuntimeContext.builder().sessionId(<span class="s">"trip"</span>).userId(<span class="s">"alice"</span>).build()
+).block();
+<span class="c">// 一周后重启，问"推荐大理住宿"，自动召回：考虑到您喜欢民宿…</span></code></pre>
+
+<h3>小场景 8 · HarnessAgent 本地双层记忆</h3>
+<pre><code>.memory(io.agentscope.harness.memory.MemoryConfig.builder()
+        .flushTrigger(io.agentscope.harness.memory.FlushTrigger
+                .throttled(Duration.ofMinutes(10)))
+        .model(<span class="s">"dashscope:qwen-turbo"</span>)   <span class="c">// 提取用便宜模型</span>
+        .build())
+.compaction(io.agentscope.harness.memory.CompactionConfig.builder()
+        .triggerMessages(30).keepMessages(10).flushBeforeCompact(<span class="k">true</span>).build())</code></pre>
+<pre><code>.agentscope/workspace/
+├── AGENTS.md              <span class="c"># Agent 人设</span>
+├── MEMORY.md              <span class="c"># 长期事实（后台合并）</span>
+├── memory/
+│   └── 2026-10-02.md      <span class="c"># 今日日志（只追加）</span>
+└── memory_index.db        <span class="c"># SQLite FTS5 索引</span></code></pre>
+<p>Agent 自动获得 <code>memory_search</code> / <code>memory_get</code> 工具。压缩/Flush/合并是 <strong>3 次独立 LLM 调用</strong>，均可单独指定便宜模型。</p>
+</section>
+
+<!-- ============ 第 9 章 ============ -->
+<section id="structured">
+<h2><span class="ch">09</span>结构化输出</h2>
+<p>让 Agent 输出严格符合 Java POJO 的数据，自然语言 → 类型化对象<span data-allow-html class="search-source-placeholder" data-keys="turn2search0,turn2search8" data-label="java.agentscope.io +1"><span class="search-source-item-label"><a data-allow-html href="https://java.agentscope.io/v1/en/docs/task/structured-output" target="_blank" rel="noopener noreferrer">java.agentscope.io</a></span><span class="source-item-num-count"> +1</span></span>。</p>
+<div class="card">
+<h4>两条路径，自动降级</h4>
+<ul>
+<li><strong>Native JSON Schema</strong>：模型原生支持（DashScope / OpenAI / Gemini 等），单次调用。</li>
+<li><strong>合成 Tool-Call</strong>：框架自动生成"结构化工具"，模型通过 tool_call 返回。Native 失败自动 fallback，无需干预。</li>
+</ul>
+</div>
+<div class="scene"><span class="label">小场景 9</span><p>从商品描述中提取结构化信息。</p></div>
+<pre><code><span class="k">import</span> io.agentscope.core.ReActAgent;
+<span class="k">import</span> io.agentscope.core.message.UserMessage;
+<span class="k">import</span> java.util.List;
+
+<span class="k">public class</span> <span class="f">ProductInfo</span> {
+    <span class="k">public</span> String name;
+    <span class="k">public</span> Double price;
+    <span class="k">public</span> List&lt;String&gt; features;
+    <span class="k">public</span> ProductInfo() {}   <span class="c">// 必须有无参构造</span>
+}
+
+ReActAgent agent = ReActAgent.builder().name(<span class="s">"extractor"</span>)
+        .sysPrompt(<span class="s">"从文本中提取商品信息。"</span>)
+        .model(<span class="s">"dashscope:qwen-plus"</span>).build();
+
+Msg resp = agent.call(
+        <span class="k">new</span> UserMessage(<span class="s">"Apple Watch S10，售价 ¥2999，支持血氧、ECG、跌倒检测"</span>),
+        ProductInfo.class).block();
+ProductInfo data = resp.getStructuredData(ProductInfo.class);
+System.out.println(data.name + <span class="s">" / "</span> + data.price + <span class="s">" / "</span> + data.features);
+<span class="c">// → Apple Watch S10 / 2999.0 / [血氧, ECG, 跌倒检测]</span></code></pre>
+<div class="warn">⚠️ DashScope 开启 <code>enableThinking(true)</code> 时 Native 结构化输出不支持，框架会强制走合成 Tool-Call 路径。</div>
+</section>
+
+<!-- ============ 第 10 章 ============ -->
+<section id="rag">
+<h2><span class="ch">10</span>RAG 知识库</h2>
+<p>两个核心组件：<strong>Reader</strong>（读取+分块成 Document）和 <strong>Knowledge</strong>（存储+向量检索）<span data-allow-html class="search-source-placeholder" data-keys="turn2search1,turn2search7" data-label="java.agentscope.io +1"><span class="search-source-item-label"><a data-allow-html href="https://java.agentscope.io/v1/en/docs/task/rag" target="_blank" rel="noopener noreferrer">java.agentscope.io</a></span><span class="source-item-num-count"> +1</span></span>。</p>
+<h3>两种集成模式</h3>
+<table>
+<tr><th>模式</th><th>机制</th><th>优点</th><th>缺点</th></tr>
+<tr><td><strong>Generic</strong></td><td>检索结果自动前置到用户消息</td><td>简单，Agent 无感</td><td>每次都检索，浪费 token</td></tr>
+<tr><td><strong>Agentic</strong></td><td>Agent 拿到 <code>retrieve_knowledge</code> 工具自主决定何时查</td><td>灵活，可重写查询</td><td>依赖模型决策能力</td></tr>
+</table>
+<div class="scene"><span class="label">小场景 10</span><p>让 Agent 基于公司内部文档回答问题（Agentic 模式）。</p></div>
+<pre><code><span class="k">import</span> io.agentscope.core.rag.*;
+<span class="k">import</span> io.agentscope.core.rag.store.SimpleKnowledge;
+<span class="k">import</span> io.agentscope.core.rag.reader.*;
+<span class="k">import</span> io.agentscope.core.tool.Toolkit;
+
+<span class="c">// 1. 读取并分块文档</span>
+Reader reader = <span class="k">new</span> TextReader(chunkSize=512, splitBy=<span class="s">"paragraph"</span>);
+List&lt;Document&gt; docs = reader.read(Paths.get(<span class="s">"./docs/company_handbook.txt"</span>));
+
+<span class="c">// 2. 构建向量知识库并入库（Simple 是本地最小实现）</span>
+SimpleKnowledge knowledge = SimpleKnowledge.builder()
+        .embeddingModel(<span class="s">"dashscope:text-embedding-v3"</span>)
+        .build();
+knowledge.addDocuments(docs);
+
+<span class="c">// 3. Agentic 模式：注册为工具</span>
+Toolkit toolkit = <span class="k">new</span> Toolkit();
+toolkit.registerKnowledge(knowledge);   <span class="c">// 生成 retrieve_knowledge 工具</span>
+
+<span class="c">// 4. 构建并调用 Agent</span>
+ReActAgent agent = ReActAgent.builder()
+        .name(<span class="s">"FAQBot"</span>)
+        .sysPrompt(<span class="s">"回答公司相关问题前必须先调用 retrieve_knowledge。"</span>)
+        .model(<span class="s">"dashscope:qwen-plus"</span>)
+        .toolkit(toolkit).build();
+agent.call(<span class="k">new</span> UserMessage(<span class="s">"我们公司的年假制度是什么？"</span>)).block();</code></pre>
+<p>Generic 模式只需把 Knowledge 对象传给 Builder：<code>.knowledge(knowledge)</code>。生产环境可替换为百炼知识库 / Milvus / Elasticsearch 等扩展实现。</p>
+</section>
+
+<!-- ============ 第 11 章 ============ -->
+<section id="mcp">
+<h2><span class="ch">11</span>MCP 工具集成</h2>
+<p>Model Context Protocol，一次接入即可使用 MCP 生态全部工具；工具命名空间为 <code>mcp__{server_name}__{tool_name}</code>，<code>readOnlyHint</code> 工具自动允许权限<span data-allow-html class="search-source-placeholder" data-keys="turn4search2,turn4search7" data-label="java.agentscope.io +1"><span class="search-source-item-label"><a data-allow-html href="https://java.agentscope.io/v1/en/docs/task/mcp" target="_blank" rel="noopener noreferrer">java.agentscope.io</a></span><span class="source-item-num-count"> +1</span></span>。</p>
+<h3>三种传输方式</h3>
+<table>
+<tr><th>Transport</th><th>场景</th><th>示例</th></tr>
+<tr><td>STDIO</td><td>本地子进程</td><td>Filesystem / Git / Playwright 本地服务</td></tr>
+<tr><td>SSE</td><td>HTTP 长连接</td><td>远程 MCP Server</td></tr>
+<tr><td>Streamable HTTP</td><td>无状态 HTTP</td><td>云端 MCP 服务</td></tr>
+</table>
+<pre><code><span class="k">import</span> io.agentscope.core.tool.mcp.*;
+
+<span class="c">// STDIO：本地 filesystem server</span>
+McpClientWrapper fsClient = McpClientBuilder.builder()
+        .name(<span class="s">"filesystem"</span>)
+        .stdio()
+        .command(<span class="s">"npx"</span>, <span class="s">"-y"</span>, <span class="s">"@modelcontextprotocol/server-filesystem"</span>, <span class="s">"/tmp"</span>)
+        .build();
+
+<span class="c">// Streamable HTTP：远程服务</span>
+McpClientWrapper remote = McpClientBuilder.builder()
+        .name(<span class="s">"weather-api"</span>)
+        .streamableHttp(<span class="s">"https://mcp.example.com/mcp"</span>)
+        .build();
+
+Toolkit toolkit = <span class="k">new</span> Toolkit();
+toolkit.registerMcpClient(fsClient);   <span class="c">// 自动发现并注册全部工具</span>
+
+<span class="c">// 选择性注册特定工具</span>
+toolkit.registerMcpClient(remote, <span class="s">"get_weather"</span>, <span class="s">"get_forecast"</span>);</code></pre>
+<div class="scene"><span class="label">小场景 11</span><p>让 Agent 通过 MCP 读本地文件并回答问题——一个工具都不用手写。</p></div>
+</section>
+
+<!-- ============ 第 12 章 ============ -->
+<section id="plan">
+<h2><span class="ch">12</span>Plan 模式</h2>
+<p>"先想清楚再动手"——激活后 Agent 进入<strong>只读阶段</strong>，仅允许 4 个白名单工具：<code>plan_enter / plan_write / plan_exit / todo_write</code>；退出 Plan 模式必须 HITL 确认，防止模型擅自跳到执行<span data-allow-html class="search-source-placeholder" data-keys="turn4search1,turn4search4" data-label="java.agentscope.io +1"><span class="search-source-item-label"><a data-allow-html href="https://java.agentscope.io/v2/en/docs/harness/plan-mode" target="_blank" rel="noopener noreferrer">java.agentscope.io</a></span><span class="source-item-num-count"> +1</span></span>。</p>
+<div class="scene"><span class="label">小场景 12</span><p>复杂重构任务，先让 Agent 出方案、人工审批、再执行。</p></div>
+<pre><code><span class="k">import</span> io.agentscope.core.plan.PlanNotebook;
+
+PlanNotebook notebook = PlanNotebook.builder().build();
+
+ReActAgent agent = ReActAgent.builder()
+        .name(<span class="s">"RefactorBot"</span>)
+        .sysPrompt(<span class="s">"你是重构助手，复杂任务必须先制定计划。"</span>)
+        .model(<span class="s">"dashscope:qwen-plus"</span>)
+        .toolkit(toolkit)
+        .planNotebook(notebook)
+        .build();
+
+<span class="c">// 自动获得工具：create_plan / finish_subtask / finish_plan / revise_current_subtask</span>
+<span class="c">// Workflow: 创建计划 → 执行子任务 → 更新状态 → 完成计划</span>
+<span class="c">// 每轮推理前自动注入 Plan 提示</span></code></pre>
+<h3>HarnessAgent 的 Plan Mode</h3>
+<pre><code>HarnessAgent agent = HarnessAgent.builder()
+        .name(<span class="s">"harness-agent"</span>).model(<span class="s">"dashscope:qwen-plus"</span>)
+        .enablePlanMode(<span class="k">true</span>)   <span class="c">// 激活只读阶段 + plan_* 工具</span>
+        .enableTaskList(<span class="k">true</span>)   <span class="c">// 激活 todo_write + 每步推理前的小提醒</span>
+        .build();</code></pre>
+<p>执行流程：<strong>设计 → 计划 → 人工审批 → 执行</strong>。审批通过权限系统的 ASK 机制实现，模型无法单方面跳过。</p>
+</section>
+
+<!-- ============ 第 13 章 ============ -->
+<section id="skill">
+<h2><span class="ch">13</span>Skill 技能系统</h2>
+<p>把"做事的方法"打包为 Markdown 目录，Agent 按需加载——不写新工具代码就能扩展能力<span data-allow-html class="search-source-placeholder" data-keys="turn4search6" data-label="java.agentscope.io"><span class="search-source-item-label"><a data-allow-html href="https://java.agentscope.io/v2/en/docs/harness/skill" target="_blank" rel="noopener noreferrer">java.agentscope.io</a></span><span class="source-item-num-count"></span></span>。</p>
+<h3>目录结构</h3>
+<pre><code>code-reviewer/
+├── SKILL.md              <span class="c"># 必需：YAML frontmatter + 指令</span>
+├── references/
+│   └── style-guide.md    <span class="c"># 可选：长文参考</span>
+└── scripts/
+    └── run-checks.sh     <span class="c"># 可选：可执行脚本</span></code></pre>
+<h3>SKILL.md 示例</h3>
+<pre><code>---
+name: code-reviewer
+description: 用于代码评审场景。当用户要求审查 PR 或代码质量时使用。
+---
+
+## 评审流程
+1. 先读取 references/style-guide.md 了解规范
+2. 对每个文件调用 read_file
+3. 按规范输出问题清单
+4. 必要时运行 scripts/run-checks.sh 校验</code></pre>
+<h3>安装方式</h3>
+<table>
+<tr><th>来源</th><th>写法</th></tr>
+<tr><td>Workspace 共享</td><td>放到 <code>workspace/skills/</code>（全员可用）</td></tr>
+<tr><td>用户级隔离</td><td>放到 <code>workspace/&lt;userId&gt;/skills/</code></td></tr>
+<tr><td>Git 仓库</td><td><code>.skillRepository(new GitSkillRepository(url, branch))</code></td></tr>
+<tr><td>Nacos</td><td><code>.skillRepository(new NacosSkillRepository(...))</code></td></tr>
+<tr><td>MySQL</td><td><code>.skillRepository(new MysqlSkillRepository(...))</code></td></tr>
+<tr><td>Classpath</td><td><code>.skillRepository(new ClasspathSkillRepository("/skills"))</code></td></tr>
+</table>
+<pre><code>HarnessAgent agent = HarnessAgent.builder()
+        .name(<span class="s">"coder"</span>).model(<span class="s">"dashscope:qwen-plus"</span>)
+        .workspace(Paths.get(<span class="s">".agentscope/workspace"</span>))
+        .skillRepository(<span class="k">new</span> GitSkillRepository(
+                <span class="s">"https://github.com/my-org/skills.git"</span>, <span class="s">"main"</span>))
+        .build();</code></pre>
+<div class="tip">💡 Agent 会先看到所有 skill 的 name+description，需要时通过 <code>read_skill</code> 工具加载完整内容——渐进披露，保持初始上下文轻量。还可开启<strong>自学习循环</strong>：Agent 起草 → 审查门 → 后台整理入库。</div>
+</section>
+
+<!-- ============ 第 14 章 ============ -->
+<section id="subagent">
+<h2><span class="ch">14</span>Subagent 子代理</h2>
+<p>让父 Agent 把"独立、上下文重、可并行"的任务委派给子代理，不污染自己的循环。每个子代理是临时 <code>HarnessAgent</code>，有独立会话，结果通过工具结果返回<span data-allow-html class="search-source-placeholder" data-keys="turn0fetch1" data-label="java.agentscope.io"><span class="search-source-item-label"><a data-allow-html href="https://java.agentscope.io/v2/en/docs/harness/subagent" target="_blank" rel="noopener noreferrer">java.agentscope.io</a></span><span class="source-item-num-count"></span></span>。</p>
+<h3>启用条件</h3>
+<ul><li>当前 Agent 不是叶子节点</li><li>未调用 <code>disableSubagents()</code></li><li>已配置 model</li></ul>
+<p>满足后自动注册 <code>SubagentsHook</code>，暴露 6 个工具：<code>agent_spawn / agent_send / agent_list / task_output / task_cancel / task_list</code>。</p>
+<h3>三种声明方式（三选一）</h3>
+<pre><code><span class="c"># 方式 1：workspace/subagents/reviewer.md</span>
+---
+name: reviewer            <span class="c"># 可省略，文件名即 agent_id</span>
+description: 代码审查专家，当需要审查代码质量时调用。
+persist_session: false
+expose_to_user: false
+---
+你是代码审查专家。对传入代码输出问题清单和改进建议。
+
+<span class="c">// 方式 2：程序化 inline</span>
+<span class="c">// 方式 3：URL 远程加载</span></code></pre>
+<div class="scene"><span class="label">小场景 13</span><p>父 Agent 把"代码审查"委派给子代理，同步等待结果；同时启动一个后台任务异步分析日志。</p></div>
+<pre><code>HarnessAgent parent = HarnessAgent.builder()
+        .name(<span class="s">"orchestrator"</span>).model(<span class="s">"dashscope:qwen-plus"</span>)
+        .workspace(Paths.get(<span class="s">".agentscope/workspace"</span>))   <span class="c">// 含 subagents/reviewer.md</span>
+        .build();
+
+<span class="c">// 模型会自主调用：</span>
+<span class="c">//   agent_spawn(agent_id="reviewer", prompt="审查 XXX", timeout_seconds=60)</span>
+<span class="c">//   agent_spawn(agent_id="log-analyst", prompt="分析近 7 天日志", timeout_seconds=0)</span>
+<span class="c">//   → 返回 task_id，后台跑</span>
+<span class="c">//   后台任务结束前自动注入 &lt;system-reminder&gt; 到父 Agent 上下文</span></code></pre>
+<h3>同步 vs 后台</h3>
+<table>
+<tr><th>参数</th><th>行为</th></tr>
+<tr><td><code>timeout_seconds &gt; 0</code>（默认 30，最大 600）</td><td>同步等待，超时自动升级为后台任务（<code>status: timeout_promoted</code>）</td></tr>
+<tr><td><code>timeout_seconds = 0</code></td><td>立即返回 <code>task_id</code>，后台运行</td></tr>
+<tr><td><code>persistSession(true)</code></td><td>同一 (parentSessionId, agentId, label) 复用实例，保留会话</td></tr>
+<tr><td><code>expose_to_user(true)</code></td><td>通过 Channel 直接暴露给用户，发 <code>SubagentExposedEvent</code></td></tr>
+</table>
+<h3>强制同步 / 暴露给用户</h3>
+<pre><code>RuntimeContext ctx = RuntimeContext.builder()
+        .sessionId(<span class="s">"s1"</span>).userId(<span class="s">"alice"</span>)
+        .put(AgentSpawnTool.CTX_FORCE_SYNC, <span class="k">true</span>)
+        .put(AgentSpawnTool.CTX_FORCE_SYNC_TIMEOUT_SECONDS, 120)
+        .put(AgentSpawnTool.CTX_EXPOSE_TO_USER, <span class="k">true</span>)
+        .build();</code></pre>
+<div class="tip">💡 后台任务结果<strong>自动 push back</strong>——在父 Agent 下一次推理前，框架把已完成任务结果作为 <code>&lt;system-reminder&gt;</code> 注入，无需写"记得调 task_output"这样的提示。</div>
+</section>
+
+<!-- ============ 第 15 章 ============ -->
+<section id="fs">
+<h2><span class="ch">15</span>Filesystem 三模式与沙箱</h2>
+<p>把 Agent 眼中的 workspace 抽象为统一接口，文件工具和 <code>execute</code> 都走此抽象；三种模式可<strong>不改代码切换</strong><span data-allow-html class="search-source-placeholder" data-keys="turn0fetch2" data-label="java.agentscope.io"><span class="search-source-item-label"><a data-allow-html href="https://java.agentscope.io/v2/en/docs/harness/filesystem.html" target="_blank" rel="noopener noreferrer">java.agentscope.io</a></span><span class="source-item-num-count"></span></span>。</p>
+<table>
+<tr><th>模式</th><th>Spec</th><th>Shell</th><th>场景</th></tr>
+<tr><td>1 · 共享存储</td><td><code>RemoteFilesystemSpec(store)</code></td><td>无</td><td>多副本共享 MEMORY.md，不占宿主机</td></tr>
+<tr><td>2 · 沙箱</td><td><code>DockerFilesystemSpec / KubernetesFilesystemSpec / E2bFilesystemSpec / DaytonaFilesystemSpec / AgentRunFilesystemSpec</code></td><td>沙箱内</td><td>不可信代码 / 生产隔离</td></tr>
+<tr><td>3 · 本地 + Shell（默认）</td><td><code>LocalFilesystemSpec</code> 或不调用</td><td>宿主机</td><td>单机开发</td></tr>
+</table>
+<h3>IsolationScope 隔离维度</h3>
+<table>
+<tr><th>Scope</th><th>持久化 key</th><th>场景</th></tr>
+<tr><td><code>SESSION</code>（默认）</td><td>sessionKey</td><td>每会话独立沙箱</td></tr>
+<tr><td><code>USER</code></td><td>userId</td><td>同一用户跨会话共享 workspace</td></tr>
+<tr><td><code>AGENT</code></td><td>Agent name</td><td>该 Agent 全部用户共享</td></tr>
+<tr><td><code>GLOBAL</code></td><td>固定 <code>__global__</code></td><td>全局共享</td></tr>
+</table>
+<div class="scene"><span class="label">小场景 14</span><p>把文件助手切到 Docker 沙箱，代码永不触碰宿主机。</p></div>
+<pre><code>HarnessAgent agent = HarnessAgent.builder()
+        .name(<span class="s">"sandbox-agent"</span>).model(<span class="s">"dashscope:qwen-plus"</span>)
+        .workspace(Paths.get(<span class="s">".agentscope/workspace"</span>))
+        .filesystem(<span class="k">new</span> DockerFilesystemSpec()
+                .image(<span class="s">"ubuntu:24.04"</span>)
+                .isolationScope(IsolationScope.SESSION)
+                .memorySizeBytes(512L * 1024 * 1024)   <span class="c">// 512 MB</span>
+                .cpuCount(2L)
+                .network(<span class="s">"host"</span>)
+                .exposedPorts(8080, 3000)
+                .environment(Map.of(<span class="s">"NODE_ENV"</span>, <span class="s">"development"</span>))
+                .snapshotSpec(<span class="k">new</span> LocalSnapshotSpec(<span class="s">"/data/snapshots"</span>)))
+        .build();</code></pre>
+<h3>多副本共享存储（无 shell）</h3>
+<pre><code>DistributedStore store = RedisDistributedStore.fromJedis(
+        <span class="k">new</span> JedisPooled(<span class="s">"redis://shared-redis:6379"</span>));
+
+HarnessAgent agent = HarnessAgent.builder()
+        .name(<span class="s">"customer-service"</span>).model(model)
+        .workspace(Paths.get(<span class="s">"/opt/agent/workspace"</span>))
+        .distributedStore(store)     <span class="c">// stateStore + baseStore 一行搞定</span>
+        .filesystem(<span class="k">new</span> RemoteFilesystemSpec()
+                .isolationScope(IsolationScope.USER)
+                .anonymousUserId(<span class="s">"anonymous"</span>))
+        .build();
+<span class="c">// Alice 的记忆落在 KV key: agents/customer-service/users/alice/memory/...</span></code></pre>
+<p>Kubernetes / E2B / Daytona / AgentRun 沙箱均通过 <code>filesystem(new XxxFilesystemSpec()...)</code> 切换，配置项类似。快照机制支持跨调用恢复 workspace 状态。</p>
+</section>
+
+<!-- ============ 第 16 章 ============ -->
+<section id="channel">
+<h2><span class="ch">16</span>Channel / Gateway 多渠道接入</h2>
+<p><strong>Gateway</strong> 处理会话管理、并发控制、多 Agent 路由；<strong>Channel</strong> 把具体 IM/Web 适配进 Gateway 的路由模型。绝大多数场景无需直接操作——<code>agent.channel(...)</code> 一行接入<span data-allow-html class="search-source-placeholder" data-keys="turn0fetch0" data-label="java.agentscope.io"><span class="search-source-item-label"><a data-allow-html href="https://java.agentscope.io/v2/en/docs/harness/channel" target="_blank" rel="noopener noreferrer">java.agentscope.io</a></span><span class="source-item-num-count"></span></span>。</p>
+<div class="scene"><span class="label">小场景 15</span><p>把同一个 Agent 接到 Web Chat UI、钉钉机器人、飞书机器人，自动隔离各渠道会话。</p></div>
+<pre><code>HarnessAgent agent = HarnessAgent.builder()
+        .name(<span class="s">"assistant"</span>).sysPrompt(<span class="s">"通用助手"</span>)
+        .model(<span class="s">"dashscope:qwen-plus"</span>).build();
+
+<span class="c">// 1. Web Chat UI 通道</span>
+ChatUiChannel chat = agent.channel(ChatUiChannel.create());
+
+<span class="c">// 2. 发送消息：每 userId 自动独立 session</span>
+chat.send(SendOptions.userId(<span class="s">"user-1"</span>), <span class="s">"你好！"</span>).block();
+chat.send(SendOptions.userId(<span class="s">"user-1"</span>), <span class="s">"继续上一话题"</span>).block();
+chat.send(SendOptions.userId(<span class="s">"user-2"</span>), <span class="s">"Hi there"</span>).block();
+
+<span class="c">// 3. 同一用户多会话</span>
+chat.send(SendOptions.of(<span class="s">"user-1"</span>, <span class="s">"session-a"</span>), <span class="s">"话题 A"</span>).block();
+chat.send(SendOptions.of(<span class="s">"user-1"</span>, <span class="s">"session-b"</span>), <span class="s">"话题 B"</span>).block();
+
+<span class="c">// 4. 流式 + 多 Agent 路由</span>
+chat.sendStream(
+        SendOptions.userId(<span class="s">"user-1"</span>).withAgentId(<span class="s">"support"</span>),
+        <span class="s">"北京的天气？"</span>)
+     .doOnNext(e -&gt; {
+         <span class="k">if</span> (e instanceof TextBlockDeltaEvent d) System.out.print(d.getDelta());
+     }).blockLast();</code></pre>
+<h3>内置 Channel 适配器</h3>
+<table>
+<tr><th>平台</th><th>接入方式</th></tr>
+<tr><td>Web Chat UI</td><td><code>ChatUiChannel.create()</code></td></tr>
+<tr><td>钉钉</td><td>Stream 模式（持久 WebSocket）</td></tr>
+<tr><td>飞书 / Lark</td><td>事件订阅回调</td></tr>
+<tr><td>GitHub</td><td>Issue / PR comment webhook</td></tr>
+<tr><td>GitLab</td><td>Note hook</td></tr>
+<tr><td>企业微信</td><td>加密回调</td></tr>
+</table>
+<pre><code><span class="c">&lt;!-- 钉钉扩展 --&gt;</span>
+&lt;dependency&gt;
+    &lt;groupId&gt;io.agentscope&lt;/groupId&gt;
+    &lt;artifactId&gt;agentscope-extensions-channel-dingtalk&lt;/artifactId&gt;
+    &lt;version&gt;${agentscope.version}&lt;/version&gt;
+&lt;/dependency&gt;</code></pre>
+<h3>与 Subagent 协同：直接与子代理对话</h3>
+<pre><code>AtomicReference&lt;String&gt; subagentId = <span class="k">new</span> AtomicReference&lt;&gt;();
+
+chat.sendStream(SendOptions.userId(<span class="s">"user-1"</span>),
+        <span class="s">"Spawn 一个研究员调研 AI 趋势"</span>)
+    .doOnNext(e -&gt; {
+        <span class="k">if</span> (e instanceof SubagentExposedEvent se) subagentId.set(se.getSubagentId());
+    }).blockLast();
+
+<span class="c">// 之后用户直接跟子代理聊，绕过父 Agent</span>
+chat.sendToSubagent(subagentId.get(), <span class="s">"聚焦 LLM Agent 领域"</span>).block();</code></pre>
+</section>
+
+<!-- ============ 第 17 章 ============ -->
+<section id="agui">
+<h2><span class="ch">17</span>AG-UI 前端协议</h2>
+<p>把 AgentScope 的 <code>AgentEvent</code> 流转换为 AG-UI 协议事件，前端可用 <code>@ag-ui/client</code> 或 CopilotKit 直接渲染实时运行过程，包括文本、推理、工具调用、状态、Token 用量、HITL 中断<span data-allow-html class="search-source-placeholder" data-keys="turn1fetch0" data-label="java.agentscope.io"><span class="search-source-item-label"><a data-allow-html href="https://java.agentscope.io/v2/en/integration/protocol/agui" target="_blank" rel="noopener noreferrer">java.agentscope.io</a></span><span class="source-item-num-count"></span></span>。</p>
+<pre><code><span class="c">&lt;dependency&gt;
+    &lt;groupId&gt;io.agentscope&lt;/groupId&gt;
+    &lt;artifactId&gt;agentscope-extensions-agui&lt;/artifactId&gt;
+    &lt;version&gt;${agentscope.version}&lt;/version&gt;
+&lt;/dependency&gt;
+&lt;!-- Spring Boot 场景用 --&gt;
+&lt;!-- agentscope-agui-spring-boot-starter --&gt;</code></pre>
+<div class="scene"><span class="label">小场景 16</span><p>用 CopilotKit 给 Agent 加一个 React 聊天前端。</p></div>
+<h3>核心事件映射</h3>
+<table>
+<tr><th>AG-UI 事件</th><th>来源</th></tr>
+<tr><td><code>RUN_STARTED</code> / <code>RUN_FINISHED</code></td><td>AgentStartEvent / AgentEndEvent</td></tr>
+<tr><td><code>TEXT_MESSAGE_START/CONTENT/END</code></td><td>TextBlockDeltaEvent</td></tr>
+<tr><td><code>TOOL_CALL_START/ARGS/END</code></td><td>ToolCall*Event</td></tr>
+<tr><td><code>CUSTOM</code>（<code>subagent.*</code>）</td><td>子代理事件（默认不污染父流）</td></tr>
+<tr><td><code>RUN_ERROR</code></td><td>错误（与 RUN_FINISHED 互斥）</td></tr>
+</table>
+<h3>Spring Boot 集成</h3>
+<pre><code><span class="c">// application.yml</span>
+<span class="n">agentscope</span>:
+  <span class="n">agui</span>:
+    <span class="n">interrupt-on-disconnect</span>: <span class="k">true</span>   <span class="c">// 客户端断开即中断 Agent</span>
+    <span class="n">emit-run-finished-after-error</span>: <span class="k">false</span></code></pre>
+<pre><code><span class="c">// 自动暴露 POST /agui/{agentId} 端点</span>
+<span class="c">// 前端发送 RunAgentInput { threadId, runId, messages, tools, state }</span>
+<span class="c">// 返回 SSE 流，前端 @ag-ui/client 直接消费</span></code></pre>
+<h3>HITL 回传</h3>
+<p>Agent 因权限 ASK 暂停时，<code>RUN_FINISHED</code> 携带 <code>outcome.interrupts[]</code>。前端展示审批 UI，用户决策后通过 <code>resume[]</code> 字段回传：</p>
+<pre><code>{
+  <span class="s">"resume"</span>: [{
+    <span class="s">"interruptId"</span>: <span class="s">"..."</span>,
+    <span class="s">"status"</span>: <span class="s">"resolved"</span>,
+    <span class="s">"payload"</span>: { <span class="s">"approved"</span>: <span class="k">true</span>, <span class="s">"editedArgs"</span>: {...} }
+  }]
+}</code></pre>
+<p>支持 <code>payload.approved</code>（布尔）/ <code>payload.editedArgs</code>（完整替换原参数，框架会重建 ToolUseBlock）。</p>
+</section>
+
+<!-- ============ 第 18 章 ============ -->
+<section id="a2a">
+<h2><span class="ch">18</span>A2A 协议</h2>
+<p>Agent2Agent 协议，让 Agent 成为可被其他 Agent / 系统发现和调用的服务。核心是 <strong>Agent Card</strong>——位于 <code>/.well-known/agent.json</code> 的 JSON 自描述文档，记录 Agent 的名称、能力、传输方式。</p>
+<h3>把 Agent 暴露为 A2A 服务</h3>
+<pre><code><span class="c">&lt;dependency&gt;
+    &lt;groupId&gt;io.agentscope&lt;/groupId&gt;
+    &lt;artifactId&gt;agentscope-extensions-a2a&lt;/artifactId&gt;
+    &lt;version&gt;${agentscope.version}&lt;/version&gt;
+&lt;/dependency&gt;</code></pre>
+<pre><code>A2aAgentServer server = A2aAgentServer.builder()
+        .agent(agent)
+        .port(8081)
+        .agentCard(AgentCard.builder()
+                .name(<span class="s">"travel-bot"</span>)
+                .description(<span class="s">"旅行助手"</span>)
+                .capabilities(List.of(<span class="s">"streaming"</span>, <span class="s">"tools"</span>))
+                .build())
+        .build();
+server.start();</code></pre>
+<h3>调用远端 A2A Agent</h3>
+<pre><code>A2aAgentClient client = A2aAgentClient.builder()
+        .endpoint(<span class="s">"https://remote-agent.example.com"</span>)
+        .build();
+Msg reply = client.send(<span class="k">new</span> UserMessage(<span class="s">"查一下明天东京天气"</span>)).block();</code></pre>
+<h3>Nacos 注册与发现（生产推荐）</h3>
+<pre><code><span class="c">&lt;dependency&gt;
+    &lt;groupId&gt;io.agentscope&lt;/groupId&gt;
+    &lt;artifactId&gt;agentscope-extensions-nacos&lt;/artifactId&gt;
+&lt;/dependency&gt;</span>
+<span class="c">// 注册 Agent Card 到 Nacos，供跨服务发现</span>
+<span class="c">// 同时支持 prompt 配置中心 + 技能仓库</span></code></pre>
+<div class="tip">💡 结合 <strong>Higress AI 网关</strong>：拉取 Higress 上发布的 MCP 工具到 Toolkit；<strong>XXL-Job / Quartz</strong> 扩展支持 CRON 定时触发 Agent。三者独立，可自由组合。</div>
+</section>
+
+<!-- ============ 第 19 章 ============ -->
+<section id="springboot">
+<h2><span class="ch">19</span>Spring Boot 集成</h2>
+<p><code>agentscope-spring-boot-starter</code> 自动装配 Agent / 模型 / Channel / AG-UI / A2A 相关 Bean<span data-allow-html class="search-source-placeholder" data-keys="turn3search2" data-label="mvnrepository.com"><span class="search-source-item-label"><a data-allow-html href="https://mvnrepository.com/artifact/io.agentscope/agentscope-spring-boot-starter" target="_blank" rel="noopener noreferrer">mvnrepository.com</a></span><span class="source-item-num-count"></span></span>。</p>
+<pre><code><span class="c">&lt;dependency&gt;
+    &lt;groupId&gt;io.agentscope&lt;/groupId&gt;
+    &lt;artifactId&gt;agentscope-spring-boot-starter&lt;/artifactId&gt;
+    &lt;version&gt;${agentscope.version}&lt;/version&gt;
+&lt;/dependency&gt;</code></pre>
+<h3>application.yml</h3>
+<pre><code><span class="n">agentscope</span>:
+  <span class="n">model</span>:
+    <span class="n">provider</span>: dashscope
+    <span class="n">model-name</span>: qwen-plus
+  <span class="n">agent</span>:
+    <span class="n">name</span>: assistant
+    <span class="n">sys-prompt</span>: <span class="s">"你是企业助手"</span>
+  <span class="n">agui</span>:
+    <span class="n">enabled</span>: <span class="k">true</span></code></pre>
+<h3>自定义 Controller：SSE 流式输出</h3>
+<pre><code><span class="f">@RestController</span>
+<span class="k">public class</span> <span class="f">ChatController</span> {
+    <span class="k">private final</span> ChatUiChannel chat;
+    <span class="k">public</span> <span class="f">ChatController</span>(ChatUiChannel chat) { <span class="k">this</span>.chat = chat; }
+
+    <span class="f">@GetMapping</span>(value=<span class="s">"/chat"</span>, produces=MediaType.TEXT_EVENT_STREAM_VALUE)
+    <span class="k">public</span> Flux&lt;ServerSentEvent&lt;String&gt;&gt; <span class="f">chat</span>(
+            <span class="f">@RequestParam</span> String userId, <span class="f">@RequestParam</span> String message) {
+        <span class="k">return</span> chat.sendStream(SendOptions.userId(userId), message)
+                .map(e -&gt; ServerSentEvent.&lt;String&gt;builder()
+                        .event(e.getType().name())
+                        .data(toJson(e)).build());
+    }
+}</code></pre>
+<h3>声明 Agent Bean（自动被 Channel / AG-UI 识别）</h3>
+<pre><code><span class="f">@Configuration</span>
+<span class="k">public class</span> <span class="f">AgentConfig</span> {
+    <span class="f">@Bean</span>
+    <span class="k">public</span> HarnessAgent <span class="f">assistant</span>() {
+        <span class="k">return</span> HarnessAgent.builder()
+                .name(<span class="s">"assistant"</span>)
+                .sysPrompt(<span class="s">"你是企业助手"</span>)
+                .model(<span class="s">"dashscope:qwen-plus"</span>)
+                .build();
+    }
+}</code></pre>
+</section>
+
+<!-- ============ 第 20 章 ============ -->
+<section id="faq">
+<h2><span class="ch">20</span>常见问题排查</h2>
+<table>
+<tr><th style="width:32%">症状</th><th>排查思路</th></tr>
+<tr><td><code>UnsupportedClassVersionError</code></td><td>JDK 必须 17+，用 <code>java -version</code> 确认。</td></tr>
+<tr><td><code>.model("dashscope:...")</code> 解析失败</td><td>① 引入 <code>agentscope-extensions-model-dashscope</code>；② <code>DASHSCOPE_API_KEY</code> 已 export。</td></tr>
+<tr><td><code>@Tool</code> 不被调用</td><td>① <code>registerTool</code> 已调用；② <code>@ToolParam.name</code> 显式；③ description 写清楚。</td></tr>
+<tr><td>多 Agent 历史串扰</td><td>各自独立 <code>InMemoryMemory</code> + <code>MultiAgentFormatter</code>。</td></tr>
+<tr><td>WebFlux 中 <code>.block()</code> 报错</td><td>控制器直接返回 <code>Flux&lt;AgentEvent&gt;</code>，不 block。</td></tr>
+<tr><td>长对话上下文超限</td><td>配置 <code>CompactionConfig</code>，或启用 <code>ToolResultEvictionConfig</code> 落盘大结果。</td></tr>
+<tr><td>结构化输出字段为 null</td><td>POJO 必须有无参构造；DashScope Thinking 模式下走 fallback 路径。</td></tr>
+<tr><td>RAG 每次都检索浪费 token</td><td>换 Agentic 模式，把 Knowledge 注册为工具。</td></tr>
+<tr><td>MCP 工具名冲突</td><td>工具命名空间 <code>mcp__{server}__{tool}</code> 自动避免；检查 server_name 是否重复。</td></tr>
+<tr><td>Plan 模式下工具全被拒绝</td><td>正常——只读阶段仅允许 plan_* / todo_write；退出需 HITL。</td></tr>
+<tr><td>Skill 未被加载</td><td>检查 SKILL.md frontmatter 是否有 <code>name</code> + <code>description</code>；workspace 路径是否正确。</td></tr>
+<tr><td>Subagent 没被调用</td><td>① 未配 model；② 调用了 disableSubagents()；③ workspace/subagents/*.md 缺失或 description 不清晰。</td></tr>
+<tr><td>后台任务结果没回来</td><td>用 <code>wait_async_results(task_ids=..., wait_all=true)</code> 做屏障等待。</td></tr>
+<tr><td>Docker 沙箱启动失败</td><td>确认 Docker daemon 可用，image 已 pull，端口未被占用。</td></tr>
+<tr><td>Channel 消息收不到</td><td>检查适配器 Token/Secret 配置；钉钉用 Stream 模式需 WebSocket 网络可达。</td></tr>
+<tr><td>AG-UI 前端收不到 finish 事件</td><td><code>RUN_ERROR</code> 与 <code>RUN_FINISHED</code> 互斥，需兼容旧客户端则设 <code>emit-run-finished-after-error=true</code>。</td></tr>
+<tr><td>重启后会话丢失</td><td>JsonFileStore 仅单机；生产切 <code>RedisAgentStateStore</code>。</td></tr>
+</table>
+</section>
+
+<!-- ============ 第 21 章 ============ -->
+<section id="roadmap">
+<h2><span class="ch">21</span>学习路线图</h2>
+<div class="step"><div class="num">1</div><div class="body"><strong>入门（本周）</strong>：第 3–5 章，掌握 <code>ReActAgent / HarnessAgent / @Tool / streamEvents</code>。</div></div>
+<div class="step"><div class="num">2</div><div class="body"><strong>协作与状态（下周）</strong>：第 6–8.5 章，<code>MsgHub / HITL / AgentStateStore / 记忆四层</code>。</div></div>
+<div class="step"><div class="num">3</div><div class="body"><strong>进阶能力（本月）</strong>：第 9–15 章，结构化输出 / RAG / MCP / Plan / Skill / Subagent / Sandbox。</div></div>
+<div class="step"><div class="num">4</div><div class="body"><strong>生产部署（次月）</strong>：第 16–19 章，Channel 多渠道 / AG-UI 前端 / A2A 跨 Agent / Spring Boot。</div></div>
+<div class="step"><div class="num">5</div><div class="body"><strong>基础设施扩展</strong>：Higress AI 网关（MCP 聚合）、Nacos（注册+配置）、XXL-Job（定时）、分布式存储全家桶。</div></div>
+
+<h3>权威资料</h3>
+<ul>
+<li>GitHub 主仓库：<code>github.com/agentscope-ai/agentscope-java</code></li>
+<li>2.0 文档站：<code>java.agentscope.io/v2/en</code> / <code>/v2/zh</code></li>
+<li>官方示例工程：<code>agentscope-java/agentscope-examples</code></li>
+<li>Release Notes：<code>github.com/agentscope-ai/agentscope-java/releases</code></li>
+<li>Integration 目录：<code>java.agentscope.io/v2/en/integration/overview</code></li>
+</ul>
+<div class="warn">📌 框架自 2026-07 GA 后持续快速迭代，API 偶尔在小版本间调整；如运行报错请以当前 <code>${agentscope.version}</code> 对应文档为准。</div>
+</section>
+
+</main>
+</div>
+
+<footer>
+  AgentScope Java 2.0 完整入门教程 · 21 章 · 基于官方文档与 GitHub 整理 · 保存为 .html 双击离线阅读
+</footer>
+
+<script>
+const links = document.querySelectorAll('nav.sidebar a');
+const sections = [...document.querySelectorAll('main section')];
+window.addEventListener('scroll', () => {
+  let cur = '';
+  sections.forEach(s =&gt; { if (window.scrollY &gt;= s.offsetTop - 100) cur = s.id; });
+  links.forEach(a =&gt; a.classList.toggle('active', a.getAttribute('href') === '#' + cur));
+});
+</script>
+</body>
+</html>
