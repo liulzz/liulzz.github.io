@@ -240,7 +240,7 @@ footer { border-top: 1px solid var(--border); margin-top: 60px; padding-top: 18p
 <div class="callout amber"><b class="tag">约束</b>通知型钩子 <code>onAgentStateReady</code> 在同会话重入时会在 call gate 上死锁。MiddlewareBase 的 Javadoc 明确要求该钩子<strong>非阻塞、快速失败</strong>（L229–241）。这是三模式中唯一带有死锁警示的扩展点，也说明通知型钩子的执行时机位于会话串行窗口之内。</div>
 
 <h2 id="build">3 · build()：装配流水线解剖</h2>
-<p><code>HarnessAgent.Builder.build()</code>（L2369–2982，约 600 行）是整个 harness 的枢纽。它本质上是一条<strong>构造期校验 + 依赖接线 + 能力注册</strong>的流水线：</p>
+<p><code>HarnessAgent.Builder.build()</code>（L2369–2982，约 600 行）是整个 harness 的枢纽。它本质上是一条<strong>构造期校验 + 依赖装配 + 能力注册</strong>的流水线：</p>
 
 <figure class="fig">
 <svg viewBox="0 0 920 400" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="build 装配流水线">
@@ -265,7 +265,7 @@ footer { border-top: 1px solid var(--border); margin-top: 60px; padding-top: 18p
   </g>
   <g>
     <rect class="step s1" x="320" y="20" width="280" height="64" rx="10"/>
-    <text class="n" x="334" y="42">02 分布式接线</text>
+    <text class="n" x="334" y="42">02 分布式装配</text>
     <text class="t" x="334" y="62">DistributedStore 自动注入</text>
     <text class="d" x="334" y="78">state/remote/snapshot/guard/bus/async；PeriodicGate 选型</text>
   </g>
@@ -313,7 +313,7 @@ footer { border-top: 1px solid var(--border); margin-top: 60px; padding-top: 18p
   </g>
   <g>
     <rect class="step s4" x="20" y="320" width="880" height="60" rx="10"/>
-    <text class="n" x="34" y="344">10 收束</text>
+    <text class="n" x="34" y="344">10 汇总</text>
     <text class="t" x="34" y="366">inner.toolkit(agentToolkit) → inner.build() 得到 delegate → new HarnessAgent(...)</text>
     <text class="d" x="34" y="382">技能自学习组件（Promoter/Curator/UsageStore/AuditLog）随构造器一并持有；L2959–2981</text>
   </g>
