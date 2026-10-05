@@ -70,30 +70,121 @@
 
 <script>
 const DATA=[
-  {cat:"📖 速查手册", items:[
-    {ico:"🐧", name:"WSL 命令大全", desc:"WSL — The Complete Command Atlas", repo:"wsl-cheatsheet"},
-    {ico:"📜", name:"Linux 查日志工具箱", desc:"Linux 查日志 — The Complete Log Toolkit", repo:"log-cheatsheet"},
-    {ico:"☸️", name:"kubectl 命令大全", desc:"kubectl — The Complete Command Atlas", repo:"kubectl-cheatsheet"},
-    {ico:"☕", name:"Java × VS Code 速查", desc:"Java 开发高频操作与 Language Server 技巧", repo:"java-vscode-cheatsheet"},
-    {ico:"🔐", name:"前端 Token 存储安全", desc:"认证 Token 存储安全 · 速查", repo:"auth-token-storage"},
-  ]},
-  {cat:"🤖 AgentScope 智能体框架", items:[
-    {ico:"🧩", name:"AgentScope Java 2.0 入门", desc:"从消息模型到生产部署 · 15 章体系教程", repo:"agentscope-tutorial"},
-    {ico:"🎓", name:"智能体场景课", desc:"AgentScope 2.0 学习手册 · 理论 + 实践 + 自测", repo:"agentscope-tutorial-ds"},
-    {ico:"📚", name:"AgentScope Java 2.0 新手入门完整版", desc:"21 章场景式学习", repo:"agentscope-tutorial-glm"},
-    {ico:"⚙️", name:"AgentScope Java 2.0.3 实战", desc:"用 Java 构建生产级智能体系统", repo:"agentscope-2-tutorial"},
-  ]},
-  {cat:"🔌 MCP 模型上下文协议", items:[
-    {ico:"🔗", name:"MCP 由浅入深教程", desc:"Model Context Protocol 完全指南", repo:"mcp-tutorial"},
-    {ico:"🧭", name:"MCP 完全教程 2026", desc:"从协议动机到服务端 / 客户端实现", repo:"mcp-tutorial-2026"},
-    {ico:"📘", name:"MCP 学习指南", desc:"从协议基础到生产实现 · 含示例与源码", repo:"mcp-learning-guide"},
-  ]},
-  {cat:"🌐 建站 / 部署", items:[
-    {ico:"🚀", name:"GitHub Pages 教程", desc:"由浅入深 · 10 分钟拥有免费网站", repo:"github-pages-tutorial"},
-  ]},
-  {cat:"🛒 消费分析", items:[
-    {ico:"💻", name:"摩集电商 MacBook 价格分析", desc:"MacBook Pro 价格全景分析 · V2EX", repo:"mojimac-price"},
-  ]},
+  {
+    "cat": "📖 速查手册",
+    "items": [
+      {
+        "ico": "🔐",
+        "name": "前端 Token 存储安全",
+        "desc": "认证 Token 存储安全 · 速查",
+        "repo": "auth-token-storage"
+      },
+      {
+        "ico": "☕",
+        "name": "Java × VS Code 速查",
+        "desc": "Java 开发高频操作与 Language Server 技巧",
+        "repo": "java-vscode-cheatsheet"
+      },
+      {
+        "ico": "☸️",
+        "name": "kubectl 命令大全",
+        "desc": "kubectl — The Complete Command Atlas",
+        "repo": "kubectl-cheatsheet"
+      },
+      {
+        "ico": "📜",
+        "name": "Linux 查日志工具箱",
+        "desc": "Linux 查日志 — The Complete Log Toolkit",
+        "repo": "log-cheatsheet"
+      },
+      {
+        "ico": "🐧",
+        "name": "WSL 命令大全",
+        "desc": "WSL — The Complete Command Atlas",
+        "repo": "wsl-cheatsheet"
+      }
+    ]
+  },
+  {
+    "cat": "🤖 AgentScope 智能体框架",
+    "items": [
+      {
+        "ico": "⚙️",
+        "name": "AgentScope Java 2.0.3 实战",
+        "desc": "用 Java 构建生产级智能体系统",
+        "repo": "agentscope-2-tutorial"
+      },
+      {
+        "ico": "🧪",
+        "name": "AgentScope Harness 设计拆解",
+        "desc": "拆解 HarnessAgent 设计思想与实现原理",
+        "repo": "agentscope-harness"
+      },
+      {
+        "ico": "🧩",
+        "name": "AgentScope Java 2.0 入门",
+        "desc": "从消息模型到生产部署 · 15 章体系教程",
+        "repo": "agentscope-tutorial"
+      },
+      {
+        "ico": "🎓",
+        "name": "智能体场景课",
+        "desc": "AgentScope 2.0 学习手册 · 理论 + 实践 + 自测",
+        "repo": "agentscope-tutorial-ds"
+      },
+      {
+        "ico": "📚",
+        "name": "AgentScope Java 2.0 新手入门完整版",
+        "desc": "21 章场景式学习",
+        "repo": "agentscope-tutorial-glm"
+      }
+    ]
+  },
+  {
+    "cat": "🔌 MCP 模型上下文协议",
+    "items": [
+      {
+        "ico": "📘",
+        "name": "MCP 学习指南",
+        "desc": "从协议基础到生产实现 · 含示例与源码",
+        "repo": "mcp-learning-guide"
+      },
+      {
+        "ico": "🔗",
+        "name": "MCP 由浅入深教程",
+        "desc": "Model Context Protocol 完全指南",
+        "repo": "mcp-tutorial"
+      },
+      {
+        "ico": "🧭",
+        "name": "MCP 完全教程 2026",
+        "desc": "从协议动机到服务端 / 客户端实现",
+        "repo": "mcp-tutorial-2026"
+      }
+    ]
+  },
+  {
+    "cat": "🌐 建站 / 部署",
+    "items": [
+      {
+        "ico": "🚀",
+        "name": "GitHub Pages 教程",
+        "desc": "由浅入深 · 10 分钟拥有免费网站",
+        "repo": "github-pages-tutorial"
+      }
+    ]
+  },
+  {
+    "cat": "🛒 消费分析",
+    "items": [
+      {
+        "ico": "💻",
+        "name": "摩集电商 MacBook 价格分析",
+        "desc": "MacBook Pro 价格全景分析 · V2EX",
+        "repo": "mojimac-price"
+      }
+    ]
+  }
 ];
 const BASE="./";
 const catsEl=document.getElementById("cats");
