@@ -14,7 +14,7 @@
   <aside class="nav" id="nav">
 <a class="nav-brand" href="index.html">
 <div class="nav-brand-title"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#0066cc" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2 3 7v10l9 5 9-5V7l-9-5Z"/><path d="m12 22 9-5V7l-9-5"/><path d="m12 12 9-5"/><path d="m12 12-9-5"/><path d="m12 12v10"/></svg>AgentScope Java 2.0 入门教程</div>
-<div class="nav-brand-sub">基于官方文档 v2.0.1 · Java 示例</div>
+<div class="nav-brand-sub">基于官方文档 v2.0.3 · Java 示例</div>
 </a>
 <div class="nav-section">起步</div>
 <a class="nav-link" href="index.html"><span class="idx">—</span>总览 · AgentScope Java 2.0</a>
@@ -162,9 +162,9 @@ public class ProviderOverview {
 <h3 id="practice-provider-builder">DashScopeChatModel 的 builder 方法</h3>
 <div class="tbl-wrap"><table><thead><tr><th>方法</th><th>说明</th></tr></thead><tbody><tr><td><code>apiKey(String)</code></td><td>直接指定 API Key</td></tr><tr><td><code>credential(CredentialBase)</code></td><td>指定凭证对象，凭证同时持有模型清单</td></tr><tr><td><code>modelName(String)</code></td><td>模型名，例如 <code>qwen-plus</code></td></tr><tr><td><code>stream(boolean)</code></td><td>是否使用流式响应</td></tr><tr><td><code>formatter(Formatter)</code></td><td>自定义消息格式转换器</td></tr><tr><td><code>defaultOptions(GenerateOptions)</code></td><td>本次构造的默认生成参数</td></tr><tr><td><code>baseUrl(String)</code></td><td>自定义接入地址</td></tr><tr><td><code>enableThinking(boolean)</code></td><td>是否启用思考模式。<strong>开启后不支持结构化输出</strong></td></tr><tr><td><code>nativeStructuredOutput(boolean)</code></td><td>允许使用服务端原生 schema 能力</td></tr><tr><td><code>nativeStructuredOutputWithTools(boolean)</code></td><td>同时启用工具与原生结构化输出</td></tr></tbody></table></div>
 <p>各 provider 的模型类名与所在包如下，显式构造时需要 import 对应的类：</p>
-<div class="tbl-wrap"><table><thead><tr><th>provider 前缀</th><th>模型类</th><th>所在包</th><th>Maven artifact</th></tr></thead><tbody><tr><td><code>dashscope</code></td><td><code>DashScopeChatModel</code></td><td><code>io.agentscope.extensions.model.dashscope</code></td><td><code>agentscope-extensions-model-dashscope</code></td></tr><tr><td><code>openai</code></td><td><code>OpenAIChatModel</code></td><td><code>io.agentscope.extensions.model.openai</code></td><td><code>agentscope-extensions-model-openai</code></td></tr><tr><td><code>openai-official</code></td><td><code>OpenAIResponsesChatModel</code></td><td><code>io.agentscope.extensions.model.openaiofficial</code></td><td><code>agentscope-extensions-model-openai-official</code></td></tr><tr><td><code>anthropic</code></td><td><code>AnthropicChatModel</code></td><td><code>io.agentscope.extensions.model.anthropic</code></td><td><code>agentscope-extensions-model-anthropic</code></td></tr><tr><td><code>gemini</code></td><td><code>GeminiChatModel</code></td><td><code>io.agentscope.extensions.model.gemini</code></td><td><code>agentscope-extensions-model-gemini</code></td></tr><tr><td><code>ollama</code></td><td><code>OllamaChatModel</code></td><td><code>io.agentscope.extensions.model.ollama</code></td><td><code>agentscope-extensions-model-ollama</code></td></tr><tr><td><code>kimi</code></td><td>官方列为 2.0.1 新增的一等 provider；本章按 openai 兼容通道书写，请以官方 provider 列表为准</td><td>本章按 <code>io.agentscope.extensions.model.openai</code> 书写，若官方提供独立 artifact 则以官方为准</td><td>本章按 <code>agentscope-extensions-model-openai</code> 书写，若官方提供独立 artifact 则以官方为准</td></tr></tbody></table></div>
+<div class="tbl-wrap"><table><thead><tr><th>provider 前缀</th><th>模型类</th><th>所在包</th><th>Maven artifact</th></tr></thead><tbody><tr><td><code>dashscope</code></td><td><code>DashScopeChatModel</code></td><td><code>io.agentscope.extensions.model.dashscope</code></td><td><code>agentscope-extensions-model-dashscope</code></td></tr><tr><td><code>openai</code></td><td><code>OpenAIChatModel</code></td><td><code>io.agentscope.extensions.model.openai</code></td><td><code>agentscope-extensions-model-openai</code></td></tr><tr><td><code>openai-official</code></td><td><code>OpenAIResponsesChatModel</code></td><td><code>io.agentscope.extensions.model.openaiofficial</code></td><td><code>agentscope-extensions-model-openai-official</code></td></tr><tr><td><code>anthropic</code></td><td><code>AnthropicChatModel</code></td><td><code>io.agentscope.extensions.model.anthropic</code></td><td><code>agentscope-extensions-model-anthropic</code></td></tr><tr><td><code>gemini</code></td><td><code>GeminiChatModel</code></td><td><code>io.agentscope.extensions.model.gemini</code></td><td><code>agentscope-extensions-model-gemini</code></td></tr><tr><td><code>ollama</code></td><td><code>OllamaChatModel</code></td><td><code>io.agentscope.extensions.model.ollama</code></td><td><code>agentscope-extensions-model-ollama</code></td></tr><tr><td><code>kimi</code></td><td>官方列为 2.0.3 新增的一等 provider；本章按 openai 兼容通道书写，请以官方 provider 列表为准</td><td>本章按 <code>io.agentscope.extensions.model.openai</code> 书写，若官方提供独立 artifact 则以官方为准</td><td>本章按 <code>agentscope-extensions-model-openai</code> 书写，若官方提供独立 artifact 则以官方为准</td></tr></tbody></table></div>
 <div class="note note-warn"><div class="note-title">kimi 与 deepseek 的 artifact 需要你自行确认</div>
-<p>官方 Release Notes 把 <code>deepseek</code> 列为 2.0.1 新增的一等 provider，
+<p>官方 Release Notes 把 <code>deepseek</code> 列为 2.0.3 新增的一等 provider，
 也提到了 GLM（智谱）、Kimi（Moonshot AI）与 MiniMax 等兼容厂商，
 但是<strong>没有为这些厂商逐一给出独立的 Maven artifact 与包名</strong>。</p>
 <p>因此本章的表格按「复用 OpenAI 兼容通道」来处理。
@@ -376,8 +376,8 @@ public class FaultToleranceDemo {
 <h3 id="practice-failover-listener">关于 failoverListener 的三条约束</h3>
 <p>这个监听器承担了一个容易被忽略的职责，因此它的行为约定需要单独说明。</p>
 <div class="tbl-wrap"><table><thead><tr><th>约束</th><th>原因</th><th>实践建议</th></tr></thead><tbody><tr><td>它是<strong>进程内唯一的切换信号</strong></td><td>主模型调用的错误不会进入事件流，也不会经过中间件，因此外部没有其他途径感知切换发生了</td><td>把降级计数作为核心监控指标，不要只在错误日志里体现</td></tr><tr><td>在切换处<strong>同步调用</strong></td><td>回调会阻塞在切换链路上</td><td>只做计数与上报，不要在其中做数据库写入或远程调用</td></tr><tr><td>实现必须<strong>非阻塞且线程安全</strong>；抛出的异常会被记录并忽略</td><td>异常不会向上传播，因此回调里的错误不会让请求失败，但也会被静默丢弃</td><td>自己 try-catch 并就地记录日志，不要依赖框架的日志</td></tr></tbody></table></div>
-<div class="note note-info"><div class="note-title">2.0.1 对重试链路的修正</div>
-<p>2.0.1 把 OpenAI 的 streaming 分支包进了 <code>Flux.defer</code>，
+<div class="note note-info"><div class="note-title">2.0.3 对重试链路的修正</div>
+<p>2.0.3 把 OpenAI 的 streaming 分支包进了 <code>Flux.defer</code>，
 因此重试会真正重新发起 HTTP 请求，而不是复用已经消费过的流。
 在此之前的版本中，流式场景下的重试实际上无法再次请求服务端。</p>
 </div>
@@ -658,7 +658,7 @@ class CredentialDemo extends CredentialBase {
 </div>
       <div class="foot">
         本教程内容依据 AgentScope Java 官方文档（<a href="https://java.agentscope.io/v2/zh/docs" target="_blank" rel="noopener">java.agentscope.io</a>）与源码仓库
-        <a href="https://github.com/agentscope-ai/agentscope-java" target="_blank" rel="noopener">agentscope-ai/agentscope-java</a> 整理，覆盖版本 v2.0.1。
+        <a href="https://github.com/agentscope-ai/agentscope-java" target="_blank" rel="noopener">agentscope-ai/agentscope-java</a> 整理，覆盖版本 v2.0.3。
         代码片段以官方文档中的示例为基准，实际使用时请以你所安装版本的 API 参考为准。
       </div>
     </main>

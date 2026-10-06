@@ -14,7 +14,7 @@
   <aside class="nav" id="nav">
 <a class="nav-brand" href="index.html">
 <div class="nav-brand-title"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#0066cc" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2 3 7v10l9 5 9-5V7l-9-5Z"/><path d="m12 22 9-5V7l-9-5"/><path d="m12 12 9-5"/><path d="m12 12-9-5"/><path d="m12 12v10"/></svg>AgentScope Java 2.0 入门教程</div>
-<div class="nav-brand-sub">基于官方文档 v2.0.1 · Java 示例</div>
+<div class="nav-brand-sub">基于官方文档 v2.0.3 · Java 示例</div>
 </a>
 <div class="nav-section">起步</div>
 <a class="nav-link" href="index.html"><span class="idx">—</span>总览 · AgentScope Java 2.0</a>
@@ -734,6 +734,16 @@ ReActAgent agent = ReActAgent.builder()
 <div class="note note-warn"><div class="note-title">关于这个写法的两点说明</div><p><b>其一</b>，<code>next.apply(switched)</code> 复用了同一个 next，因此备用模型走的仍然是当前扩展点的下游链路。如果 <code>maxRetries</code> 大于 1，你需要在 <code>onErrorResume</code> 内部显式做次数控制，否则会形成自我递归。示例中因此直接返回 <code>Flux.error(err)</code>。生产环境更稳妥的做法是把备用模型包装成一个显式的降级响应，让模型自己决定如何继续，而不是无条件重试。</p><p><b>其二</b>，故障转移改变的是模型，因此不同模型的工具调用能力、上下文长度可能不一致。切换前应当确认备用模型支持 <code>input.tools()</code> 中的全部工具。</p></div>
 <h3 id="practice-final">示例六：只保留最终答案</h3>
 <p>最后一个例子来自内置中间件。ReAct 循环中，模型在调用工具之前通常会先说一句「我来查一下」。这些文本对用户没有价值，尤其是在把流式输出直接呈现给用户的界面上。<code>FinalAnswerFilterMiddleware</code> 解决的就是这个问题。</p>
+<div class="note note-info"><div class="note-title">本中间件在 2.0.3 中引入</div>
+<p>官方 2.0.3 的 Release Notes 把 <code>FinalAnswerFilterMiddleware</code> 列为新增项
+（对应 PR #2926 与 issue #2872），因此如果你使用的版本低于 2.0.3，
+classpath 中不会有这个类。使用前请确认依赖版本。</p>
+<p>它的工作方式是：按模型调用缓冲文本事件，
+当本轮产生工具调用时抑制中间轮次的文本，
+只输出最终面向用户的回答。
+由于每轮文本必须缓冲到模型调用结束才能判断该轮是否会调用工具，
+因此输出会略微延迟，这是设计的必然结果。</p>
+</div>
 <div class="code-wrap"><div class="code-head"><span class="code-file">FinalAnswerFilterDemo.java</span><span style="display:flex;align-items:center;gap:10px"><span class="code-lang">java</span><button class="copy-btn">复制</button></span></div><pre><code>package com.example.kb;
 
 import io.agentscope.core.ReActAgent;
@@ -806,7 +816,7 @@ public class FinalAnswerFilterDemo {
 </div>
       <div class="foot">
         本教程内容依据 AgentScope Java 官方文档（<a href="https://java.agentscope.io/v2/zh/docs" target="_blank" rel="noopener">java.agentscope.io</a>）与源码仓库
-        <a href="https://github.com/agentscope-ai/agentscope-java" target="_blank" rel="noopener">agentscope-ai/agentscope-java</a> 整理，覆盖版本 v2.0.1。
+        <a href="https://github.com/agentscope-ai/agentscope-java" target="_blank" rel="noopener">agentscope-ai/agentscope-java</a> 整理，覆盖版本 v2.0.3。
         代码片段以官方文档中的示例为基准，实际使用时请以你所安装版本的 API 参考为准。
       </div>
     </main>

@@ -14,7 +14,7 @@
   <aside class="nav" id="nav">
 <a class="nav-brand" href="index.html">
 <div class="nav-brand-title"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#0066cc" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2 3 7v10l9 5 9-5V7l-9-5Z"/><path d="m12 22 9-5V7l-9-5"/><path d="m12 12 9-5"/><path d="m12 12-9-5"/><path d="m12 12v10"/></svg>AgentScope Java 2.0 入门教程</div>
-<div class="nav-brand-sub">基于官方文档 v2.0.1 · Java 示例</div>
+<div class="nav-brand-sub">基于官方文档 v2.0.3 · Java 示例</div>
 </a>
 <div class="nav-section">起步</div>
 <a class="nav-link" href="index.html"><span class="idx">—</span>总览 · AgentScope Java 2.0</a>
@@ -150,6 +150,16 @@ HarnessAgent.builder()
 <h3 id="theory-basestore">BaseStore 的并发安全</h3>
 <p>技能仓库、后台任务仓库、消息总线这些插件都通过 <code>BaseStore</code> 落数据。多副本环境下，如果两个副本同时写同一个键，必须有一致的策略，否则后写会静默覆盖先写。</p>
 <p><code>BaseStore</code> 提供了一套版本化 CAS（compare-and-swap）API：<code>getVersioned</code> 读取值与版本号，<code>saveIfVersion</code> 与 <code>putIfVersion</code> 只在版本号未变化时写入。</p>
+<div class="note note-info"><div class="note-title">2.0.3 为 AgentStateStore 引入了同类的并发原语</div>
+<p>2.0.3 新增了状态版本化与乐观并发原语：
+<code>VersionedState</code>、<code>ConflictPolicy</code> 与
+<code>ConcurrentSessionModificationException</code>。
+它们让 <code>AgentStateStore</code> 的实现能够识别并<strong>拒绝过期写入</strong>。</p>
+<p>在此之前，会话状态的并发控制主要依赖「相同 (userId, sessionId) 的调用自动串行化」这一机制，
+该机制在单副本内有效。
+但是当状态存储是分布式的、且存在副本同时处理同一会话的可能时，
+就需要这一层乐观并发保护来避免状态回退。</p>
+</div>
 <div class="tbl-wrap"><table><thead><tr><th>BaseStore 实现</th><th>并发控制方式</th><th>说明</th></tr></thead><tbody><tr><td><code>RedisStore</code></td><td><b>CAS</b></td><td>用 Lua 脚本实现原子的 <code>putIfVersion</code>；前缀搜索使用 <code>ZRANGEBYLEX</code> 按字典序扫描</td></tr><tr><td><code>JdbcStore</code></td><td><b>CAS</b></td><td>单条 <code>UPDATE</code> 语句完成版本比对与写入；自动识别 MySQL / PostgreSQL / SQLite / H2 方言</td></tr><tr><td><code>InMemoryStore</code></td><td><b>CAS</b></td><td>进程内实现，带版本号比较</td></tr><tr><td><code>OssBaseStore</code></td><td><b>LWW</b></td><td>对象存储无原子条件写语义，采用后写覆盖</td></tr></tbody></table></div>
 <p>其余实现为 LWW（last-write-wins，后写覆盖）。如果你需要「冲突时失败」而不是「静默覆盖」，可以把策略显式设为 <code>ConflictPolicy.FAIL</code>，并配合 <code>SessionTurnGate</code> 使用——后者用于确保同一个会话的同一轮不会被两个副本同时处理。</p>
 <p>键路径的组织方式如下，注意分隔符与层级：</p>
@@ -452,7 +462,7 @@ public class KnowledgeAssistantService {
 <p>另外，<code>.block()</code> 会把响应式流<strong>阻塞</strong>成同步结果。在 Web 请求线程中这通常可以接受，但如果引入 WebFlux 或虚拟线程，建议改为响应式返回，避免占用线程。</p>
 <h2 id="spring"><span class="num">14.3</span>Spring Boot Starter</h2>
 <p>如果使用 Spring Boot，各模型提供方与控制面都有对应的 starter，避免手写 <code>ChatModel</code> 与 <code>Tool</code> 的装配代码。</p>
-<div class="tbl-wrap"><table><thead><tr><th>starter artifactId</th><th>用途</th></tr></thead><tbody><tr><td><code>agentscope-openai-spring-boot-starter</code></td><td>OpenAI 系列模型</td></tr><tr><td><code>agentscope-dashscope-spring-boot-starter</code></td><td>阿里云百炼（DashScope）模型</td></tr><tr><td><code>agentscope-gemini-spring-boot-starter</code></td><td>Google Gemini 模型</td></tr><tr><td><code>agentscope-anthropic-spring-boot-starter</code></td><td>Anthropic Claude 模型</td></tr><tr><td><code>agentscope-ollama-spring-boot-starter</code></td><td>Ollama 本地模型（2.0.1 新增）</td></tr><tr><td><code>agentscope-admin-spring-boot-starter</code></td><td>管理 API，包含 Plan Mode 相关接口</td></tr></tbody></table></div>
+<div class="tbl-wrap"><table><thead><tr><th>starter artifactId</th><th>用途</th></tr></thead><tbody><tr><td><code>agentscope-openai-spring-boot-starter</code></td><td>OpenAI 系列模型</td></tr><tr><td><code>agentscope-dashscope-spring-boot-starter</code></td><td>阿里云百炼（DashScope）模型</td></tr><tr><td><code>agentscope-gemini-spring-boot-starter</code></td><td>Google Gemini 模型</td></tr><tr><td><code>agentscope-anthropic-spring-boot-starter</code></td><td>Anthropic Claude 模型</td></tr><tr><td><code>agentscope-ollama-spring-boot-starter</code></td><td>Ollama 本地模型（2.0.3 新增）</td></tr><tr><td><code>agentscope-admin-spring-boot-starter</code></td><td>管理 API，包含 Plan Mode 相关接口</td></tr></tbody></table></div>
 <p>需要说明的是，<strong>starter 并不改变 <code>DistributedStore</code> 的配置方式</strong>。分布式存储仍然通过 <code>HarnessAgent.builder().distributedStore(...)</code> 配置，因为它是 Harness 层的概念，与模型提供方无关。</p>
 <div class="note note-warn"><div class="note-title">官方文档没有提供 YAML 或 properties 配置示例</div><p>这一点需要如实指出。Going to Production 页面在这部分<strong>只使用三种形式</strong>：环境变量（<code>REDIS_URI</code>、<code>AGENTRUN_API_KEY</code>、<code>ALI_ACCOUNT_ID</code> 等）、CLI 选项（例如 <code>--enable-hosted-store</code>），以及 URI 示例。它<strong>没有</strong>给出 YAML 或 .properties 的配置样例。这与第 04 章的模型 YAML 配置不同——第 04 章的 YAML 是框架明确支持的文件化配置，而本章的分布式配置目前只能通过 Java API 设置。因此在各 starter 提供的属性上，请以你所使用版本的官方文档与该 starter 的 Javadoc 为准。</p></div>
 <p>环境变量方式的实际使用示例：</p>
@@ -501,7 +511,7 @@ public class KnowledgeAssistantService {
 </div>
       <div class="foot">
         本教程内容依据 AgentScope Java 官方文档（<a href="https://java.agentscope.io/v2/zh/docs" target="_blank" rel="noopener">java.agentscope.io</a>）与源码仓库
-        <a href="https://github.com/agentscope-ai/agentscope-java" target="_blank" rel="noopener">agentscope-ai/agentscope-java</a> 整理，覆盖版本 v2.0.1。
+        <a href="https://github.com/agentscope-ai/agentscope-java" target="_blank" rel="noopener">agentscope-ai/agentscope-java</a> 整理，覆盖版本 v2.0.3。
         代码片段以官方文档中的示例为基准，实际使用时请以你所安装版本的 API 参考为准。
       </div>
     </main>

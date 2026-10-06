@@ -14,7 +14,7 @@
   <aside class="nav" id="nav">
 <a class="nav-brand" href="index.html">
 <div class="nav-brand-title"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#0066cc" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2 3 7v10l9 5 9-5V7l-9-5Z"/><path d="m12 22 9-5V7l-9-5"/><path d="m12 12 9-5"/><path d="m12 12-9-5"/><path d="m12 12v10"/></svg>AgentScope Java 2.0 入门教程</div>
-<div class="nav-brand-sub">基于官方文档 v2.0.1 · Java 示例</div>
+<div class="nav-brand-sub">基于官方文档 v2.0.3 · Java 示例</div>
 </a>
 <div class="nav-section">起步</div>
 <a class="nav-link active" href="index.html"><span class="idx">—</span>总览 · AgentScope Java 2.0</a>
@@ -44,7 +44,7 @@
       <span>AgentScope Java 2.0 入门教程</span>
     </div>
     <main class="content">
-<div class="page-head"><h1>AgentScope Java 2.0<br><span class="thin">新手入门教程</span></h1><p class="lede">面向初学者的完整实战指南。16 章、场景驱动、全部使用 Java，从第一个智能体讲到生产级分布式部署。</p><div class="meta-row"><span class="meta-chip"><b>16</b> 章</span><span class="meta-chip"><b>2.0.1</b> 版本</span><span class="meta-chip"><b>JDK 17+</b> 要求</span><span class="meta-chip"><b>约 4 小时</b>读完</span></div></div>
+<div class="page-head"><h1>AgentScope Java 2.0<br><span class="thin">新手入门教程</span></h1><p class="lede">面向初学者的完整实战指南。16 章、场景驱动、全部使用 Java，从第一个智能体讲到生产级分布式部署。</p><div class="meta-row"><span class="meta-chip"><b>16</b> 章</span><span class="meta-chip"><b>2.0.3</b> 版本</span><span class="meta-chip"><b>JDK 17+</b> 要求</span><span class="meta-chip"><b>约 4 小时</b>读完</span></div></div>
 
 <section class="hero">
 <h1><span class="grad">AgentScope Java 2.0</span><span class="thin">从第一个智能体到生产级分布式部署</span></h1>
@@ -52,7 +52,7 @@
 <div class="badge-row">
 <span class="badge b-blue">JDK 17+</span>
 <span class="badge b-blue">Maven 3.9+</span>
-<span class="badge b-blue">版本 2.0.1</span>
+<span class="badge b-blue">版本 2.0.3</span>
 <span class="badge b-blue">Reactor 响应式</span>
 <span class="badge b-blue">官方文档同步</span>
 </div>
@@ -88,7 +88,7 @@
         <maven.compiler.target>17</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <!-- 建议始终对齐官方 Release Notes 中的最新版本 -->
-        <agentscope.version>2.0.1</agentscope.version>
+        <agentscope.version>2.0.3</agentscope.version>
     </properties>
 
     <dependencyManagement>
@@ -179,6 +179,17 @@ export DEEPSEEK_API_KEY=sk-xxxxxxxx</code></pre></div>
 <div class="feat"><div class="feat-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16v16H4z"/><path d="M8 9h8M8 13h5"/></svg></div><div class="feat-t">OpenTelemetry 追踪</div><div class="feat-d"><code>OtelTracingMiddleware</code> 为智能体生命周期、模型调用、工具执行生成嵌套 span，可上报到 Langfuse 等兼容平台。</div></div>
 <div class="feat"><div class="feat-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 6h12M6 12h12M6 18h12"/></svg></div><div class="feat-t">优雅启停</div><div class="feat-d"><code>GracefulShutdownManager</code> 在进程退出前等待在途调用完成，配合状态存储实现零停机滚动发布。</div></div>
 </div>
+<h3 id="f-new">五、2.0.2 与 2.0.3 新增（<span class="code-lang">2026-09</span>）</h3>
+<div class="feat-grid">
+<div class="feat"><div class="feat-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v6M12 16v6M4 12h4M16 12h4"/><circle cx="12" cy="12" r="4"/></svg></div><div class="feat-t">最终答案过滤</div><div class="feat-d"><code>FinalAnswerFilterMiddleware</code> 按模型调用缓冲文本，当本轮产生工具调用时抑制中间文本，只输出最终回答。</div></div>
+<div class="feat"><div class="feat-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 7"/></svg></div><div class="feat-t">状态版本化与乐观并发</div><div class="feat-d"><code>VersionedState</code>、<code>ConflictPolicy</code>、<code>ConcurrentSessionModificationException</code>，让状态存储能够识别并拒绝过期写入。</div></div>
+<div class="feat"><div class="feat-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M12 4v16"/></svg></div><div class="feat-t">Anthropic 提示词缓存</div><div class="feat-d">在工具、系统提示与最后一条消息上设置 <code>cache_control</code> 断点，用量中返回 <code>cache_read_input_tokens</code>。</div></div>
+<div class="feat"><div class="feat-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17 17 7M17 7h-7M17 7v7"/></svg></div><div class="feat-t">沙箱产物交付</div><div class="feat-d"><code>deliver_artifact</code> 工具与 <code>ArtifactDeliveryTarget</code> SPI，让沙箱内的智能体把产出的文件交付出来。</div></div>
+<div class="feat"><div class="feat-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/></svg></div><div class="feat-t">MCP 注册结果监听</div><div class="feat-d"><code>McpServerRegistrationListener</code> 提供 <code>SUCCESS</code> / <code>FAILED</code> / <code>SKIPPED</code> 三种终态，便于识别失效的 MCP 配置。</div></div>
+<div class="feat"><div class="feat-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M4 12h12M4 18h8"/></svg></div><div class="feat-t">可读流式文件读</div><div class="feat-d"><code>ReadFileTool</code> 支持按行区间增量读取，到达结束行即停止，避免整文件载入内存。</div></div>
+<div class="feat"><div class="feat-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v18M8 7h8M8 17h8"/></svg></div><div class="feat-t">子智能体工厂描述</div><div class="feat-d"><code>SubagentFactoryEntry</code> 新增 <code>description</code> 字段，编排器据此获得有效的选择依据。</div></div>
+<div class="feat"><div class="feat-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12h18M12 3v18"/></svg></div><div class="feat-t">事件总线与会话隔离</div><div class="feat-d"><code>AgentProtocolEventBus</code> 提供可插拔的 SSE 事件处理；HITL 会话按用户隔离。</div></div>
+</div>
 <h2 id="arch">整体架构</h2>
 <p>理解下面这张图比记住任何一个类名都重要。AgentScope Java 2.0 的所有能力都挂载在这三个层次上：</p>
 <div class="tree"><span class="hl">Harness 工程化层</span>（HarnessAgent · 面向长时间运行的任务）
@@ -236,7 +247,7 @@ export DEEPSEEK_API_KEY=sk-xxxxxxxx</code></pre></div>
 </div>
       <div class="foot">
         本教程内容依据 AgentScope Java 官方文档（<a href="https://java.agentscope.io/v2/zh/docs" target="_blank" rel="noopener">java.agentscope.io</a>）与源码仓库
-        <a href="https://github.com/agentscope-ai/agentscope-java" target="_blank" rel="noopener">agentscope-ai/agentscope-java</a> 整理，覆盖版本 v2.0.1。
+        <a href="https://github.com/agentscope-ai/agentscope-java" target="_blank" rel="noopener">agentscope-ai/agentscope-java</a> 整理，覆盖版本 v2.0.3。
         代码片段以官方文档中的示例为基准，实际使用时请以你所安装版本的 API 参考为准。
       </div>
     </main>

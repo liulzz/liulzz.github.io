@@ -14,7 +14,7 @@
   <aside class="nav" id="nav">
 <a class="nav-brand" href="index.html">
 <div class="nav-brand-title"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#0066cc" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2 3 7v10l9 5 9-5V7l-9-5Z"/><path d="m12 22 9-5V7l-9-5"/><path d="m12 12 9-5"/><path d="m12 12-9-5"/><path d="m12 12v10"/></svg>AgentScope Java 2.0 入门教程</div>
-<div class="nav-brand-sub">基于官方文档 v2.0.1 · Java 示例</div>
+<div class="nav-brand-sub">基于官方文档 v2.0.3 · Java 示例</div>
 </a>
 <div class="nav-section">起步</div>
 <a class="nav-link" href="index.html"><span class="idx">—</span>总览 · AgentScope Java 2.0</a>
@@ -326,7 +326,9 @@ public class ProgrammaticSubagents {
                 .build();
     }
 }</code></pre></div>
-<p>这里有一个<strong>互斥约束</strong>必须记住：三种来源只能选一种。</p>
+<p>这里需要区分两组容易混淆的概念，因为它们都涉及「三」：</p>
+<p><strong>第一组是声明来源，它们是合作的</strong>。内置 <code>general-purpose</code>、Workspace spec 文件、程序化声明这三者会在构建时<b>合并</b>成一个统一的声明集合，因此你可以同时用文件定义固定角色、用 API 定义动态角色。</p>
+<p><strong>第二组是 AGENTS.md 的供给方式，它们才是互斥的</strong>。对于<b>同一个</b> <code>SubagentDeclaration</code>，下面这三个方法只能选一个使用。</p>
 <div class="tbl-wrap"><table><thead><tr><th>可用</th><th>不可与其同时使用</th><th>说明</th></tr></thead><tbody><tr><td><code>workspace(...)</code></td><td><code>inlineAgentsBody(...)</code>、<code>url(...)</code></td><td>本地独立工作区</td></tr><tr><td><code>inlineAgentsBody(...)</code></td><td><code>workspace(...)</code>、<code>url(...)</code></td><td>直接在代码里写 spec 正文</td></tr><tr><td><code>url(...)</code></td><td><code>workspace(...)</code>、<code>inlineAgentsBody(...)</code></td><td>远程 Agent Protocol</td></tr></tbody></table></div>
 <p>其余可配项：</p>
 <div class="tbl-wrap"><table><thead><tr><th>方法</th><th>缺省</th><th>说明</th></tr></thead><tbody><tr><td><code>persistSession(true)</code></td><td><code>false</code></td><td>按 <code>(parentSessionId, agentId, label)</code> 生成确定性 key，复用已有实例，保留会话历史</td></tr><tr><td><code>exposeToUser(true)</code></td><td>见曝光策略优先级</td><td>强制暴露或禁止暴露</td></tr><tr><td><code>inheritParentPermissions(false)</code></td><td><code>true</code></td><td>关闭权限继承</td></tr><tr><td><code>remoteStreaming(true)</code></td><td>未设置时缺省 <code>true</code></td><td>远程事件是否转发到父流</td></tr><tr><td><code>remoteStreamDetail(...)</code></td><td>未设置时缺省 <code>FULL</code></td><td>远程事件粒度，见前文三档表</td></tr><tr><td><code>remoteAskPolicy(...)</code></td><td>缺省 <code>DENY</code></td><td>远程 Agent 请求确认时的策略</td></tr><tr><td><code>remoteContextAttributes(Map)</code></td><td>空</td><td>附加到远程调用的上下文属性</td></tr><tr><td><code>enablePendingToolRecovery(Boolean)</code></td><td>缺省继承父 Agent</td><td><code>null</code> 表示继承</td></tr></tbody></table></div>
@@ -675,7 +677,7 @@ agent_list          列出活跃子 Agent 实例</code></pre></div>
 </div>
       <div class="foot">
         本教程内容依据 AgentScope Java 官方文档（<a href="https://java.agentscope.io/v2/zh/docs" target="_blank" rel="noopener">java.agentscope.io</a>）与源码仓库
-        <a href="https://github.com/agentscope-ai/agentscope-java" target="_blank" rel="noopener">agentscope-ai/agentscope-java</a> 整理，覆盖版本 v2.0.1。
+        <a href="https://github.com/agentscope-ai/agentscope-java" target="_blank" rel="noopener">agentscope-ai/agentscope-java</a> 整理，覆盖版本 v2.0.3。
         代码片段以官方文档中的示例为基准，实际使用时请以你所安装版本的 API 参考为准。
       </div>
     </main>
