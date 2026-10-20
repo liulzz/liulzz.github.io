@@ -1,0 +1,151 @@
+<h2>6.1 本章场景：运维删除保护</h2>
+<div class="box box-scenario">
+  <div class="box-title"><span class="ico">🎬</span>场景任务</div>
+  <p>运维团队想要一个智能体助手，它可以查询服务器状态、清理临时文件，但是删除任何重要文件都必须经过工程师确认。更严格的是：<code>drop_table</code> 一律禁止，无论谁确认都不行。因此，本章构建一个“查询自动放行、删除必须确认、危险操作绝对禁止”的三级权限体系。</p>
+</div>
+
+<h2>6.2 理论：权限决策的三个来源</h2>
+<p>AgentScope 的权限系统在每次工具执行前介入，决策由三层叠加而成，顺序如下：</p>
+<ol>
+  <li><b>工具自带检查</b>：ToolBase 的 <code>checkPermissions()</code> 最先执行，返回 ALLOW / DENY / ASK / PASSTHROUGH；</li>
+  <li><b>显式规则</b>：PermissionContextState 中的 allow / ask / deny 规则按工具名（可选限定符）匹配；</li>
+  <li><b>模式兜底</b>：以上都未命中时，由 <code>PermissionMode</code> 决定放行与否。</li>
+</ol>
+<p>决策结果有三种行为：<code>ALLOW</code>（执行）、<code>DENY</code>（拒绝，模型会看到错误结果并可能换方法重试）、<code>ASK</code>（暂停执行，等待人工确认，即 HITL）。</p>
+
+<h2>6.3 实践：五种权限模式</h2>
+<pre><code class="code-title">PermissionMode 一览</code><code class="language-java">import io.agentscope.core.permission.PermissionContextState;
+import io.agentscope.core.permission.PermissionMode;
+
+// DEFAULT：默认模式；未匹配规则的写操作需要人工确认（ASK）
+PermissionContextState def =
+        PermissionContextState.builder().mode(PermissionMode.DEFAULT).build();
+
+// EXPLORE：探索模式；只读工具自由调用，全部写工具自动拒绝
+PermissionContextState explore =
+        PermissionContextState.builder().mode(PermissionMode.EXPLORE).build();
+
+// ACCEPT_EDITS：接受编辑；写文件等编辑类操作放行，同时声明允许的工作目录
+PermissionContextState acceptEdits =
+        PermissionContextState.builder()
+                .mode(PermissionMode.ACCEPT_EDITS)
+                .addWorkingDirectory("/my/project",
+                        new AdditionalWorkingDirectory("/my/project", "userSettings"))
+                .build();
+
+// DONT_ASK：无人值守；ASK 规则命中时自动拒绝，绝不阻塞等待
+PermissionContextState headless =
+        PermissionContextState.builder()
+                .mode(PermissionMode.DONT_ASK)
+                .addAllowRule("safe_read",
+                        new PermissionRule("safe_read", null,
+                                PermissionBehavior.ALLOW, "policy"))
+                .build();
+
+// BYPASS：跳过模式；除显式 deny 外全部放行（deny 规则不可绕过）
+PermissionContextState bypass =
+        PermissionContextState.builder()
+                .mode(PermissionMode.BYPASS)
+                .addDenyRule("drop_table",
+                        new PermissionRule("drop_table", null,
+                                PermissionBehavior.DENY, "userSettings"))
+                .build();</code></pre>
+<p>模式的选择本质上是“安全与自主程度”的权衡。交互式产品用 DEFAULT；让模型先侦察后动手的流程用 EXPLORE；CI 这类无人值守环境用 DONT_ASK；可信环境下的高自主任务用 BYPASS，但是务必保留 deny 规则。</p>
+
+<h2>6.4 实践：规则与三级保护</h2>
+<pre><code class="code-title">场景核心配置</code><code class="language-java">import io.agentscope.core.ReActAgent;
+import io.agentscope.core.permission.PermissionBehavior;
+import io.agentscope.core.permission.PermissionContextState;
+import io.agentscope.core.permission.PermissionMode;
+import io.agentscope.core.permission.PermissionRule;
+
+PermissionContextState permCtx =
+        PermissionContextState.builder()
+                .mode(PermissionMode.DEFAULT)
+                .addAllowRule("safe_read",           // 查询：自动放行
+                        new PermissionRule("safe_read", null,
+                                PermissionBehavior.ALLOW, "userSettings"))
+                .addAskRule("delete_file",           // 删除：必须人工确认
+                        new PermissionRule("delete_file", null,
+                                PermissionBehavior.ASK, "userSettings"))
+                .addDenyRule("drop_table",           // 删表：绝对禁止
+                        new PermissionRule("drop_table", null,
+                                PermissionBehavior.DENY, "userSettings"))
+                .build();
+
+ReActAgent agent =
+        ReActAgent.builder()
+                .name("ops-assistant")
+                .sysPrompt("你是运维助手，谨慎执行文件与数据库操作。")
+                .model("dashscope:qwen-plus")
+                .permissionContext(permCtx)
+                .build();</code></pre>
+<p>规则还支持限定符（第二个参数），例如 <code>new PermissionRule("deploy", "staging", ...)</code> 只匹配参数中目标是 staging 的 deploy 调用——因此“允许部署到测试环境、但是生产环境必须确认”这类细粒度策略可以直接表达。</p>
+
+<h2>6.5 实践：工具级自定义检查</h2>
+<pre><code class="code-title">在工具内部拦截生产资源</code><code class="language-java">@Override
+public Mono&lt;PermissionDecision&gt; checkPermissions(
+        Map&lt;String, Object&gt; toolInput, PermissionContextState context) {
+    Object target = toolInput.get("target");
+
+    // 自定义安全检查：操作生产资源必须人工确认
+    if (target instanceof String s &amp;&amp; s.startsWith("prod-")) {
+        return Mono.just(
+                PermissionDecision.ask("Operation targets production resource: " + s));
+    }
+
+    // PASSTHROUGH：交回权限引擎，继续按规则与模式评估
+    return Mono.just(PermissionDecision.passthrough("default"));
+}</code></pre>
+
+<h2>6.6 实践：HITL 确认-恢复闭环</h2>
+<p>ASK 决策会让智能体暂停并发出 <code>RequireUserConfirmEvent</code>。完整闭环分三步：</p>
+<pre><code class="code-title">第 1 步：监听暂停事件</code><code class="language-java">import io.agentscope.core.event.RequireUserConfirmEvent;
+
+agent.streamEvents(List.of(new UserMessage("user", "删除 /tmp/important.txt")))
+        .doOnNext(event -&gt; {
+            if (event instanceof RequireUserConfirmEvent confirmEvent) {
+                confirmEvent.getToolCalls().forEach(t -&gt;
+                        System.out.println("待确认: " + t.getName() + " " + t.getInput()
+                                + " 建议规则: " + t.getSuggestedRules()));
+                // 把 toolCalls 存起来，等用户决策
+            }
+        })
+        .blockLast();</code></pre>
+<pre><code class="code-title">第 2 步：构建确认结果</code><code class="language-java">import io.agentscope.core.event.ConfirmResult;
+import java.util.ArrayList;
+import java.util.List;
+
+List&lt;ConfirmResult&gt; confirmResults = new ArrayList&lt;&gt;();
+for (var tc : confirmEvent.getToolCalls()) {
+    confirmResults.add(
+            new ConfirmResult(
+                    /* confirmed = */ true,                   // false 表示拒绝
+                    /* toolCall  = */ tc,                     // 可以在此修改工具输入
+                    /* rules     = */ tc.getSuggestedRules()  // 接受建议规则 → 未来相同调用自动放行
+            ));
+}</code></pre>
+<pre><code class="code-title">第 3 步：恢复执行</code><code class="language-java">import io.agentscope.core.message.Msg;
+import io.agentscope.core.message.UserMessage;
+import java.util.Map;
+
+UserMessage resumeMsg =
+        UserMessage.builder()
+                .metadata(Map.of(Msg.METADATA_CONFIRM_RESULTS, confirmResults))
+                .build();
+
+Msg result = agent.call(List.of(resumeMsg), ctx).block();
+// 已确认的工具立即执行；已拒绝的会作为错误结果回给模型；接受的规则持久化到权限引擎</code></pre>
+<p>“建议规则”机制值得单独说明：模型每次请求确认时，会基于本次调用生成 <code>suggestedRules</code>。用户如果选择接受，那么今后完全相同的调用将不再打扰——既保留了首次的安全审查，又避免了重复确认的疲劳。</p>
+
+<div class="box box-practice">
+  <div class="box-title"><span class="ico">✍️</span>动手练习 6</div>
+  <ol>
+    <li>把 6.4 的配置改为 <code>DONT_ASK</code> 模式运行删除请求，观察自动拒绝行为——思考为什么无人值守环境必须这样配置；</li>
+    <li>实现“允许删除 <code>/tmp/</code> 下的文件、删除其他路径必须确认”的限定符规则；</li>
+    <li>在第 2 步中把 <code>confirmed</code> 设为 false，运行并观察模型收到错误结果后的重试话术。</li>
+  </ol>
+</div>
+
+<h2>6.7 本章小结</h2>
+<p>权限系统由工具检查、显式规则、模式兜底三层叠加，五种模式覆盖从交互式到无人值守的全部场景；HITL 闭环让“暂停-确认-恢复”成为一等公民。至此，智能体的行为边界已经可控——下一章用中间件为它增加可观测性与横切能力。</p>

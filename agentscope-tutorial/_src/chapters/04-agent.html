@@ -1,0 +1,115 @@
+<h2>4.1 本章场景：多用户待办助理</h2>
+<div class="box box-scenario">
+  <div class="box-title"><span class="ico">🎬</span>场景任务</div>
+  <p>假设你要把第 2 章的助理升级为团队服务：alice 与 bob 同时使用同一个服务实例，各自维护独立的待办对话；服务重启后对话不丢失；用户关闭页面时，正在生成的回答要能够被安全中止。因此，本章要讲清四件事：<b>ReActAgent 的完整接口、AgentState 持久化、多用户多会话并发、中断（interrupt）</b>。</p>
+</div>
+
+<h2>4.2 理论：推理-行动循环与无状态实例</h2>
+<p><code>ReActAgent</code>（接口 <code>io.agentscope.core.agent.Agent</code>）是框架的核心抽象：一个<b>推理-行动循环</b>引擎。每次调用时，它反复执行“模型推理 → 发起工具调用 → 获得工具结果 → 继续推理”，直到给出最终回答，或者因权限确认、外部执行而暂停。</p>
+<p>有一个设计要点必须先建立认知：<b>Agent 实例本身对会话无状态</b>。同一个实例可以同时服务所有用户；每次调用通过 <code>RuntimeContext</code> 携带的 <code>(userId, sessionId)</code> 定位该次调用使用哪份对话状态。因此，生产环境中应当把 Agent 做成单例，而不是每个请求新建实例。</p>
+
+<h2>4.3 核心接口</h2>
+<table>
+  <tr><th style="width:42%">方法</th><th>说明</th></tr>
+  <tr><td><code>call(List&lt;Msg&gt;)</code> / <code>call(List&lt;Msg&gt;, RuntimeContext)</code></td><td>运行推理-行动循环，返回 <code>Mono&lt;Msg&gt;</code>；内部消费全部事件，在完成或暂停时返回最终消息</td></tr>
+  <tr><td><code>streamEvents(List&lt;Msg&gt;)</code> / <code>streamEvents(Msg)</code></td><td>同样驱动循环，但是逐一产出 <code>AgentEvent</code>，适合构建实时界面</td></tr>
+  <tr><td><code>observe(Msg)</code> / <code>observe(List&lt;Msg&gt;)</code></td><td>把消息写入上下文但不触发推理；适用于一个智能体观察另一个智能体输出的场景</td></tr>
+  <tr><td><code>interrupt(...)</code></td><td>中止指定会话正在进行的调用（见 4.6）</td></tr>
+  <tr><td><code>getAgentState(userId, sessionId)</code></td><td>读取指定会话的状态快照</td></tr>
+  <tr><td><code>call(msgs, Xxx.class, ctx)</code></td><td>结构化输出重载（第 3 章已实践）</td></tr>
+</table>
+
+<h2>4.4 实践：多用户与状态持久化</h2>
+<p>配置 <code>stateStore</code> 后，每次调用结束时 AgentState（对话上下文、压缩摘要、权限规则、工具状态）自动写回存储；下次以相同 <code>(userId, sessionId)</code> 调用时自动恢复：</p>
+<pre><code class="code-title">单实例服务多用户</code><code class="language-java">import io.agentscope.core.ReActAgent;
+import io.agentscope.core.agent.RuntimeContext;
+import io.agentscope.core.message.UserMessage;
+import io.agentscope.core.state.JsonFileAgentStateStore;
+import java.nio.file.Paths;
+import java.util.List;
+
+// 应用启动时创建一个实例（单例）
+ReActAgent agent = ReActAgent.builder()
+        .name("todo-assistant")
+        .sysPrompt("你是团队待办助理，帮助用户记录与整理待办事项。")
+        .model("dashscope:qwen-plus")
+        .stateStore(new JsonFileAgentStateStore(
+                Paths.get(System.getProperty("user.home"), ".agentscope/sessions")))
+        .build();
+
+// HTTP handler 中：不同请求携带不同身份，状态完全隔离
+agent.call(List.of(new UserMessage("user", "我今天要提交周报")),
+        RuntimeContext.builder().userId("alice").sessionId("session-1").build()).block();
+
+agent.call(List.of(new UserMessage("user", "Hello")),
+        RuntimeContext.builder().userId("bob").sessionId("session-2").build()).block();</code></pre>
+<p>内置的状态存储实现有四种，按部署形态选择：</p>
+<table>
+  <tr><th style="width:34%">实现</th><th style="width:38%">模块</th><th>适用</th></tr>
+  <tr><td><code>InMemoryAgentStateStore</code></td><td>agentscope-core</td><td>单元测试、单进程演示</td></tr>
+  <tr><td><code>JsonFileAgentStateStore</code></td><td>agentscope-core</td><td>单机开发，按 (userId, sessionId) 分目录存 JSON</td></tr>
+  <tr><td><code>RedisAgentStateStore</code></td><td>agentscope-extensions-redis</td><td>多副本生产，跨进程跨机器共享</td></tr>
+  <tr><td><code>MysqlAgentStateStore</code></td><td>agentscope-extensions-mysql</td><td>需要审计与报表的关系型库场景</td></tr>
+</table>
+<p>并发行为也要记住：同一 <code>(userId, sessionId)</code> 的调用按到达顺序<b>串行</b>执行，第二个请求等待第一个完成，因此不会出现并发写坏同一份状态的问题；但是不同 session 之间完全并行。</p>
+
+<h2>4.5 实践：RuntimeContext 的三层槽位</h2>
+<p><code>RuntimeContext</code>（io.agentscope.core.agent.RuntimeContext）是“每次调用”的元数据容器，分三层：</p>
+<pre><code class="code-title">构造并传入</code><code class="language-java">RuntimeContext ctx =
+        RuntimeContext.builder()
+                .userId("alice")                            // 可选；null 表示匿名
+                .sessionId("session-001")                   // 选择状态槽位
+                .put("request_id", "req-abc-123")           // 字符串属性层
+                .put(UserContext.class, new UserContext("alice", "zh"))  // 类型化属性层
+                .build();
+
+Msg result = agent.call(List.of(new UserMessage("user", "Hi.")), ctx).block();</code></pre>
+<p>三层槽位的可见范围不同：</p>
+<ul>
+  <li><b>会话字段</b>：驱动状态持久化的寻址；</li>
+  <li><b>字符串属性</b>：通常用于内部协调，例如中间件之间传递值；</li>
+  <li><b>类型化属性</b>：为工具准备——@Tool 方法里声明同类型参数，框架会自动注入（第 5 章实践）。</li>
+</ul>
+<p>注意区分：<b>RuntimeContext 不持久化</b>，它承载“本次调用”的瞬态数据（租户、请求 ID、数据库连接等）；AgentState 才是可恢复状态。不传 context 时框架使用 <code>RuntimeContext.empty()</code>，并回退到 builder 上的 <code>defaultSessionId</code>。</p>
+
+<h2>4.6 实践：中断执行</h2>
+<p>用户关闭页面、请求超时、服务优雅停机——这些时刻需要从外部中止一个正在运行的调用。<code>interrupt</code> 按会话生效，不会波及其他会话：</p>
+<pre><code class="code-title">中断指定会话</code><code class="language-java">// 构造标识目标会话的 RuntimeContext
+RuntimeContext target = RuntimeContext.builder()
+        .userId("alice")
+        .sessionId("session-001")
+        .build();
+
+// 方式一：直接中断
+agent.interrupt(target);
+
+// 方式二：带消息中断——中断消息会被模型在恢复时看到
+agent.interrupt(target, new UserMessage("user", "用户已取消操作"));
+
+// 也可以直接用字符串：
+agent.interrupt("alice", "session-001");</code></pre>
+<p>中断后的行为：当前推理或工具执行在下一个检查点（推理开始、行动开始、流式输出每个分片）被拦截；调用方得到一个带 <code>GenerateReason.INTERRUPTED</code> 标记的 Msg；AgentState 自动保存，因此下次调用会从中断点恢复。</p>
+
+<h2>4.7 更多 builder 能力</h2>
+<p>ReActAgent 的 builder 还有几组常用参数，此处先混个面熟，后续章节各自展开：</p>
+<table>
+  <tr><th style="width:26%">参数</th><th>说明</th></tr>
+  <tr><td><code>maxIters</code> / <code>reactConfig</code></td><td>主循环最大迭代次数（默认 10）与拒绝处理方式</td></tr>
+  <tr><td><code>maxRetries</code> / <code>fallbackModel</code> / <code>failoverListener</code></td><td>模型容错：失败重试次数、备用模型、切换监听器</td></tr>
+  <tr><td><code>permissionContext</code></td><td>工具执行权限规则（第 6 章）</td></tr>
+  <tr><td><code>middlewares</code></td><td>中间件列表（第 7 章）</td></tr>
+  <tr><td><code>enableMetaTool(true)</code></td><td>注册 list_tools / activate_group 元工具，让模型自主发现并切换工具组</td></tr>
+  <tr><td><code>enableTaskList()</code></td><td>注册任务列表工具，让模型把复杂任务拆解为步骤并逐步完成</td></tr>
+</table>
+
+<div class="box box-practice">
+  <div class="box-title"><span class="ico">✍️</span>动手练习 4</div>
+  <ol>
+    <li>把 4.4 的代码改为 <code>InMemoryAgentStateStore</code>，重启进程后再问“我今天要做什么”，观察状态是否丢失；然后换回 JsonFile 实现验证持久化；</li>
+    <li>编写一个后台线程，在调用进行中触发 <code>agent.interrupt("alice", "session-1")</code>，观察返回的 Msg 与下次调用的行为；</li>
+    <li>开启 <code>enableTaskList()</code>，输入一个多步骤任务（例如“帮我规划明天的三件事并逐条确认”），观察模型如何使用任务工具。</li>
+  </ol>
+</div>
+
+<h2>4.8 本章小结</h2>
+<p>ReActAgent 是无状态的单例引擎，状态保存在 AgentState 中并由 AgentStateStore 持久化；RuntimeContext 决定每次调用使用哪个状态槽位，并且携带瞬态元数据。此时你已经能构建可靠的多用户服务了，但是智能体还只能“说”不能“做”——下一章引入工具。</p>

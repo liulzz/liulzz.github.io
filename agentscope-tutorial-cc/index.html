@@ -1,0 +1,1527 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>AgentScope Java 2.0.4 Agent 开发标准范式指南</title>
+<style>
+:root {
+  --fg: #1f2328;
+  --fg-muted: #57606a;
+  --fg-soft: #8b949e;
+  --bg: #ffffff;
+  --bg-soft: #f6f8fa;
+  --bg-code: #f6f8fa;
+  --border: #d0d7de;
+  --border-soft: #eaeef2;
+  --accent: #0969da;
+  --accent-soft: #ddf4ff;
+  --warn-bg: #fff8c5;
+  --warn-border: #d4a72c;
+  --info-bg: #ddf4ff;
+  --info-border: #54aeff;
+  --table-stripe: #f6f8fa;
+  --code-fg: #1f2328;
+  --shadow: 0 1px 3px rgba(31, 35, 40, 0.04);
+}
+* { box-sizing: border-box; }
+html, body {
+  margin: 0;
+  padding: 0;
+  background: var(--bg);
+  color: var(--fg);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC",
+    "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans CJK SC", sans-serif;
+  font-size: 16px;
+  line-height: 1.75;
+}
+.page {
+  max-width: 920px;
+  margin: 0 auto;
+  padding: 56px 64px 96px;
+}
+header.cover {
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 28px;
+  margin-bottom: 40px;
+}
+header.cover h1 {
+  font-size: 32px;
+  line-height: 1.3;
+  margin: 0 0 12px 0;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+header.cover .meta {
+  color: var(--fg-muted);
+  font-size: 14px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  align-items: center;
+}
+header.cover .meta .pill {
+  background: var(--bg-soft);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 2px 10px;
+  font-size: 12px;
+  color: var(--fg-muted);
+}
+header.cover .meta .pill.accent {
+  background: var(--accent-soft);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+h1, h2, h3, h4, h5 {
+  font-weight: 600;
+  line-height: 1.4;
+  margin: 32px 0 16px;
+  letter-spacing: -0.005em;
+}
+h1 { font-size: 30px; padding-bottom: 12px; border-bottom: 1px solid var(--border); }
+h2 {
+  font-size: 24px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border-soft);
+  margin-top: 48px;
+}
+h3 { font-size: 20px; margin-top: 32px; }
+h4 { font-size: 17px; margin-top: 24px; color: var(--fg-muted); }
+p { margin: 12px 0; }
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+strong { color: var(--fg); font-weight: 600; }
+em { color: var(--fg-muted); }
+ul, ol { padding-left: 28px; margin: 12px 0; }
+li { margin: 4px 0; }
+li > p { margin: 4px 0; }
+blockquote {
+  margin: 16px 0;
+  padding: 10px 18px;
+  border-left: 4px solid var(--accent);
+  background: var(--bg-soft);
+  color: var(--fg-muted);
+  border-radius: 0 6px 6px 0;
+}
+blockquote p { margin: 4px 0; }
+blockquote p:first-child { margin-top: 0; }
+blockquote p:last-child { margin-bottom: 0; }
+code {
+  font-family: "SFMono-Regular", "JetBrains Mono", "SF Mono", Consolas,
+    "Liberation Mono", Menlo, monospace;
+  font-size: 0.88em;
+  background: var(--bg-code);
+  padding: 2px 6px;
+  border-radius: 4px;
+  color: var(--code-fg);
+  border: 1px solid var(--border-soft);
+}
+pre {
+  background: var(--bg-code);
+  border: 1px solid var(--border-soft);
+  border-radius: 8px;
+  padding: 16px 18px;
+  overflow-x: auto;
+  line-height: 1.55;
+  margin: 16px 0;
+  font-size: 13.5px;
+  box-shadow: var(--shadow);
+}
+pre code {
+  background: transparent;
+  border: none;
+  padding: 0;
+  font-size: inherit;
+  color: var(--code-fg);
+}
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 16px 0;
+  font-size: 14.5px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  overflow: hidden;
+}
+th, td {
+  border: 1px solid var(--border-soft);
+  padding: 9px 14px;
+  text-align: left;
+  vertical-align: top;
+}
+th {
+  background: var(--bg-soft);
+  font-weight: 600;
+  color: var(--fg);
+}
+tbody tr:nth-child(even) { background: var(--table-stripe); }
+hr {
+  border: none;
+  border-top: 1px dashed var(--border);
+  margin: 32px 0;
+}
+.toc {
+  background: var(--bg-soft);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 18px 24px;
+  margin: 24px 0 40px;
+}
+.toc h2 {
+  font-size: 16px;
+  margin: 0 0 12px;
+  padding: 0;
+  border: none;
+  color: var(--fg-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.toc ul { list-style: none; padding-left: 0; margin: 0; }
+.toc li { margin: 4px 0; }
+.toc a { color: var(--fg); }
+.toc .lvl-3 { padding-left: 18px; font-size: 14px; color: var(--fg-muted); }
+.callout {
+  border-radius: 8px;
+  padding: 14px 18px;
+  margin: 16px 0;
+  border-left: 4px solid;
+  font-size: 15px;
+}
+.callout.warn { background: var(--warn-bg); border-color: var(--warn-border); }
+.callout.info { background: var(--info-bg); border-color: var(--info-border); }
+.callout p:first-child { margin-top: 0; }
+.callout p:last-child { margin-bottom: 0; }
+footer {
+  margin-top: 80px;
+  padding-top: 20px;
+  border-top: 1px solid var(--border);
+  color: var(--fg-soft);
+  font-size: 13px;
+  text-align: center;
+}
+@media (max-width: 768px) {
+  .page { padding: 28px 20px 60px; }
+  header.cover h1 { font-size: 26px; }
+  h1 { font-size: 24px; }
+  h2 { font-size: 20px; }
+  h3 { font-size: 17px; }
+  pre { font-size: 12.5px; padding: 12px 14px; }
+  table { font-size: 13px; }
+}
+@media print {
+  body { font-size: 12pt; }
+  .page { max-width: 100%; padding: 0; }
+  pre, table { page-break-inside: avoid; }
+  h2, h3 { page-break-after: avoid; }
+}
+</style>
+</head>
+<body>
+<main class="page">
+<header class="cover">
+<h1>AgentScope Java 2.0.4 Agent 开发标准范式指南</h1>
+<div class="meta">
+  <span class="pill accent">v2.0.4</span>
+  <span class="pill">2026-10-08</span>
+  <span class="pill">JDK 17+ · Maven 3.6+</span>
+  <span class="pill">Apache License 2.0</span>
+  <span>基于 <a href="https://github.com/agentscope-ai/agentscope-java">agentscope-java</a> 官方仓库示例</span>
+</div>
+</header>
+<nav class="toc"><h2>目录</h2><ul>
+<li class="lvl-2"><a href="#_1">第一性原理</a></li>
+<li class="lvl-2"><a href="#0">📦 第 0 步：依赖引入</a></li>
+<li class="lvl-2"><a href="#1-agentreactagent">🎯 范式 1：最简 Agent（ReActAgent 基线）</a></li>
+<li class="lvl-2"><a href="#2tool">🔧 范式 2：工具调用（@Tool 注解）</a></li>
+<li class="lvl-2"><a href="#3">🧩 范式 3：中间件六阶段（横切关注点）</a></li>
+<li class="lvl-2"><a href="#4agentstatestore">💾 范式 4：会话持久化（AgentStateStore）</a></li>
+<li class="lvl-2"><a href="#5harnessagent-204">🏗️ 范式 5：HarnessAgent 生产范式（核心 · 2.0.4）</a></li>
+<li class="lvl-3"><a href="#204-agentrun-runcontrol">2.0.4 新增：AgentRun + RunControl（每次调用一份）</a></li>
+<li class="lvl-3"><a href="#204-toolrequestconfig">2.0.4 新增：ToolRequestConfig（请求级工具隔离）</a></li>
+<li class="lvl-3"><a href="#204-runtimecontext">2.0.4 关键变化：RuntimeContext 显式传递</a></li>
+<li class="lvl-2"><a href="#6agentsession-web-chat">🌐 范式 6：AgentSession 可恢复 Web Chat（生产完整态）</a></li>
+<li class="lvl-2"><a href="#agent">👥 多 Agent 编排模式速查</a></li>
+<li class="lvl-2"><a href="#_2">🔌 其他常用集成（官方示例清单）</a></li>
+<li class="lvl-2"><a href="#_3">📐 通用设计原则（从全部示例提炼）</a></li>
+<li class="lvl-2"><a href="#_4">🗂️ 推荐项目结构</a></li>
+<li class="lvl-2"><a href="#_5">🚀 起步三步</a></li>
+<li class="lvl-2"><a href="#_6">📚 示例工程速查表</a></li>
+<li class="lvl-2"><a href="#7-spring-boot">🏭 范式 7：生产级 Spring Boot 部署</a></li>
+<li class="lvl-3"><a href="#71">7.1 目录结构</a></li>
+<li class="lvl-3"><a href="#72-applicationyml">7.2 配置文件 application.yml</a></li>
+<li class="lvl-3"><a href="#73-agentpropertiesjava">7.3 类型安全配置 AgentProperties.java</a></li>
+<li class="lvl-3"><a href="#74-agent-agentconfigjava">7.4 Agent 装配 AgentConfig.java</a></li>
+<li class="lvl-3"><a href="#75-runtimecontextresolverjava">7.5 多租户解析 RuntimeContextResolver.java</a></li>
+<li class="lvl-3"><a href="#76-rest-chatrestcontrollerjava">7.6 同步 REST ChatRestController.java</a></li>
+<li class="lvl-3"><a href="#77-sse-chatstreamcontrollerjava">7.7 流式 SSE ChatStreamController.java</a></li>
+<li class="lvl-3"><a href="#78-dto">7.8 DTO</a></li>
+<li class="lvl-3"><a href="#79-orderqueryservicejava">7.9 业务工具示例 OrderQueryService.java</a></li>
+<li class="lvl-3"><a href="#710-authauditmiddlewarejava">7.10 横切中间件 AuthAuditMiddleware.java</a></li>
+<li class="lvl-3"><a href="#711-spring-security-securityconfigjava">7.11 Spring Security SecurityConfig.java</a></li>
+<li class="lvl-3"><a href="#712-observabilityconfigjava">7.12 可观测 ObservabilityConfig.java</a></li>
+<li class="lvl-3"><a href="#713-agentlifecyclejava">7.13 优雅停机 AgentLifecycle.java</a></li>
+<li class="lvl-3"><a href="#714-controller-globalexceptionhandlerjava">7.14 Controller 异常统一处理 GlobalExceptionHandler.java</a></li>
+<li class="lvl-3"><a href="#715">7.15 客户端调用示例</a></li>
+<li class="lvl-3"><a href="#716">7.16 反模式清单（不要这么写）</a></li>
+<li class="lvl-2"><a href="#_7">🎓 一句话总结</a></li>
+<li class="lvl-2"><a href="#203-204">🔄 2.0.3 → 2.0.4 升级迁移清单</a></li>
+<li class="lvl-3"><a href="#_8">编译会失败的破坏性变更</a></li>
+<li class="lvl-3"><a href="#_9">编译能过但行为不同</a></li>
+<li class="lvl-3"><a href="#_10">推荐的迁移步骤</a></li>
+<li class="lvl-3"><a href="#_11">顺带新增的可用能力（不是破坏性的）</a></li>
+</ul></nav>
+<h1 id="agentscope-java-20-agent">AgentScope Java 2.0 Agent 开发标准范式指南</h1>
+<blockquote>
+<p><strong>来源</strong>：基于 <a href="https://github.com/agentscope-ai/agentscope-java">agentscope-ai/agentscope-java</a> 官方仓库（Oct 8, 2026 发布 2.0.4 / 2.1.0-BETA1）的 <code>agentscope-examples</code> 示例工程综合提炼。<br />
+<strong>定位</strong>：构建<strong>分布式、生产级、长时间运行</strong> Agent 的企业级 Java 框架。<br />
+<strong>要求</strong>：JDK 17+ · Maven 3.6+ · Apache License 2.0 · <strong>当前稳定版 2.0.4（2026-10-08）</strong> · 下一个发布 2.1.0</p>
+<p><strong>落地原则</strong>：示范代码全部按生产标准写——Spring Boot 容器管理 Bean 生命周期、WebFlux SSE 流式、Spring Security 鉴权、Micrometer 可观测、<code>@PreDestroy</code> 优雅停机，<strong>不出现 <code>main()</code>、不写 Demo</strong>。</p>
+</blockquote>
+<hr />
+<h2 id="_1">第一性原理</h2>
+<pre><code>ReActAgent（推理-行动循环内核，纯逻辑）
+        ↓ 叠加
+HarnessAgent（工程基础设施：工作区/记忆/技能/子Agent/压缩/恢复）
+        ↓ 组装
+你的业务代码（只写 Builder 配置 + @Tool 方法 + 可选 Middleware）
+</code></pre>
+<p>Java 版与 Python 版的最大差异：<strong>ReActAgent 与 HarnessAgent 分层</strong>。日常演示用 <code>ReActAgent</code>，生产长时间任务一律用 <code>HarnessAgent</code>。</p>
+<hr />
+<h2 id="0">📦 第 0 步：依赖引入</h2>
+<pre><code class="language-xml">&lt;!-- 生产基线：Harness 层（含 core） --&gt;
+&lt;dependency&gt;
+    &lt;groupId&gt;io.agentscope&lt;/groupId&gt;
+    &lt;artifactId&gt;agentscope-harness&lt;/artifactId&gt;
+    &lt;version&gt;2.0.4&lt;/version&gt;
+&lt;/dependency&gt;
+
+&lt;!-- 模型提供商按需选一（也可用 BOM 统一管版本） --&gt;
+&lt;dependency&gt;
+    &lt;groupId&gt;io.agentscope&lt;/groupId&gt;
+    &lt;artifactId&gt;agentscope-extensions-model-dashscope&lt;/artifactId&gt;
+    &lt;version&gt;2.0.4&lt;/version&gt;
+&lt;/dependency&gt;
+&lt;!-- 可选：model-openai / model-openai-responses (2.0.4 新增) / model-anthropic / model-gemini / model-ollama --&gt;
+</code></pre>
+<p>只需推理与工具 API（无 Workspace/记忆/恢复）时，可只依赖 <code>agentscope-core</code> + 模型扩展。</p>
+<hr />
+<h2 id="1-agentreactagent">🎯 范式 1：最简 Agent（ReActAgent 基线）</h2>
+<blockquote>
+<p>出处：<code>examples/documentation2/quickstart/BasicChatExample.java</code></p>
+</blockquote>
+<pre><code class="language-java">ReActAgent agent = ReActAgent.builder()
+        .name(&quot;Assistant&quot;)
+        .sysPrompt(&quot;You are a helpful AI assistant. Be friendly and concise.&quot;)
+        .model(&quot;dashscope:qwen-plus&quot;)   // 字符串模型名，ModelRegistry 自动解析提供商与 API Key
+        .toolkit(new Toolkit())          // 2.0 不再需要 .memory(...)，历史由 AgentState 持有
+        .build();
+
+// 流式输出（Reactor）
+agent.streamEvents(new UserMessage(&quot;Hello!&quot;))
+        .doOnNext(event -&gt; {
+            if (event instanceof TextBlockDeltaEvent e) {
+                System.out.print(e.getDelta());
+            }
+        })
+        .blockLast();
+
+// 或阻塞式
+Msg reply = agent.call(new UserMessage(&quot;Hi&quot;)).block();
+</code></pre>
+<p><strong>要点</strong>：<br />
+- <code>model("dashscope:qwen-plus")</code> 字符串即可，Registry 自动解析（也可显式 <code>DashScopeChatModel.builder()...build()</code>）<br />
+- 2.0 移除了 <code>.memory(new InMemoryMemory())</code> —— 会话历史在 <code>AgentState</code> 里<br />
+- 事件流基于 <strong>Reactor</strong>（<code>Flux</code>/<code>Mono</code>），与 Spring WebFlux 天然契合</p>
+<hr />
+<h2 id="2tool">🔧 范式 2：工具调用（@Tool 注解）</h2>
+<blockquote>
+<p>出处：<code>examples/documentation2/tool/ToolCallingExample.java</code></p>
+</blockquote>
+<pre><code class="language-java">Toolkit toolkit = new Toolkit();
+toolkit.registerTool(new SimpleTools());   // 一个类可含多个 @Tool 方法
+
+ReActAgent agent = ReActAgent.builder()
+        .name(&quot;ToolAgent&quot;)
+        .sysPrompt(&quot;You are a helpful assistant with access to tools...&quot;)
+        .model(DashScopeChatModel.builder()
+                .apiKey(apiKey)
+                .modelName(&quot;qwen-max&quot;)
+                .stream(true)
+                .enableThinking(false)
+                .formatter(new DashScopeChatFormatter())
+                .build())
+        .toolkit(toolkit)
+        .middleware(new AgentTraceMiddleware())   // 内置追踪中间件
+        .build();
+
+public static class SimpleTools {
+
+    @Tool(name = &quot;get_current_time&quot;,
+          description = &quot;Get the current time in a specific timezone&quot;)
+    public String getCurrentTime(
+            @ToolParam(name = &quot;timezone&quot;,
+                       description = &quot;Timezone name, e.g., 'Asia/Tokyo'&quot;) String timezone) {
+        // 纯 Java 方法，返回值即工具结果
+        return &quot;Current time in &quot; + timezone + &quot;: ...&quot;;
+    }
+}
+</code></pre>
+<p><strong>工具规范</strong>：<br />
+- 一个 POJO 类，方法上加 <code>@Tool(name, description)</code>，参数上加 <code>@ToolParam(name, description)</code><br />
+- 注册方式：<code>toolkit.registerTool(instance)</code>，Schema 从 Java 类自动生成<br />
+- 返回类型推荐 <code>ToolResultBlock</code>（显式 <code>success()/error()</code> 状态）；返回 <code>String</code> 也可<br />
+- <strong>带进度</strong>的工具：方法追加 <code>ToolEmitter emitter</code> 参数，<code>emitter.emit(...)</code> 推进度（只给 UI 看，不进模型上下文）</p>
+<hr />
+<h2 id="3">🧩 范式 3：中间件六阶段（横切关注点）</h2>
+<blockquote>
+<p>出处：<code>examples/documentation2/middleware/CustomizedMiddlewareExample.java</code></p>
+</blockquote>
+<pre><code class="language-java">static class MonitoringMiddleware implements MiddlewareBase {
+
+    @Override
+    public Set&lt;ExtensionPoint&gt; activePoints() {
+        return EnumSet.of(
+            ExtensionPoint.ON_AGENT,       // 整个 agent 调用前后
+            ExtensionPoint.ON_REASONING,   // 推理（模型调用）前后
+            ExtensionPoint.ON_ACTING);     // 行动（工具执行）前后
+    }
+
+    @Override
+    public Flux&lt;AgentEvent&gt; onAgent(Agent agent, RuntimeContext ctx,
+                                    AgentInput input,
+                                    Function&lt;AgentInput, Flux&lt;AgentEvent&gt;&gt; next) {
+        System.out.println(&quot;[MW] onAgent START — session=&quot; + ctx.sessionId()
+                + &quot; msgs=&quot; + input.msgs().size());
+        return next.apply(input)
+                .doOnComplete(() -&gt; System.out.println(&quot;[MW] onAgent END&quot;));
+    }
+
+    @Override
+    public Flux&lt;AgentEvent&gt; onActing(Agent agent, RuntimeContext ctx,
+                                     ActingInput input,
+                                     Function&lt;ActingInput, Flux&lt;AgentEvent&gt;&gt; next) {
+        String tools = input.toolCalls().stream()
+                .map(ToolUseBlock::getName).collect(Collectors.joining(&quot;, &quot;));
+        return next.apply(input)
+                .doOnNext(e -&gt; { if (e instanceof ToolProgressEvent p)
+                    System.out.println(&quot;[MW] progress: &quot; + p.getText()); });
+    }
+    // onReasoning / onModelCall / onSystemPrompt / onAgentStateReady 同理
+}
+</code></pre>
+<p><strong>六个扩展点</strong>（取代 v1 扁平钩子）：</p>
+<table>
+<thead>
+<tr>
+<th>扩展点</th>
+<th>拦截时机</th>
+<th>典型用途</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>onAgent</code></td>
+<td>整轮调用前后</td>
+<td>计时、审计、限流</td>
+</tr>
+<tr>
+<td><code>onReasoning</code></td>
+<td>模型推理前后</td>
+<td>上下文裁剪、日志</td>
+</tr>
+<tr>
+<td><code>onActing</code></td>
+<td>工具执行前后</td>
+<td>权限门控、进度监听</td>
+</tr>
+<tr>
+<td><code>onModelCall</code></td>
+<td>底层模型调用</td>
+<td>重试、降级、计费</td>
+</tr>
+<tr>
+<td><code>onSystemPrompt</code></td>
+<td>系统提示组装</td>
+<td>动态注入（RAG/记忆）</td>
+</tr>
+<tr>
+<td><code>onAgentStateReady</code></td>
+<td>状态就绪</td>
+<td>恢复校验</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="4agentstatestore">💾 范式 4：会话持久化（AgentStateStore）</h2>
+<blockquote>
+<p>出处：<code>examples/documentation2/state/StateExample.java</code></p>
+</blockquote>
+<pre><code class="language-java">AgentStateStore stateStore =
+        new JsonFileAgentStateStore(
+                Paths.get(System.getProperty(&quot;user.home&quot;),
+                          &quot;.agentscope&quot;, &quot;examples&quot;, &quot;sessions&quot;));
+
+ReActAgent agent = ReActAgent.builder()
+        .name(&quot;Assistant&quot;)
+        .sysPrompt(&quot;You are a helpful assistant with persistent memory...&quot;)
+        .toolkit(new Toolkit())
+        .stateStore(stateStore)              // 配置即自动加载/保存
+        .defaultSessionId(&quot;alice_session&quot;)   // 同 sessionId 续聊
+        .model(...)
+        .build();
+
+// 首次调用自动加载历史；每次交互后自动持久化
+agent.call(new UserMessage(&quot;My name is Alice&quot;)).block();
+
+// 读取历史
+List&lt;Msg&gt; history = agent.getAgentState().getContext();
+</code></pre>
+<p><strong>Store 可选实现</strong>：<code>InMemory</code>（测试）/ <code>JsonFile</code>（单机）/ <code>MySQL</code> / <code>Redis</code> / <code>PostgreSQL</code>（分布式）。<br />
+<strong>关键</strong>：2.0 不再有 <code>agent.loadFrom()/saveTo()</code> —— builder 上配 <code>stateStore + sessionId</code> 即全自动。</p>
+<hr />
+<h2 id="5harnessagent-204">🏗️ 范式 5：HarnessAgent 生产范式（核心 · 2.0.4）</h2>
+<blockquote>
+<p>出处：官方 README Quick Start + 2.0.4 升级指南</p>
+</blockquote>
+<pre><code class="language-java">// ① 启动时配置一次，线程安全共享
+private static final HarnessAgent.Builder AGENT_BUILDER = HarnessAgent.builder()
+        .name(&quot;assistant&quot;)
+        .agentId(&quot;assistant&quot;)
+        .sysPrompt(&quot;You are a helpful AI assistant.&quot;)
+        .model(&quot;dashscope:qwen-plus&quot;)
+        .workspace(Paths.get(&quot;.agentscope/workspace&quot;));   // 工作区：文件/记忆/技能落地处
+
+// ② 每次请求 build() + try-with-resources
+try (HarnessAgent agent = AGENT_BUILDER.build()) {
+    RuntimeContext ctx = RuntimeContext.builder()
+            .sessionId(&quot;demo&quot;)      // 会话维度
+            .userId(&quot;alice&quot;)        // 用户维度 —— 多租户隔离贯穿 workspace 路径/KV 命名空间/沙箱状态槽
+            .build();
+
+    // 阻塞式 —— 2.0.4：每次 call 返回 AgentRun 句柄，承载本次执行控制权
+    AgentRun run = agent.call(new UserMessage(&quot;Hello!&quot;), ctx).block();
+
+    // 流式事件：32 种类型化事件
+    agent.streamEvents(new UserMessage(&quot;Summarize today.&quot;), ctx)
+            .doOnNext(event -&gt; {
+                switch (event.getType()) {
+                    case TEXT_BLOCK_DELTA -&gt;
+                        System.out.print(((TextBlockDeltaEvent) event).getDelta());
+                    case TOOL_CALL_START -&gt;
+                        System.out.println(&quot;[tool] &quot;
+                            + ((ToolCallStartEvent) event).getToolCallName());
+                    default -&gt; { }
+                }
+            })
+            .blockLast();
+}
+</code></pre>
+<h3 id="204-agentrun-runcontrol">2.0.4 新增：<code>AgentRun</code> + <code>RunControl</code>（每次调用一份）</h3>
+<pre><code class="language-java">try (HarnessAgent agent = AGENT_BUILDER.build()) {
+    AgentRun run = agent.call(new UserMessage(&quot;...&quot;), ctx).block();
+
+    // 中途取消：只影响本次 run，不污染 agent
+    run.cancel();
+
+    // 查看本次执行的元数据
+    run.getRunId();
+    run.isCompleted();
+}
+</code></pre>
+<h3 id="204-toolrequestconfig">2.0.4 新增：<code>ToolRequestConfig</code>（请求级工具隔离）</h3>
+<pre><code class="language-java">ToolRequestConfig toolCfg = ToolRequestConfig.builder()
+        .visibleToolNames(Set.of(&quot;get_current_time&quot;, &quot;calculate&quot;))  // 本次只暴露这些
+        .streamingCallbacks(myCallbacks)                            // 流式回调
+        .sessionSkillResources(mySkillBundle)                       // 会话级技能资源
+        .build();
+
+agent.call(new UserMessage(&quot;...&quot;), ctx, toolCfg).block();
+</code></pre>
+<h3 id="204-runtimecontext">2.0.4 关键变化：RuntimeContext 显式传递</h3>
+<pre><code class="language-java">// 旧（2.0.3）: 通过实现 RuntimeContextAware 让框架自动塞入
+public class MyTool implements RuntimeContextAware {
+    @Override public void setRuntimeContext(RuntimeContext rc) { ... }   // 2.0.4 已删除
+}
+
+// 新（2.0.4）: 工具方法直接声明 RuntimeContext 参数（不加 @ToolParam，模型看不见）
+@Tool(name = &quot;my_action&quot;, description = &quot;...&quot;)
+public String myAction(
+        @ToolParam(name = &quot;arg&quot;) String arg,
+        RuntimeContext ctx) {                                            // ← 显式注入
+    return &quot;session=&quot; + ctx.sessionId() + &quot; processed &quot; + arg;
+}
+</code></pre>
+<p>中间件签名上 <code>RuntimeContext</code> 仍在 <code>onAgent(Agent, RuntimeContext, ...)</code> 第二个参数，无需变更。</p>
+<p><strong>HarnessAgent 在 ReActAgent 之上叠加的能力</strong>：</p>
+<table>
+<thead>
+<tr>
+<th>能力</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>技能库自我进化</td>
+<td>成功模式自动存为 Markdown 技能，跨会话共享</td>
+</tr>
+<tr>
+<td>分层记忆</td>
+<td>上下文对话 + Agent 维护的 <code>MEMORY.md</code> + 磁盘事实日志，自动压缩</td>
+</tr>
+<tr>
+<td>子 Agent</td>
+<td>Markdown 声明子 Agent 规格，运行时 <code>agent_spawn</code> / <code>agent_send</code></td>
+</tr>
+<tr>
+<td>自动上下文管理</td>
+<td>结构化压缩保留目标/状态/发现/下一步；超大工具结果卸载磁盘</td>
+</tr>
+<tr>
+<td>Plan Mode</td>
+<td>长任务只读规划态，计划文件持久化驱动执行</td>
+</tr>
+<tr>
+<td>权限三态引擎</td>
+<td>allow / approve（HITL 人工批准）/ deny</td>
+</tr>
+<tr>
+<td>多租户隔离</td>
+<td>session/user/agent/org 四维，RuntimeContext 显式贯穿全链路</td>
+</tr>
+<tr>
+<td><strong>AgentRun/RunControl</strong>（2.0.4 新增）</td>
+<td>单次执行句柄、独立取消与状态查询</td>
+</tr>
+<tr>
+<td><strong>ToolRequestConfig</strong>（2.0.4 新增）</td>
+<td>工具可见性/回调/技能资源按请求隔离</td>
+</tr>
+<tr>
+<td><strong>MongoDB 存储</strong>（2.0.4 新增）</td>
+<td>持久化后端扩展</td>
+</tr>
+<tr>
+<td><strong>OpenAI Responses API</strong>（2.0.4 新增）</td>
+<td>替代 Chat Completions 的新版 OpenAI 接口</td>
+</tr>
+<tr>
+<td><strong>Anthropic Bearer Token</strong>（2.0.4 新增）</td>
+<td>鉴权方式</td>
+</tr>
+<tr>
+<td><strong>个人微信 iLink / 钉钉 HTTP 回调</strong>（2.0.4 新增）</td>
+<td>IM Channel 扩展</td>
+</tr>
+</tbody>
+</table>
+<p><strong>选择标准</strong>：<code>call / streamEvents</code> 够用就不上 <code>AgentSession</code>；页面关闭后任务仍要跑、忙时排队、中断续跑 → 上 <code>AgentSession</code>（范式 6）。</p>
+<hr />
+<h2 id="6agentsession-web-chat">🌐 范式 6：AgentSession 可恢复 Web Chat（生产完整态）</h2>
+<blockquote>
+<p>出处：<code>examples/agents/agentscope-chat/</code>（可直接运行的完整 Web 应用，默认离线模型、免 API Key）</p>
+</blockquote>
+<pre><code class="language-java">// 通过 agent.session(context) 获得会话门面：
+// - submit：提交任务（忙时排队，新 turnId）
+// - steer：给正在跑的任务补充指引（不换 turn）
+// - inject：只注入参考材料，不触发执行
+// - respond / resume：外部答复 / 断点续跑
+</code></pre>
+<p><strong>HTTP API 速查</strong>（该示例暴露的 REST 端点）：</p>
+<table>
+<thead>
+<tr>
+<th>操作</th>
+<th>端点</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>会话列表</td>
+<td><code>GET /api/sessions</code></td>
+</tr>
+<tr>
+<td>快照/消息/待答复</td>
+<td><code>GET /api/sessions/{session}</code></td>
+</tr>
+<tr>
+<td>提交任务</td>
+<td><code>POST /api/sessions/{session}/turns</code></td>
+</tr>
+<tr>
+<td>引导当前任务</td>
+<td><code>POST /api/sessions/{session}/steer</code></td>
+</tr>
+<tr>
+<td>注入材料</td>
+<td><code>POST /api/sessions/{session}/inject</code></td>
+</tr>
+<tr>
+<td>SSE 订阅（断线续传 Last-Event-ID）</td>
+<td><code>GET /api/sessions/{session}/stream?after={cursor}</code></td>
+</tr>
+<tr>
+<td>外部答复并继续</td>
+<td><code>POST /api/sessions/{session}/answers</code></td>
+</tr>
+<tr>
+<td>协作式中断</td>
+<td><code>POST /api/sessions/{session}/interrupt</code></td>
+</tr>
+<tr>
+<td>断点恢复</td>
+<td><code>POST /api/sessions/{session}/turns/{turn}/resume</code></td>
+</tr>
+</tbody>
+</table>
+<p><strong>运行</strong>：</p>
+<pre><code class="language-bash">mvn -pl agentscope-examples/agents/agentscope-chat -am package -DskipTests
+java -jar agentscope-examples/agents/agentscope-chat/target/agentscope-chat.jar
+# 打开 http://127.0.0.1:8087
+</code></pre>
+<hr />
+<h2 id="agent">👥 多 Agent 编排模式速查</h2>
+<blockquote>
+<p>出处：<code>examples/multiagent-patterns/</code>（每种模式一个可运行子工程，<code>mvn spring-boot:run</code>）</p>
+</blockquote>
+<table>
+<thead>
+<tr>
+<th>模式</th>
+<th>实现要点</th>
+<th>示例路径</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Pipeline</strong></td>
+<td><code>SequentialAgent</code> / <code>ParallelAgent</code> / <code>LoopAgent</code> 组合</td>
+<td><code>multiagent-patterns/pipeline</code></td>
+</tr>
+<tr>
+<td><strong>Routing</strong></td>
+<td><code>AgentScopeRoutingAgent</code>（简单）或 <code>StateGraph</code> + 路由子图（复杂）</td>
+<td><code>multiagent-patterns/routing</code></td>
+</tr>
+<tr>
+<td><strong>Skills</strong></td>
+<td><code>SkillBox</code> + <code>ClasspathSkillRepository</code> + <code>read_skill</code></td>
+<td><code>multiagent-patterns/skills</code></td>
+</tr>
+<tr>
+<td><strong>Subagents</strong></td>
+<td><code>TaskToolsBuilder</code> + Markdown/API 声明子 Agent</td>
+<td><code>multiagent-patterns/subagent</code></td>
+</tr>
+<tr>
+<td><strong>Supervisor</strong></td>
+<td><code>Toolkit.registration().subAgent()</code></td>
+<td><code>multiagent-patterns/supervisor</code></td>
+</tr>
+<tr>
+<td><strong>Handoffs</strong></td>
+<td><code>StateGraph</code> + 交接工具（更新 <code>active_agent</code>）+ 条件边</td>
+<td><code>multiagent-patterns/handoffs</code></td>
+</tr>
+<tr>
+<td><strong>Custom Workflow</strong></td>
+<td><code>StateGraph</code> + 自定义节点与边（如 RAG、SQL 工作流）</td>
+<td><code>multiagent-patterns/workflow</code></td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p>官方建议：<strong>不需要全用</strong>。按业务场景挑一两种，需要时组合。</p>
+</blockquote>
+<hr />
+<h2 id="_2">🔌 其他常用集成（官方示例清单）</h2>
+<table>
+<thead>
+<tr>
+<th>能力</th>
+<th>关键类/传输</th>
+<th>示例</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>结构化输出</strong></td>
+<td>Java 类定义 Schema，自动校验、类型安全提取（无需手写 JSON 解析）</td>
+<td><code>structuredoutput/StructuredOutputExample</code></td>
+</tr>
+<tr>
+<td><strong>MCP 本地</strong></td>
+<td>StdIO 传输（<code>@modelcontextprotocol/server-filesystem</code> 等）</td>
+<td><code>mcp/McpStdioExample</code></td>
+</tr>
+<tr>
+<td><strong>MCP 远程</strong></td>
+<td>SSE 或 Streamable HTTP 传输</td>
+<td><code>mcp/McpSseExample</code> / <code>McpStreamableHttpExample</code></td>
+</tr>
+<tr>
+<td><strong>工具组自治</strong></td>
+<td><code>reset_equipped_tools</code> 元工具，Agent 自主激活工具组</td>
+<td><code>tool/ToolGroupExample</code></td>
+</tr>
+<tr>
+<td><strong>Web 流式</strong></td>
+<td>Spring Boot + SSE 端点</td>
+<td><code>streaming/StreamingWebExample</code></td>
+</tr>
+<tr>
+<td><strong>中断与恢复</strong></td>
+<td>协作式中断、伪工具结果、优雅恢复</td>
+<td><code>hitl/InterruptionExample</code></td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="_3">📐 通用设计原则（从全部示例提炼）</h2>
+<ol>
+<li><strong>Builder 一次配置，多次 build()</strong> —— Builder 静态共享，请求级实例 try-with-resources</li>
+<li><strong>工具 = POJO + @Tool 注解</strong> —— 不写调度代码，Schema 自动生成</li>
+<li><strong>横切关注点全走 Middleware 六阶段</strong> —— 不侵入业务逻辑</li>
+<li><strong>配置即持久化</strong> —— <code>stateStore + sessionId</code> 替代手动 load/save</li>
+<li><strong>RuntimeContext 承载多租户</strong> —— sessionId/userId 从入口一路贯穿到 workspace 与沙箱</li>
+<li><strong>Reactor 流式优先</strong> —— <code>streamEvents</code> + <code>Flux</code>，与 Spring WebFlux/SSE 无缝</li>
+<li><strong>ReActAgent 起步，HarnessAgent 进生产</strong> —— 长任务、多租户、恢复能力只在上层提供</li>
+<li><strong>事件系统是一等公民</strong> —— 32 种类型化事件：模型调用、文本增量、工具执行、用户确认全覆盖；<code>ToolProgressEvent</code> 只给 UI，不污染模型上下文</li>
+</ol>
+<hr />
+<h2 id="_4">🗂️ 推荐项目结构</h2>
+<pre><code>my-agent-service/
+├── pom.xml                        # 依赖 agentscope-harness + 模型扩展（建议用 BOM）
+├── src/main/java/com/example/agent/
+│   ├── AgentConfig.java           # 静态 Builder（name/model/workspace/sysPrompt）
+│   ├── tools/
+│   │   └── BusinessTools.java     # @Tool 方法集合
+│   ├── middleware/
+│   │   └── AuditMiddleware.java   # 实现 MiddlewareBase 的横切逻辑
+│   ├── controller/
+│   │   └── ChatController.java    # SSE / REST 端点（Spring WebFlux）
+│   └── Application.java           # Spring Boot 入口
+└── .agentscope/
+    └── workspace/                 # 工作区（记忆 MEMORY.md、技能、会话日志）
+</code></pre>
+<hr />
+<h2 id="_5">🚀 起步三步</h2>
+<pre><code class="language-bash"># 1. 克隆并安装核心库
+git clone https://github.com/agentscope-ai/agentscope-java.git
+cd agentscope-java/agentscope-core &amp;&amp; mvn clean install
+
+# 2. 配置 API Key
+export DASHSCOPE_API_KEY=sk-...
+
+# 3. 跑最简示例（交互式聊天）
+cd ../agentscope-examples
+mvn exec:java -pl documentation \
+    -Dexec.mainClass=&quot;io.agentscope.examples.documentation2.quickstart.BasicChatExample&quot;
+
+# 进阶：完整 Web Chat（免 API Key，离线演示模型）
+mvn -pl agents/agentscope-chat -am package -DskipTests
+java -jar agents/agentscope-chat/target/agentscope-chat.jar
+</code></pre>
+<hr />
+<h2 id="_6">📚 示例工程速查表</h2>
+<table>
+<thead>
+<tr>
+<th>示例</th>
+<th>学什么</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>documentation2/quickstart/BasicChatExample</code></td>
+<td>ReActAgent 基线（第一步）</td>
+</tr>
+<tr>
+<td><code>documentation2/tool/ToolCallingExample</code></td>
+<td>@Tool 工具范式</td>
+</tr>
+<tr>
+<td><code>documentation2/tool/ToolGroupExample</code></td>
+<td>工具组自治（元工具）</td>
+</tr>
+<tr>
+<td><code>documentation2/middleware/CustomizedMiddlewareExample</code></td>
+<td>中间件六阶段 + ToolEmitter 进度</td>
+</tr>
+<tr>
+<td><code>documentation2/state/StateExample</code></td>
+<td>会话持久化</td>
+</tr>
+<tr>
+<td><code>documentation2/hitl/InterruptionExample</code></td>
+<td>中断与恢复</td>
+</tr>
+<tr>
+<td><code>documentation2/structuredoutput/StructuredOutputExample</code></td>
+<td>类型安全结构化输出</td>
+</tr>
+<tr>
+<td><code>documentation2/mcp/*</code></td>
+<td>MCP 三种传输（StdIO/SSE/HTTP）</td>
+</tr>
+<tr>
+<td><code>documentation2/streaming/StreamingWebExample</code></td>
+<td>Spring Boot + SSE</td>
+</tr>
+<tr>
+<td><code>agents/agentscope-chat</code></td>
+<td>生产级可恢复 Web Chat（最完整）</td>
+</tr>
+<tr>
+<td><code>multiagent-patterns/*</code></td>
+<td>七种多 Agent 编排模式</td>
+</tr>
+<tr>
+<td><code>documentation2/streaming/StreamingWebExample</code></td>
+<td>Spring Boot + WebFlux SSE 流式（推荐起点）</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="7-spring-boot">🏭 范式 7：生产级 Spring Boot 部署</h2>
+<blockquote>
+<p><strong>目标</strong>：把 HarnessAgent 接入企业级 Web 服务，支持同步 REST + 流式 SSE，多租户隔离、可观测、优雅停机。<br />
+<strong>栈</strong>：Spring Boot 3.3+ · JDK 17+ · Spring MVC（同步）+ Spring WebFlux（SSE）· Spring Security · Micrometer</p>
+</blockquote>
+<h3 id="71">7.1 目录结构</h3>
+<pre><code>com.example.agent
+├── AgentApplication.java
+├── config/
+│   ├── AgentProperties.java          # @ConfigurationProperties 类型安全配置
+│   ├── AgentConfig.java              # HarnessAgent 装配
+│   ├── SecurityConfig.java           # Spring Security 鉴权
+│   ├── WebConfig.java                # 注册 RuntimeContextResolver
+│   └── ObservabilityConfig.java      # Micrometer + 健康检查
+├── controller/
+│   ├── ChatRestController.java       # POST /api/v1/chat      同步
+│   └── ChatStreamController.java     # GET  /api/v1/chat/sse  SSE 流式
+├── resolver/
+│   └── RuntimeContextResolver.java   # Header → RuntimeContext
+├── dto/
+│   ├── ChatRequest.java
+│   ├── ChatResponse.java
+│   └── StreamChunk.java
+├── tools/
+│   └── OrderQueryService.java        # @Tool 业务类（示例）
+├── middleware/
+│   └── AuthAuditMiddleware.java      # 横切：鉴权 + 审计
+└── lifecycle/
+    └── AgentLifecycle.java           # @PreDestroy 优雅停机
+</code></pre>
+<h3 id="72-applicationyml">7.2 配置文件 <code>application.yml</code></h3>
+<pre><code class="language-yaml">server:
+  port: 8080
+  shutdown: graceful                # 启动时不再接收新连接，给在飞请求时间完成
+
+spring:
+  application:
+    name: agent-service
+  lifecycle:
+    timeout-per-shutdown-phase: 30s
+  data:
+    redis:
+      uri: redis://${REDIS_HOST:localhost}:${REDIS_PORT:6379}   # 状态持久化
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      show-details: when_authorized
+      probes:
+        enabled: true              # K8s liveness/readiness
+  metrics:
+    distribution:
+      percentiles-histogram:
+        http.server.requests: true
+      percentiles:
+        http.server.requests: 0.5, 0.95, 0.99
+
+agentscope:
+  model: dashscope:qwen-plus
+  workspace: ${AGENT_WORKSPACE:/var/lib/agent/workspace}
+  state-store:
+    type: redis
+  tool-timeout: PT30S
+  agent-timeout: PT2M
+  sse:
+    keep-alive: PT15S               # 防止代理/网关超时断流
+  security:
+    # 简化示例：单一共享 Token；生产应该用 JWT + 密钥中心
+    bearer-tokens:
+      - ${AGENT_SERVICE_TOKEN:please-change-me-in-prod}
+</code></pre>
+<h3 id="73-agentpropertiesjava">7.3 类型安全配置 <code>AgentProperties.java</code></h3>
+<pre><code class="language-java">@Data
+@ConfigurationProperties(prefix = &quot;agentscope&quot;)
+@Validated
+public class AgentProperties {
+    @NotBlank private String model;
+    @NotBlank private String workspace;
+    @NotNull  private StateStore stateStore = new StateStore();
+    @NotNull  private Duration toolTimeout = Duration.ofSeconds(30);
+    @NotNull  private Duration agentTimeout = Duration.ofMinutes(2);
+    @NotNull  private Sse sse = new Sse();
+    @NotNull  private Security security = new Security();
+
+    @Data public static class StateStore { @NotBlank private String type = &quot;memory&quot;; }
+    @Data public static class Sse       { @NotNull private Duration keepAlive = Duration.ofSeconds(15); }
+    @Data public static class Security  { @NotEmpty private List&lt;String&gt; bearerTokens; }
+}
+</code></pre>
+<blockquote>
+<p>注册：<code>@EnableConfigurationProperties(AgentProperties.class)</code> 加在 <code>AgentApplication</code> 或 <code>AgentConfig</code> 上。</p>
+</blockquote>
+<h3 id="74-agent-agentconfigjava">7.4 Agent 装配 <code>AgentConfig.java</code></h3>
+<pre><code class="language-java">@Slf4j
+@Configuration
+@EnableConfigurationProperties(AgentProperties.class)
+@RequiredArgsConstructor
+public class AgentConfig {
+
+    private final AgentProperties props;
+
+    /** ① HarnessAgent 作为单例 Bean，线程安全共享 */
+    @Bean
+    public HarnessAgent harnessAgent(AgentToolkit toolkit,
+                                     List&lt;MiddlewareBase&gt; middlewares) {
+        return HarnessAgent.builder()
+                .name(&quot;assistant&quot;)
+                .agentId(&quot;assistant&quot;)
+                .sysPrompt(&quot;You are a production assistant. Be concise, cite sources.&quot;)
+                .model(props.getModel())
+                .workspace(Paths.get(props.getWorkspace()))
+                .toolTimeout(props.getToolTimeout())
+                .middlewares(middlewares)            // 注入横切中间件（鉴权/审计/限流）
+                .build();
+    }
+
+    /** ② 工具集 Bean —— 业务类上加 @Tool 注解即可 */
+    @Bean
+    public AgentToolkit agentToolkit(OrderQueryService orderService, /* ...更多业务服务 */) {
+        return AgentToolkit.builder()
+                .addToolBean(orderService)            // 扫 @Tool / @ToolParam
+                // .addSkillLoader(Path.of(&quot;classpath:skills&quot;))
+                .build();
+    }
+
+    /** ③ 多租户 RuntimeContext 解析器 */
+    @Bean
+    public RuntimeContextResolver runtimeContextResolver() {
+        return new RuntimeContextResolver();
+    }
+
+    /** ④ 状态存储（按需切换） */
+    @Bean
+    @ConditionalOnProperty(prefix = &quot;agentscope.state-store&quot;, name = &quot;type&quot;, havingValue = &quot;redis&quot;)
+    public StateStore redisStateStore(RedisConnectionFactory factory) {
+        return StateStore.redis(factory);
+    }
+
+    @Bean
+    @ConditionalOnMissingBean(StateStore.class)   // 默认内存版（仅单实例）
+    public StateStore inMemoryStateStore() {
+        return StateStore.inMemory();
+    }
+
+    /** ⑤ 优雅停机钩子 */
+    @Bean
+    public AgentLifecycle agentLifecycle(HarnessAgent agent, RuntimeContextResolver resolver) {
+        return new AgentLifecycle(agent, resolver);
+    }
+}
+</code></pre>
+<h3 id="75-runtimecontextresolverjava">7.5 多租户解析 <code>RuntimeContextResolver.java</code></h3>
+<pre><code class="language-java">@Component
+public class RuntimeContextResolver {
+
+    /** 从 Header 拿租户身份；缺失则拒绝（由 Controller 抛 400） */
+    public RuntimeContext resolve(@Nullable String userId,
+                                  @Nullable String sessionId) {
+        if (userId == null || userId.isBlank()) {
+            throw new MissingTenantHeaderException(&quot;X-User-Id 不能为空&quot;);
+        }
+        if (sessionId == null || sessionId.isBlank()) {
+            throw new MissingTenantHeaderException(&quot;X-Session-Id 不能为空&quot;);
+        }
+        return RuntimeContext.builder()
+                .userId(userId)
+                .sessionId(sessionId)
+                .build();
+    }
+}
+</code></pre>
+<blockquote>
+<p><code>MissingTenantHeaderException</code> 用 <code>@RestControllerAdvice</code> 统一映射成 400。</p>
+</blockquote>
+<h3 id="76-rest-chatrestcontrollerjava">7.6 同步 REST <code>ChatRestController.java</code></h3>
+<pre><code class="language-java">@Slf4j
+@RestController
+@RequestMapping(&quot;/api/v1/chat&quot;)
+@RequiredArgsConstructor
+@Validated
+public class ChatRestController {
+
+    private final HarnessAgent agent;
+    private final RuntimeContextResolver ctxResolver;
+    private final AgentProperties props;
+
+    /** 同步：等全部跑完一次性返回（适合短任务，&lt; 30s） */
+    @PostMapping(produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity&lt;ChatResponse&gt; chat(@Valid @RequestBody ChatRequest req,
+                                             @RequestHeader(&quot;X-User-Id&quot;) String userId,
+                                             @RequestHeader(&quot;X-Session-Id&quot;) String sessionId) {
+        RuntimeContext ctx = ctxResolver.resolve(userId, sessionId);
+        AgentInput input = new AgentInput(List.of(new UserMessage(req.message())));
+
+        // 2.0.4 拿 AgentRun 句柄，配合 ToolRequestConfig
+        AgentRun run = agent.call(input, ctx, ToolRequestConfig.defaults())
+                            .timeout(props.getAgentTimeout())   // Reactor 超时
+                            .block();
+
+        return ResponseEntity.ok()
+                .header(&quot;X-Trace-Id&quot;, run.traceId())
+                .body(ChatResponse.from(run));
+    }
+}
+</code></pre>
+<blockquote>
+<p><strong>注意</strong>：<code>agent.call(...)</code> 返回的是 <code>Mono&lt;AgentRun&gt;</code>，<code>.block()</code> 只在同步控制器用；流式 Controller 永远不 <code>.block()</code>。</p>
+</blockquote>
+<h3 id="77-sse-chatstreamcontrollerjava">7.7 流式 SSE <code>ChatStreamController.java</code></h3>
+<pre><code class="language-java">@Slf4j
+@RestController
+@RequestMapping(&quot;/api/v1/chat&quot;)
+@RequiredArgsConstructor
+@Validated
+public class ChatStreamController {
+
+    private final HarnessAgent agent;
+    private final RuntimeContextResolver ctxResolver;
+    private final AgentProperties props;
+
+    /**
+     * SSE 流式：浏览器/移动端逐 token / 逐事件拿到结果
+     *  - Content-Type: text/event-stream
+     *  - 每条 event 形如：event: TEXT_BLOCK_DELTA\ndata: {&quot;text&quot;:&quot;...&quot;}\n\n
+     */
+    @GetMapping(value = &quot;/sse&quot;, produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    public Flux&lt;ServerSentEvent&lt;StreamChunk&gt;&gt; stream(@RequestParam @NotBlank String message,
+                                                      @RequestHeader(&quot;X-User-Id&quot;) String userId,
+                                                      @RequestHeader(&quot;X-Session-Id&quot;) String sessionId) {
+        RuntimeContext ctx = ctxResolver.resolve(userId, sessionId);
+        AgentInput input = new AgentInput(List.of(new UserMessage(message)));
+
+        return agent.streamEvents(input, ctx, ToolRequestConfig.defaults())
+                .timeout(props.getAgentTimeout())
+                .map(event -&gt; ServerSentEvent.&lt;StreamChunk&gt;builder()
+                        .id(event.id())
+                        .event(event.getType().name())           // 32 种类型化事件
+                        .data(StreamChunk.from(event))
+                        .build())
+                // 心跳：防止 nginx/ALB 60s 切断（默认 15s）
+                .mergeWith(Flux.interval(props.getSse().getKeepAlive())
+                        .map(tick -&gt; ServerSentEvent.&lt;StreamChunk&gt;builder()
+                                .event(&quot;PING&quot;).comment(&quot;keep-alive&quot;).build()))
+                .onErrorResume(e -&gt; {
+                    log.error(&quot;SSE stream failed for user={} session={}&quot;, userId, sessionId, e);
+                    return Flux.just(ServerSentEvent.&lt;StreamChunk&gt;builder()
+                            .event(&quot;ERROR&quot;)
+                            .data(StreamChunk.error(e.getClass().getSimpleName(), e.getMessage()))
+                            .build());
+                });
+    }
+}
+</code></pre>
+<blockquote>
+<p><strong>背压说明</strong>：HarnessAgent 的 <code>streamEvents()</code> 已经是 <code>Flux&lt;AgentEvent&gt;</code>，与 WebFlux 同源，<strong>不要 <code>.block()</code> / <code>.toFuture()</code> / <code>.collectList()</code></strong>——任何中间缓冲都会把流式变回同步。</p>
+</blockquote>
+<h3 id="78-dto">7.8 DTO</h3>
+<pre><code class="language-java">public record ChatRequest(
+    @NotBlank @Size(max = 8000) String message,
+    @Size(max = 20) List&lt;@NotBlank String&gt; attachmentIds   // 可选
+) {}
+
+public record ChatResponse(
+    String traceId,
+    String content,
+    List&lt;ToolCallRecord&gt; toolCalls,
+    TokenUsage tokenUsage,
+    long durationMs
+) {
+    public static ChatResponse from(AgentRun run) { /* ... */ }
+}
+
+public record StreamChunk(
+    String type,        // 事件类型，与 SSE event 字段一致
+    String text,        // 文本增量
+    ToolCallRecord tool,// 工具调用（若有）
+    String error        // 错误信息（若有）
+) {
+    public static StreamChunk from(AgentEvent e) { /* 32 种类型逐一映射 */ }
+    public static StreamChunk error(String code, String msg) { return new StreamChunk(&quot;ERROR&quot;, null, null, msg); }
+}
+</code></pre>
+<h3 id="79-orderqueryservicejava">7.9 业务工具示例 <code>OrderQueryService.java</code></h3>
+<pre><code class="language-java">@Service
+@RequiredArgsConstructor
+public class OrderQueryService {
+
+    private final OrderRepository repo;   // 你的 JPA / MyBatis 仓库
+
+    /**
+     * @Tool 方法：自动生成 JSON Schema 给模型
+     * 2.0.4 提示：若需要 RuntimeContext，加 ctx 参数（不加 @ToolParam）
+     */
+    @Tool(name = &quot;query_order&quot;, description = &quot;按订单号查询订单详情&quot;)
+    public OrderDetail queryOrder(@ToolParam(name = &quot;order_id&quot;, description = &quot;订单号&quot;) String orderId) {
+        return repo.findById(orderId)
+                .map(this::toDetail)
+                .orElseThrow(() -&gt; new OrderNotFoundException(orderId));
+    }
+
+    @Tool(name = &quot;list_recent_orders&quot;, description = &quot;查询用户最近 N 笔订单&quot;)
+    public List&lt;OrderDetail&gt; listRecent(@ToolParam(name = &quot;user_id&quot;) String userId,
+                                         @ToolParam(name = &quot;limit&quot;, defaultValue = &quot;5&quot;) int limit) {
+        return repo.findRecent(userId, Math.min(limit, 50));
+    }
+}
+</code></pre>
+<h3 id="710-authauditmiddlewarejava">7.10 横切中间件 <code>AuthAuditMiddleware.java</code></h3>
+<pre><code class="language-java">@Component
+@RequiredArgsConstructor
+public class AuthAuditMiddleware extends MiddlewareBase {
+
+    private final MeterRegistry meterRegistry;
+    private final AuditLogRepository auditRepo;
+
+    @Override
+    public Mono&lt;AgentEvent&gt; onAgentCall(Agent agent, RuntimeContext ctx,
+                                         AgentInput input,
+                                         Function&lt;AgentInput, Mono&lt;AgentEvent&gt;&gt; next) {
+        Timer.Sample sample = Timer.start(meterRegistry);
+        return next.apply(input)
+                .doOnSubscribe(s -&gt; {
+                    auditRepo.log(ctx, &quot;AGENT_CALL&quot;, &quot;user=&quot; + ctx.userId() + &quot; msg_len=&quot;
+                            + input.firstMessage().text().length());
+                })
+                .doOnSuccess(e -&gt; sample.stop(Timer.builder(&quot;agent.call.latency&quot;)
+                        .tag(&quot;user&quot;, ctx.userId()).register(meterRegistry)))
+                .doOnError(e -&gt; {
+                    meterRegistry.counter(&quot;agent.call.error&quot;,
+                            &quot;user&quot;, ctx.userId(),
+                            &quot;code&quot;, e.getClass().getSimpleName()).increment();
+                });
+    }
+}
+</code></pre>
+<h3 id="711-spring-security-securityconfigjava">7.11 Spring Security <code>SecurityConfig.java</code></h3>
+<pre><code class="language-java">@Configuration
+@EnableWebFluxSecurity   // 同步 + 流式都在同一 SecurityFilterChain
+@EnableMethodSecurity
+@RequiredArgsConstructor
+public class SecurityConfig {
+
+    private final AgentProperties props;
+
+    @Bean
+    public SecurityWebFilterChain securityFilterChain(ServerHttpSecurity http) {
+        return http
+            .csrf(ServerHttpSecurity.CsrfSpec::disable)        // API 服务关 CSRF
+            .authorizeExchange(a -&gt; a
+                .pathMatchers(&quot;/actuator/health/**&quot;, &quot;/actuator/prometheus&quot;).permitAll()
+                .pathMatchers(&quot;/api/**&quot;).authenticated()
+                .anyExchange().permitAll())
+            .httpBasic(ServerHttpSecurity.HttpBasicSpec::disable)
+            .formLogin(ServerHttpSecurity.FormLoginSpec::disable)
+            .oauth2ResourceServer(o -&gt; o.jwt(j -&gt; j /* 接你的 JWT 解码器 */))
+            .build();
+    }
+}
+</code></pre>
+<blockquote>
+<p><strong>简化的 Token 模式</strong>（不想上 JWT 时）—— 把 <code>props.getSecurity().getBearerTokens()</code> 注入到一个 <code>ServerAuthenticationConverter</code> 里，匹配则放行。</p>
+</blockquote>
+<h3 id="712-observabilityconfigjava">7.12 可观测 <code>ObservabilityConfig.java</code></h3>
+<pre><code class="language-java">@Configuration
+@RequiredArgsConstructor
+public class ObservabilityConfig {
+
+    @Bean
+    public TimedAspect timedAspect(MeterRegistry registry) { return new TimedAspect(registry); }
+
+    /** 自定义指标：当前在飞 agent 数 */
+    @Bean
+    public MeterBinder inFlightAgentGauge(AgentLifecycle lifecycle) {
+        return registry -&gt; Gauge.builder(&quot;agent.in_flight&quot;, lifecycle, AgentLifecycle::inFlightCount)
+                .description(&quot;Number of in-flight agent calls&quot;)
+                .register(registry);
+    }
+}
+</code></pre>
+<h3 id="713-agentlifecyclejava">7.13 优雅停机 <code>AgentLifecycle.java</code></h3>
+<pre><code class="language-java">@Slf4j
+public class AgentLifecycle implements DisposableBean {
+
+    private final HarnessAgent agent;
+    private final RuntimeContextResolver resolver;
+    private final AtomicInteger inFlight = new AtomicInteger();
+
+    public int inFlightCount() { return inFlight.get(); }
+
+    /** Controller 调用前后打点 */
+    public void enter()  { inFlight.incrementAndGet(); }
+    public void exit()   { inFlight.decrementAndGet(); }
+
+    /**
+     * Spring 关闭时（SIGTERM）触发：
+     *  - 等 K8s readiness=false 摘流量
+     *  - 通知 HarnessAgent 进入 draining 状态
+     *  - 给在飞请求一个 graceful 窗口（配 application.yml 的 timeout-per-shutdown-phase）
+     */
+    @Override
+    @PreDestroy
+    public void destroy() {
+        log.info(&quot;Agent lifecycle shutting down, in-flight={}&quot;, inFlight.get());
+        // 1) 关闭新请求入口（由 Tomcat/WebFlux 自身处理）
+        // 2) 等待 inFlight==0 或超时
+        long deadline = System.nanoTime() + Duration.ofSeconds(25).toNanos();
+        while (inFlight.get() &gt; 0 &amp;&amp; System.nanoTime() &lt; deadline) {
+            try { Thread.sleep(100); } catch (InterruptedException ie) { Thread.currentThread().interrupt(); break; }
+        }
+        // 3) 强制关闭 HarnessAgent 内部资源
+        if (inFlight.get() &gt; 0) {
+            log.warn(&quot;Force-closing with {} requests still in flight&quot;, inFlight.get());
+        }
+        agent.close();    // 2.0.4 提供的 try-with-resources 风格的 close()
+        log.info(&quot;Agent lifecycle closed&quot;);
+    }
+}
+</code></pre>
+<blockquote>
+<p>Controller 加个 <code>Filter</code> 调 <code>lifecycle.enter()</code> / <code>lifecycle.exit()</code>（<code>try/finally</code>）即可。</p>
+</blockquote>
+<h3 id="714-controller-globalexceptionhandlerjava">7.14 Controller 异常统一处理 <code>GlobalExceptionHandler.java</code></h3>
+<pre><code class="language-java">@RestControllerAdvice
+@Slf4j
+public class GlobalExceptionHandler {
+
+    @ExceptionHandler(MissingTenantHeaderException.class)
+    public ResponseEntity&lt;Map&lt;String, Object&gt;&gt; handleTenant(MissingTenantHeaderException e) {
+        return ResponseEntity.badRequest().body(Map.of(
+                &quot;code&quot;, &quot;MISSING_TENANT_HEADER&quot;,
+                &quot;message&quot;, e.getMessage()));
+    }
+
+    @ExceptionHandler(AgentTimeoutException.class)
+    public ResponseEntity&lt;Map&lt;String, Object&gt;&gt; handleTimeout(AgentTimeoutException e) {
+        return ResponseEntity.status(504).body(Map.of(
+                &quot;code&quot;, &quot;AGENT_TIMEOUT&quot;,
+                &quot;message&quot;, &quot;Agent 思考超时，请重试或简化任务&quot;));
+    }
+
+    @ExceptionHandler(Throwable.class)
+    public ResponseEntity&lt;Map&lt;String, Object&gt;&gt; handleAny(Throwable t) {
+        log.error(&quot;Unhandled exception in chat controller&quot;, t);
+        return ResponseEntity.internalServerError().body(Map.of(
+                &quot;code&quot;, &quot;INTERNAL_ERROR&quot;,
+                &quot;message&quot;, &quot;服务内部错误&quot;));
+    }
+}
+</code></pre>
+<h3 id="715">7.15 客户端调用示例</h3>
+<pre><code class="language-bash"># 同步
+curl -X POST http://localhost:8080/api/v1/chat \
+  -H &quot;Authorization: Bearer $TOKEN&quot; \
+  -H &quot;X-User-Id: u_123&quot; \
+  -H &quot;X-Session-Id: s_abc&quot; \
+  -H &quot;Content-Type: application/json&quot; \
+  -d '{&quot;message&quot;: &quot;帮我查订单 OD202610140001&quot;}'
+
+# 流式
+curl -N &quot;http://localhost:8080/api/v1/chat/sse?message=讲个故事&quot; \
+  -H &quot;Authorization: Bearer $TOKEN&quot; \
+  -H &quot;X-User-Id: u_123&quot; \
+  -H &quot;X-Session-Id: s_abc&quot;
+</code></pre>
+<pre><code class="language-javascript">// 浏览器 EventSource
+const es = new EventSource(
+  &quot;/api/v1/chat/sse?message=讲个故事&quot;,
+  { headers: { &quot;X-User-Id&quot;: &quot;u_123&quot;, &quot;X-Session-Id&quot;: &quot;s_abc&quot; } }  // 注：原生 EventSource 不支持自定义 header，用 fetch+ReadableStream 替代
+);
+es.addEventListener(&quot;TEXT_BLOCK_DELTA&quot;, e =&gt; appendText(JSON.parse(e.data).text));
+es.addEventListener(&quot;TOOL_CALL_START&quot;,   e =&gt; showTool(JSON.parse(e.data)));
+es.addEventListener(&quot;DONE&quot;,              () =&gt; es.close());
+</code></pre>
+<h3 id="716">7.16 反模式清单（不要这么写）</h3>
+<table>
+<thead>
+<tr>
+<th>反模式</th>
+<th>为什么不行</th>
+<th>正确做法</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>main()</code> 里 <code>new HarnessAgent()</code></td>
+<td>没人管生命周期，无法优雅停机</td>
+<td>用 <code>@Bean</code> 让 Spring 注入</td>
+</tr>
+<tr>
+<td><code>agent.call(...).block()</code> 放在流式 Controller</td>
+<td>把流式退化成同步，吞掉背压</td>
+<td><code>return agent.streamEvents(...)</code></td>
+</tr>
+<tr>
+<td>静态字段 <code>private static final AGENT_BUILDER</code></td>
+<td>绕过容器，无法注入中间件/工具</td>
+<td>写 <code>@Configuration</code> Bean</td>
+</tr>
+<tr>
+<td><code>try-with-resources</code> 每次请求开新 Agent</td>
+<td>模型连接、工具缓存每次重建</td>
+<td>单例 HarnessAgent + 每请求 <code>AgentRun</code></td>
+</tr>
+<tr>
+<td>不传 <code>RuntimeContext</code> 调 agent</td>
+<td>所有用户共享同一个会话，泄漏数据</td>
+<td>Header 解析 + 每次请求构造 ctx</td>
+</tr>
+<tr>
+<td><code>@Tool</code> 方法里直接 new 一个 service</td>
+<td>拿不到事务、连接池</td>
+<td>注入 <code>@Service</code> 业务 Bean</td>
+</tr>
+<tr>
+<td>流式返回前 <code>.collectList()</code></td>
+<td>把所有事件攒到内存再发</td>
+<td>保持 <code>Flux&lt;ServerSentEvent&gt;</code> 形态</td>
+</tr>
+<tr>
+<td>关闭时不通知 HarnessAgent</td>
+<td>在飞请求被强杀，用户看到断流</td>
+<td><code>@PreDestroy</code> + grace 期</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="_7">🎓 一句话总结</h2>
+<blockquote>
+<p><strong>Java 版范式的灵魂是"分层与配置化"</strong>：<code>ReActAgent</code> 管推理循环，<code>HarnessAgent</code> 叠工程能力，<code>AgentSession</code> 管长任务生命周期；工具用 <code>@Tool</code> 注解、横切用 Middleware 六阶段、多租户用 <code>RuntimeContext</code> 显式贯穿、持久化配 <code>stateStore</code> 即自动 —— 业务代码只写 Builder 和注解，其余交给框架。<br />
+<strong>2.0.4 起</strong>：每次调用拿到 <code>AgentRun</code> 句柄；工具可见性/回调/技能资源可按请求隔离（<code>ToolRequestConfig</code>）；<code>RuntimeContext</code> 不再依赖 <code>RuntimeContextAware</code> 自动注入，全部走显式声明。</p>
+</blockquote>
+<hr />
+<h2 id="203-204">🔄 2.0.3 → 2.0.4 升级迁移清单</h2>
+<blockquote>
+<p>来源：<a href="https://spring4all.com/archives/agentscope-java-2-0-4-agentrun">Spring4All 升级指南</a> + <a href="https://java.agentscope.io/v2/zh/docs/others/release-notes">官方 Release Notes</a> + 对照两个 tag 的源码</p>
+</blockquote>
+<h3 id="_8">编译会失败的破坏性变更</h3>
+<table>
+<thead>
+<tr>
+<th>变更</th>
+<th>改法</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>RuntimeContextAware</code> 接口删除</td>
+<td>工具方法直接加 <code>RuntimeContext ctx</code> 参数（不加 <code>@ToolParam</code>，模型看不见）</td>
+</tr>
+<tr>
+<td><code>ToolInjection</code> API 删除</td>
+<td>改用 <code>ToolRequestConfig</code> 按请求注入；或迁移到 <code>MiddlewareBase</code> 签名</td>
+</tr>
+<tr>
+<td><code>Agent.getRuntimeContext()</code> 删除</td>
+<td>改用 <code>AgentRun.getRuntimeContext()</code> 或 <code>ctx</code> 参数</td>
+</tr>
+<tr>
+<td><code>RuntimeContext</code> 内部 <code>activeRc</code> 移除</td>
+<td>无需迁移——本来就不该用内部 API</td>
+</tr>
+</tbody>
+</table>
+<h3 id="_9">编译能过但行为不同</h3>
+<ul>
+<li><code>HttpTransportConfig</code> 默认 HTTP 版本从固定值改为<strong>自动选择</strong>——重试策略、超时可能变化</li>
+<li><code>Gemini</code> 工具参数 Schema 直接传 JSON Schema（不再嵌套）—— 自定义工具调用方需复核</li>
+<li>Ollama 工具结果名从 <code>name</code> 改为 <code>tool_name</code>，并暴露 <code>ThinkingBlock</code></li>
+</ul>
+<h3 id="_10">推荐的迁移步骤</h3>
+<pre><code class="language-bash"># 1. 升版本号
+sed -i 's|&lt;version&gt;2.0.3&lt;/version&gt;|&lt;version&gt;2.0.4&lt;/version&gt;|g' pom.xml
+
+# 2. 编译找断点
+mvn -DskipTests clean compile
+
+# 3. 按编译器提示把 RuntimeContextAware 改成显式参数
+# 4. 把每次 agent.call(...) 返回值改为 AgentRun 类型
+# 5. 测试并发场景下 cancel() 是否仅影响本次 run
+# 6. 接入 ToolRequestConfig（如需请求级隔离）
+</code></pre>
+<h3 id="_11">顺带新增的可用能力（不是破坏性的）</h3>
+<table>
+<thead>
+<tr>
+<th>新增</th>
+<th>何时用</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>OpenAI Responses API 模块</td>
+<td>模型用 OpenAI 且想用新接口时</td>
+</tr>
+<tr>
+<td><code>returnDirect</code> 工具结果</td>
+<td>工具希望直接返回并结束推理循环</td>
+</tr>
+<tr>
+<td>详细 chat token 用量指标</td>
+<td>计费/可观测性</td>
+</tr>
+<tr>
+<td>模型回退 failover 监听器</td>
+<td>多模型降级</td>
+</tr>
+<tr>
+<td>Anthropic Bearer Token 鉴权</td>
+<td>不再用 API Key 的场景</td>
+</tr>
+<tr>
+<td>MongoDB 存储</td>
+<td>后端是 MongoDB 的分布式部署</td>
+</tr>
+<tr>
+<td>个人微信 iLink / 钉钉 HTTP 回调</td>
+<td>接 IM Channel</td>
+</tr>
+<tr>
+<td>可插拔 Channel 访问令牌存储 + 入站去重</td>
+<td>多渠道路由</td>
+</tr>
+<tr>
+<td>文件系统 <code>sharedLocalWorkspace</code></td>
+<td>多实例共享本地工作目录</td>
+</tr>
+<tr>
+<td>自动清理旧 E2B 原生快照</td>
+<td>沙箱成本控制</td>
+</tr>
+</tbody>
+</table>
+<footer>由 WorkBuddy 自动生成 · 内容仅供学习参考，请以官方仓库为准</footer>
+</main>
+</body>
+</html>

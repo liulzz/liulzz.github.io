@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MCP 由浅入深教程 · Model Context Protocol 完全指南</title>
+<meta name="description" content="从零开始系统学习 MCP（Model Context Protocol）：核心概念、三大原语、传输层、安全策略与实战案例，含完整 Python 示例代码。">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<header class="site-header">
+  <div class="wrap">
+    <a class="brand" href="index.html">MCP<span> 教程</span></a>
+    <nav class="site-nav" aria-label="章节导航">
+      <a href="index.html" class="current">目录</a>
+      <a href="chapters/01-what-is-mcp.html">1</a>
+      <a href="chapters/02-architecture.html">2</a>
+      <a href="chapters/03-first-server.html">3</a>
+      <a href="chapters/04-tools.html">4</a>
+      <a href="chapters/05-resources.html">5</a>
+      <a href="chapters/06-prompts.html">6</a>
+      <a href="chapters/07-transport.html">7</a>
+      <a href="chapters/08-lifecycle.html">8</a>
+      <a href="chapters/09-advanced.html">9</a>
+      <a href="chapters/10-client.html">10</a>
+      <a href="chapters/11-security.html">11</a>
+      <a href="chapters/12-practice.html">12</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+<div class="wrap">
+
+<div class="hero">
+  <div class="kicker">MODEL CONTEXT PROTOCOL</div>
+  <h1>MCP 由浅入深完全教程</h1>
+  <p class="lead">
+    MCP（Model Context Protocol）是 Anthropic 于 2024 年发布的开放协议，它定义了 LLM 应用与外部工具、数据源之间的标准化通信接口。
+    本教程从「MCP 是什么」出发，逐步覆盖三大原语、传输层机制、Sampling / Roots 等进阶特性，直到安全加固与实战案例，
+    全程配以可运行的 Python 示例代码。
+  </p>
+</div>
+
+<div class="box note">
+  <span class="box-title">📌 阅读建议</span>
+  <p>如果你是第一次接触 MCP，建议按章节顺序阅读第 1—8 章；如果你已有基础，可直接跳到第 9 章（进阶特性）或第 12 章（实战案例）。每章末尾有"下一章"导航。</p>
+</div>
+
+<div class="part-label">PART 1 · 基础</div>
+<div class="card-grid">
+  <a class="card" href="chapters/01-what-is-mcp.html">
+    <div class="num">第 1 章</div>
+    <h3>MCP 是什么</h3>
+    <p>协议定位、解决的核心问题、与 Function Calling 的关系，以及 MCP 生态全景。</p>
+  </a>
+  <a class="card" href="chapters/02-architecture.html">
+    <div class="num">第 2 章</div>
+    <h3>架构与核心概念</h3>
+    <p>Host / Client / Server 三角模型、JSON-RPC 2.0 基础、能力协商与消息流。</p>
+  </a>
+  <a class="card" href="chapters/03-first-server.html">
+    <div class="num">第 3 章</div>
+    <h3>第一个 MCP Server</h3>
+    <p>用 Python mcp SDK / FastMCP 搭建并测试一个最小 Server，理解启动流程。</p>
+  </a>
+</div>
+
+<div class="part-label">PART 2 · 三大原语</div>
+<div class="card-grid">
+  <a class="card" href="chapters/04-tools.html">
+    <div class="num">第 4 章</div>
+    <h3>Tools（工具）</h3>
+    <p>让模型能「执行动作」：Tool 定义、JSON Schema 参数、调用流程与幂等性设计。</p>
+  </a>
+  <a class="card" href="chapters/05-resources.html">
+    <div class="num">第 5 章</div>
+    <h3>Resources（资源）</h3>
+    <p>向模型注入上下文：静态 / 动态资源、URI 模板、订阅推送与分块传输。</p>
+  </a>
+  <a class="card" href="chapters/06-prompts.html">
+    <div class="num">第 6 章</div>
+    <h3>Prompts（提示模板）</h3>
+    <p>用户触发的预设工作流：Prompt 定义、参数化模板、与 Tool / Resource 的协作模式。</p>
+  </a>
+</div>
+
+<div class="part-label">PART 3 · 协议底层</div>
+<div class="card-grid">
+  <a class="card" href="chapters/07-transport.html">
+    <div class="num">第 7 章</div>
+    <h3>传输层</h3>
+    <p>stdio 本地传输 vs. Streamable HTTP 远程传输；SSE、会话管理与断线重连。</p>
+  </a>
+  <a class="card" href="chapters/08-lifecycle.html">
+    <div class="num">第 8 章</div>
+    <h3>JSON-RPC 与连接生命周期</h3>
+    <p>完整报文结构、initialize 握手、进度通知、取消机制与错误码规范。</p>
+  </a>
+</div>
+
+<div class="part-label">PART 4 · 进阶与实战</div>
+<div class="card-grid">
+  <a class="card" href="chapters/09-advanced.html">
+    <div class="num">第 9 章</div>
+    <h3>进阶特性</h3>
+    <p>Sampling（让 Server 反向调用 LLM）、Elicitation、Roots，以及多 Server 组合模式。</p>
+  </a>
+  <a class="card" href="chapters/10-client.html">
+    <div class="num">第 10 章</div>
+    <h3>自己写一个 MCP Client</h3>
+    <p>从零实现支持 stdio + HTTP 双传输的 Python 客户端，理解 Client 侧的完整逻辑。</p>
+  </a>
+  <a class="card" href="chapters/11-security.html">
+    <div class="num">第 11 章</div>
+    <h3>安全加固</h3>
+    <p>Prompt Injection、Tool Poisoning、沙箱隔离、OAuth 鉴权与供应链风险。</p>
+  </a>
+  <a class="card" href="chapters/12-practice.html">
+    <div class="num">第 12 章</div>
+    <h3>实战：SQLite + 文件系统 MCP Server</h3>
+    <p>综合实战：把 SQLite 数据库与本地文件系统封装成生产可用的 MCP Server。</p>
+  </a>
+</div>
+
+</div>
+</main>
+
+<footer class="site-footer">
+  <div class="wrap">
+    <p>内容基于 MCP 规范（2025-03-26 版）与官方 Python SDK 0.9.x 编写。如发现错误，欢迎在 <a href="https://github.com/liulzz/mcp-tutorial">GitHub</a> 提 Issue。</p>
+  </div>
+</footer>
+
+<script src="assets/app.js"></script>
+</body>
+</html>

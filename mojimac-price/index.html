@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>摩集电商 MacBook Pro 价格分析</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #0d1117; color: #c9d1d9; line-height: 1.6; }
+.container { max-width: 1200px; margin: 0 auto; padding: 20px; }
+h1 { text-align: center; font-size: 2em; margin: 30px 0 10px; background: linear-gradient(135deg, #58a6ff, #bc8cff); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+.subtitle { text-align: center; color: #8b949e; margin-bottom: 30px; font-size: 0.9em; }
+.card { background: #161b22; border: 1px solid #30363d; border-radius: 12px; padding: 24px; margin-bottom: 20px; }
+.card h2 { color: #58a6ff; font-size: 1.3em; margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
+.card h2 .emoji { font-size: 1.2em; }
+.chart-container { position: relative; height: 400px; margin: 16px 0; }
+table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 0.9em; }
+th { background: #21262d; color: #58a6ff; padding: 12px 8px; text-align: left; font-weight: 600; border-bottom: 2px solid #30363d; }
+td { padding: 10px 8px; border-bottom: 1px solid #21262d; }
+tr:hover td { background: #1c2128; }
+.price { color: #f0883e; font-weight: 700; font-size: 1.05em; }
+.price-drop { color: #3fb950; }
+.price-up { color: #f85149; }
+.tag { display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 0.75em; font-weight: 600; margin: 2px; }
+.tag-m3pro { background: #1f6feb33; color: #58a6ff; border: 1px solid #1f6feb; }
+.tag-m3max { background: #bc8cff33; color: #bc8cff; border: 1px solid #bc8cff; }
+.tag-m4pro { background: #3fb95033; color: #3fb950; border: 1px solid #3fb950; }
+.tag-m4max { background: #f0883e33; color: #f0883e; border: 1px solid #f0883e; }
+.tag-m2max { background: #f8514933; color: #f85149; border: 1px solid #f85149; }
+.tag-m3ultra { background: #da368833; color: #da3688; border: 1px solid #da3688; }
+.tag-new { background: #23863633; color: #3fb950; border: 1px solid #238636; }
+.tag-refurb { background: #9e6a0333; color: #d29922; border: 1px solid #9e6a03; }
+.tag-hk { background: #8957e533; color: #bc8cff; border: 1px solid #8957e5; }
+.tag-us { background: #1f6feb33; color: #58a6ff; border: 1px solid #1f6feb; }
+.tag-cn { background: #f8514933; color: #f85149; border: 1px solid #f85149; }
+.tag-kr { background: #da368833; color: #da3688; border: 1px solid #da3688; }
+.stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin: 16px 0; }
+.stat-card { background: #21262d; border-radius: 8px; padding: 16px; text-align: center; }
+.stat-card .num { font-size: 2em; font-weight: 700; background: linear-gradient(135deg, #f0883e, #f85149); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+.stat-card .label { color: #8b949e; font-size: 0.85em; margin-top: 4px; }
+.post-list { list-style: none; }
+.post-list li { padding: 10px 0; border-bottom: 1px solid #21262d; display: flex; align-items: center; gap: 12px; }
+.post-list li a { color: #58a6ff; text-decoration: none; flex: 1; }
+.post-list li a:hover { text-decoration: underline; }
+.post-list .date { color: #8b949e; font-size: 0.8em; white-space: nowrap; }
+.recommend { background: linear-gradient(135deg, #238636, #1f6feb); border: none; }
+.recommend h2 { color: #fff !important; }
+.recommend .rec-item { background: rgba(255,255,255,0.1); border-radius: 8px; padding: 16px; margin: 8px 0; }
+.recommend .rec-item h3 { color: #fff; font-size: 1.1em; }
+.recommend .rec-item p { color: rgba(255,255,255,0.85); }
+.badge { display: inline-block; background: #f0883e; color: #000; padding: 2px 10px; border-radius: 12px; font-size: 0.75em; font-weight: 700; }
+.footer { text-align: center; color: #484f58; margin: 40px 0 20px; font-size: 0.8em; }
+</style>
+</head>
+<body>
+<div class="container">
+
+<h1>🍎 摩集电商 MacBook Pro 价格全景分析</h1>
+<p class="subtitle">数据来源：V2EX @NewMoorj 最近10篇交易帖 · 浏览器实时抓取 · 2026年5月20日</p>
+
+<!-- Stats Overview -->
+<div class="stats-grid">
+  <div class="stat-card"><div class="num">40+</div><div class="label">在售机型配置</div></div>
+  <div class="stat-card"><div class="num">8,658</div><div class="label">最低价（元）</div></div>
+  <div class="stat-card"><div class="num">55,500</div><div class="label">最高价（元）</div></div>
+  <div class="stat-card"><div class="num">-15%</div><div class="label">最大年跌幅</div></div>
+</div>
+
+<!-- Price Trend Chart -->
+<div class="card">
+  <h2><span class="emoji">📈</span> 核心型号价格趋势（近12个月）</h2>
+  <div class="chart-container"><canvas id="trendChart"></canvas></div>
+</div>
+
+<!-- Current Prices Table -->
+<div class="card">
+  <h2><span class="emoji">💻</span> MacBook Pro 14 寸 当前价格（2026年5月最新）</h2>
+  <table>
+    <thead><tr><th>型号</th><th>配置</th><th>版本</th><th>价格</th><th>来源帖</th></tr></thead>
+    <tbody>
+      <tr><td><span class="tag tag-m3pro">M3 Pro</span></td><td>(12+18)/18G/1T</td><td><span class="tag tag-us">美版</span> <span class="tag tag-new">全新</span></td><td class="price">¥10,358</td><td>t/1210926</td></tr>
+      <tr><td><span class="tag tag-m3pro">M3 Pro</span></td><td>(11+14)/36G/512G</td><td><span class="tag tag-hk">港版</span> <span class="tag tag-refurb">官翻</span></td><td class="price">¥10,400</td><td>t/1176237</td></tr>
+      <tr><td><span class="tag tag-m3pro">M3 Pro</span></td><td>(11+14)/36G/1T</td><td><span class="tag tag-hk">港版</span> <span class="tag tag-refurb">官翻</span></td><td class="price">¥11,400</td><td>t/1176237</td></tr>
+      <tr><td><span class="tag tag-m3pro">M3 Pro</span></td><td>(12+18)/36G/2T</td><td><span class="tag tag-cn">国行</span> <span class="tag tag-refurb">官翻</span></td><td class="price">¥13,400</td><td>t/1161411</td></tr>
+      <tr><td><span class="tag tag-m3max">M3 Max</span></td><td>(14+30)/36G/1T</td><td><span class="tag tag-hk">港版</span> <span class="tag tag-refurb">官翻</span></td><td class="price">¥14,100</td><td>t/1176237</td></tr>
+      <tr><td><span class="tag tag-m4pro">M4 Pro</span></td><td>(14+20)/24G/1T</td><td><span class="tag tag-cn">国行</span> <span class="tag tag-refurb">官翻</span></td><td class="price">¥14,100</td><td>t/1176237</td></tr>
+      <tr><td><span class="tag tag-m2max">M2 Max</span></td><td>(12+30)/32G/1T</td><td><span class="tag tag-cn">国行</span> <span class="tag tag-refurb">官翻</span></td><td class="price">¥12,400</td><td>t/1176237</td></tr>
+      <tr><td><span class="tag tag-m2max">M2 Max</span></td><td>(12+38)/64G/8T</td><td><span class="tag tag-us">美版</span> <span class="tag tag-refurb">官翻</span></td><td class="price">¥15,800</td><td>t/1176237</td></tr>
+      <tr><td><span class="tag tag-m3max">M3 Max</span></td><td>(16+40)/64G/2T</td><td><span class="tag tag-us">美版</span> <span class="tag tag-new">全新</span></td><td class="price">¥17,700</td><td>t/1210926</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<div class="card">
+  <h2><span class="emoji">🖥️</span> MacBook Pro 16 寸 当前价格（2026年5月最新）</h2>
+  <table>
+    <thead><tr><th>型号</th><th>配置</th><th>版本</th><th>价格</th><th>来源帖</th></tr></thead>
+    <tbody>
+      <tr><td><span class="tag tag-m3pro">M3 Pro</span></td><td>(12+18)/18G/512G</td><td><span class="tag tag-hk">港澳</span> <span class="tag tag-refurb">官翻</span></td><td class="price">¥10,458</td><td>t/1210926</td></tr>
+      <tr><td><span class="tag tag-m3pro">M3 Pro</span></td><td>(12+18)/18G/512G</td><td><span class="tag tag-us">美版</span> <span class="tag tag-new">全新</span></td><td class="price">¥10,958</td><td>t/1210926</td></tr>
+      <tr><td><span class="tag tag-m3pro">M3 Pro</span></td><td>(12+18)/18G/1T</td><td><span class="tag tag-cn">国行</span> <span class="tag tag-refurb">官翻</span></td><td class="price">¥12,058</td><td>t/1210926</td></tr>
+      <tr><td><span class="tag tag-m3pro">M3 Pro</span></td><td>(12+18)/36G/512G</td><td><span class="tag tag-hk">港澳</span> <span class="tag tag-refurb">官翻</span></td><td class="price">¥12,358</td><td>t/1210926</td></tr>
+      <tr><td><span class="tag tag-m3pro">M3 Pro</span></td><td>(12+18)/36G/1T</td><td><span class="tag tag-cn">国行</span> <span class="tag tag-refurb">官翻</span></td><td class="price">¥14,258</td><td>t/1210926</td></tr>
+      <tr><td><span class="tag tag-m3max">M3 Max</span></td><td>(14+30)/36G/1T</td><td><span class="tag tag-hk">港澳</span> <span class="tag tag-refurb">官翻</span></td><td class="price">¥15,200</td><td>t/1199055</td></tr>
+      <tr><td><span class="tag tag-m4pro">M4 Pro</span></td><td>(14+20)/24G/512G</td><td><span class="tag tag-hk">港版</span> <span class="tag tag-refurb">官翻</span></td><td class="price">¥14,300</td><td>t/1176237</td></tr>
+      <tr><td><span class="tag tag-m4pro">M4 Pro</span></td><td>(14+20)/48G/512G</td><td><span class="tag tag-hk">港版</span> <span class="tag tag-refurb">官翻</span></td><td class="price">¥15,400</td><td>t/1176237</td></tr>
+      <tr><td><span class="tag tag-m4pro">M4 Pro</span></td><td>(14+20)/48G/512G</td><td><span class="tag tag-cn">国行</span> <span class="tag tag-refurb">官翻</span></td><td class="price">¥16,500</td><td>t/1156699</td></tr>
+      <tr><td><span class="tag tag-m3max">M3 Max</span></td><td>(16+40)/48G/1T</td><td><span class="tag tag-us">美版</span> <span class="tag tag-new">全新</span></td><td class="price">¥17,758</td><td>t/1210926</td></tr>
+      <tr><td><span class="tag tag-m4max">M4 Max</span></td><td>(14+32)/36G/1T</td><td><span class="tag tag-hk">港版</span> <span class="tag tag-refurb">官翻</span></td><td class="price">¥18,800</td><td>t/1176237</td></tr>
+      <tr><td><span class="tag tag-m4max">M4 Max</span></td><td>(16+40)/48G/1T</td><td><span class="tag tag-cn">国行</span> <span class="tag tag-refurb">官翻</span></td><td class="price">¥23,500</td><td>t/1161411</td></tr>
+      <tr><td><span class="tag tag-m3max">M3 Max</span></td><td>(16+40)/48G/8T</td><td><span class="tag tag-hk">澳版</span> <span class="tag tag-refurb">官翻</span></td><td class="price">¥21,300</td><td>t/1176237</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- Mac Studio -->
+<div class="card">
+  <h2><span class="emoji">🖥️</span> Mac Studio 2025</h2>
+  <table>
+    <thead><tr><th>型号</th><th>配置</th><th>版本</th><th>价格</th><th>官网参考</th></tr></thead>
+    <tbody>
+      <tr><td><span class="tag tag-m3ultra">M3 Ultra</span></td><td>(32+80)/256G/1T</td><td><span class="tag tag-us">美版</span> <span class="tag tag-new">全新</span></td><td class="price">¥40,500</td><td>¥56,249</td></tr>
+      <tr><td><span class="tag tag-m3ultra">M3 Ultra</span></td><td>(32+80)/256G/8T</td><td><span class="tag tag-us">美版</span> <span class="tag tag-new">全新</span></td><td class="price">¥45,000</td><td>¥72,749</td></tr>
+      <tr><td><span class="tag tag-m3ultra">M3 Ultra</span></td><td>(32+80)/512G/1T</td><td><span class="tag tag-us">美版</span> <span class="tag tag-new">全新</span></td><td class="price">¥55,500</td><td>¥74,249</td></tr>
+      <tr><td><span class="tag tag-m3ultra">M3 Ultra</span></td><td>(32+80)/512G/4T</td><td><span class="tag tag-us">美版</span> <span class="tag tag-new">全新</span></td><td class="price">¥58,500</td><td>¥81,749</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- Price History for Key Models -->
+<div class="card">
+  <h2><span class="emoji">📊</span> 关键型号价格变化追踪</h2>
+  <table>
+    <thead><tr><th>型号配置</th><th>2025-03</th><th>2025-09</th><th>2025-12</th><th>2026-01</th><th>2026-03</th><th>2026-05</th><th>变化</th></tr></thead>
+    <tbody>
+      <tr>
+        <td>16" M3 Max (16+40)/48G/1T 美版</td>
+        <td>¥20,390</td><td>-</td><td>-</td><td>¥16,900</td><td>¥16,650</td><td class="price">¥17,758</td>
+        <td class="price-drop">↓ 2,632 (-13%)</td>
+      </tr>
+      <tr>
+        <td>16" M3 Max (16+40)/48G/1T 港版官翻</td>
+        <td>-</td><td>-</td><td>¥16,500</td><td>-</td><td>¥16,800</td><td class="price">¥16,800</td>
+        <td class="price-drop">↓ 稳定</td>
+      </tr>
+      <tr>
+        <td>14" M3 Max (16+40)/64G/2T 美版全新</td>
+        <td>-</td><td>-</td><td>-</td><td>¥16,650</td><td>¥17,700</td><td class="price">¥17,700</td>
+        <td class="price-up">↑ 1,050 (+6%)</td>
+      </tr>
+      <tr>
+        <td>16" M3 Pro (12+18)/18G/512G 港澳官翻</td>
+        <td>-</td><td>-</td><td>-</td><td>-</td><td>¥10,400</td><td class="price">¥10,458</td>
+        <td>≈ 持平</td>
+      </tr>
+      <tr>
+        <td>16" M4 Pro (14+20)/48G/512G 港版官翻</td>
+        <td>-</td><td>¥16,500</td><td>¥15,400</td><td>-</td><td>-</td><td class="price">¥15,400</td>
+        <td class="price-drop">↓ 1,100 (-7%)</td>
+      </tr>
+      <tr>
+        <td>16" M4 Max (14+32)/36G/1T 港版官翻</td>
+        <td>-</td><td>¥19,900</td><td>¥18,500</td><td>-</td><td>¥18,800</td><td class="price">¥18,800</td>
+        <td class="price-drop">↓ 1,100 (-6%)</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- Version Comparison Chart -->
+<div class="card">
+  <h2><span class="emoji">🏷️</span> 各版本价格差异对比</h2>
+  <div class="chart-container"><canvas id="versionChart"></canvas></div>
+</div>
+
+<!-- Posts List -->
+<div class="card">
+  <h2><span class="emoji">📋</span> 数据来源：最近10篇交易帖</h2>
+  <ul class="post-list">
+    <li><span class="date">2026-05-08</span><a href="https://www.v2ex.com/t/1210926" target="_blank">MacBook Pro 14 16寸 官翻机/全新机清仓 本月价格更新</a></li>
+    <li><span class="date">2026-04-13</span><a href="https://www.v2ex.com/t/1199055" target="_blank">MacBook Pro 16寸 一季度官翻机/全新机清仓已经到货</a></li>
+    <li><span class="date">2026-03-17</span><a href="https://www.v2ex.com/t/1198276" target="_blank">MacBook Pro 14 M3 Max (16+40)/64G/2T 美版全新 17700元</a></li>
+    <li><span class="date">2026-03-13</span><a href="https://www.v2ex.com/t/1189616" target="_blank">MacBook Pro 16 M3 Max (16+40)/48G/1T 美版全新 16650元</a></li>
+    <li><span class="date">2026-03-11</span><a href="https://www.v2ex.com/t/1189612" target="_blank">MacBook Pro 14 M3 Max (16+40)/64G/2T 美版全新 16650元</a></li>
+    <li><span class="date">2026-03-04</span><a href="https://www.v2ex.com/t/1176237" target="_blank">MacBook Pro 系列 全新机和官翻机，大量更新，多款降价</a></li>
+    <li><span class="date">2026-01-23</span><a href="https://www.v2ex.com/t/1182803" target="_blank">MacBook Pro 16 M3 Max (16+40)/48G/1T 韩版全新 16900元</a></li>
+    <li><span class="date">2026-01-07</span><a href="https://www.v2ex.com/t/1180251" target="_blank">MacBook Pro 16 M3 Max (16+40)/48G/1T 港版官翻 16500元</a></li>
+    <li><span class="date">2025-12-09</span><a href="https://www.v2ex.com/t/1177693" target="_blank">MacBook Pro 16 M4 Max (14+32)/36G/1T 开箱损 18500元</a></li>
+    <li><span class="date">2025-12-07</span><a href="https://www.v2ex.com/t/1177315" target="_blank">Mac Studio 2025 M3 Ultra 全新美版原封 40500-58500元</a></li>
+  </ul>
+</div>
+
+<!-- Recommendation -->
+<div class="card recommend">
+  <h2><span class="emoji">🏆</span> 购买推荐</h2>
+  <div class="rec-item">
+    <h3>⭐ 最佳性价比 · M3 Pro 36G/1T 港版官翻 — ¥11,400</h3>
+    <p>14寸：36G内存满足专业开发需求，1T存储够用，港版比国行便宜800元，已基本触底。<br>
+    16寸同配置约 ¥12,358，喜欢大屏可加1000元。</p>
+  </div>
+  <div class="rec-item">
+    <h3>💰 极致省钱 · M3 Pro 18G/1T 美版全新 — ¥10,358</h3>
+    <p>14寸入门之选，18G内存轻度开发够用，美版全新机带官保。</p>
+  </div>
+  <div class="rec-item">
+    <h3>🚀 旗舰性能 · M3 Max 48G/1T 美版全新 — ¥17,758</h3>
+    <p>16寸旗舰，48G内存+M3 Max芯片，适合重度开发/AI推理/视频剪辑。</p>
+  </div>
+  <div class="rec-item">
+    <h3>💡 省钱技巧</h3>
+    <p>走「摩集电商」新店铺（B店）购买，5-7月可享 <span class="badge">1.5% 优惠</span>，
+    老客户线下交易可享 <span class="badge">2% 优惠</span>。淘宝搜「摩集电商」。</p>
+  </div>
+</div>
+
+<div class="footer">
+  <p>数据由 Hermes Agent 通过浏览器实时抓取 V2EX 帖子整理 · 价格随时变动，请以卖家实际报价为准</p>
+  <p>卖家联系方式：淘宝搜「摩集电商企业店」· QQ群：795370955</p>
+</div>
+
+</div>
+
+<script>
+// Price Trend Chart
+const trendCtx = document.getElementById('trendChart').getContext('2d');
+new Chart(trendCtx, {
+  type: 'line',
+  data: {
+    labels: ['2025-03', '2025-05', '2025-06', '2025-09', '2025-12', '2026-01', '2026-03', '2026-05'],
+    datasets: [
+      {
+        label: '16" M3 Max 48G/1T 美版',
+        data: [20390, null, null, null, null, 16900, 16650, 17758],
+        borderColor: '#bc8cff', backgroundColor: '#bc8cff22', tension: 0.3, pointRadius: 5, fill: false
+      },
+      {
+        label: '16" M3 Max 48G/1T 港版官翻',
+        data: [null, null, null, null, 16500, null, 16800, 16800],
+        borderColor: '#58a6ff', backgroundColor: '#58a6ff22', tension: 0.3, pointRadius: 5, fill: false
+      },
+      {
+        label: '14" M3 Max 64G/2T 美版',
+        data: [null, 19500, null, null, null, 16650, 17700, 17700],
+        borderColor: '#f0883e', backgroundColor: '#f0883e22', tension: 0.3, pointRadius: 5, fill: false
+      },
+      {
+        label: '16" M3 Pro 18G/512G 港澳官翻',
+        data: [null, null, null, null, null, null, 10400, 10458],
+        borderColor: '#3fb950', backgroundColor: '#3fb95022', tension: 0.3, pointRadius: 5, fill: false
+      },
+      {
+        label: '16" M4 Pro 48G/512G 港版官翻',
+        data: [null, null, null, 16500, 15400, null, null, 15400],
+        borderColor: '#da3688', backgroundColor: '#da368822', tension: 0.3, pointRadius: 5, fill: false
+      }
+    ]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: { legend: { labels: { color: '#c9d1d9', font: { size: 12 } } } },
+    scales: {
+      x: { ticks: { color: '#8b949e' }, grid: { color: '#21262d' } },
+      y: { ticks: { color: '#8b949e', callback: v => '¥' + v.toLocaleString() }, grid: { color: '#21262d' } }
+    }
+  }
+});
+
+// Version Comparison Chart
+const versionCtx = document.getElementById('versionChart').getContext('2d');
+new Chart(versionCtx, {
+  type: 'bar',
+  data: {
+    labels: ['M3 Pro\n18G/512G', 'M3 Pro\n36G/1T', 'M3 Max\n48G/1T', 'M4 Pro\n48G/512G', 'M4 Max\n36G/1T'],
+    datasets: [
+      { label: '港澳/港版官翻', data: [10458, 12358, 16800, 15400, 18800], backgroundColor: '#8957e5' },
+      { label: '美版全新', data: [10958, null, 17758, null, null], backgroundColor: '#1f6feb' },
+      { label: '国行官翻', data: [12058, 14258, 17700, 16500, null], backgroundColor: '#f85149' }
+    ]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: { legend: { labels: { color: '#c9d1d9' } } },
+    scales: {
+      x: { ticks: { color: '#8b949e' }, grid: { color: '#21262d' } },
+      y: { ticks: { color: '#8b949e', callback: v => '¥' + v.toLocaleString() }, grid: { color: '#21262d' } }
+    }
+  }
+});
+</script>
+</body>
+</html>

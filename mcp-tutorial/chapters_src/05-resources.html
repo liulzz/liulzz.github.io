@@ -1,0 +1,168 @@
+<div class="toc-inline">
+  <div class="toc-title">本章目录</div>
+  <ol>
+    <li><a href="#concept">Resource 的语义</a></li>
+    <li><a href="#static">静态资源</a></li>
+    <li><a href="#template">动态资源与 URI 模板</a></li>
+    <li><a href="#binary">二进制资源与分块</a></li>
+    <li><a href="#subscribe">订阅与变更通知</a></li>
+    <li><a href="#tool-vs-resource">Resource 与 Tool 的边界</a></li>
+  </ol>
+</div>
+
+<h1>第 5 章：Resources（资源）——为模型注入上下文</h1>
+
+<h2 id="concept">5.1 Resource 的语义</h2>
+
+<p>Resource 表示一份「只读数据」，它用于扩充模型的上下文，而不产生副作用。与 Tool 的关键区别在于控制方：Tool 由模型决定调用，Resource 则由 Host 应用程序或用户决定加载。</p>
+
+<p>每个 Resource 由一个 URI 唯一标识。URI 的 scheme 可以自定义，常见的有 <code>file://</code>、<code>https://</code>、<code>db://</code> 或应用自定义的 scheme。</p>
+
+<p>Client 通过两个方法访问 Resource：</p>
+<ul>
+  <li><code>resources/list</code>：列出所有可用资源（返回 URI、名称、MIME 类型）。</li>
+  <li><code>resources/read</code>：根据 URI 读取具体内容。</li>
+</ul>
+
+<h2 id="static">5.2 静态资源</h2>
+
+<p>最简单的资源是固定 URI 的静态资源：</p>
+
+<pre><code class="language-python">from mcp.server.fastmcp import FastMCP
+
+mcp = FastMCP("docs-server")
+
+
+@mcp.resource("config://app-settings")
+def get_config() -> str:
+    """返回应用配置（只读）。"""
+    return """{
+  "app_name": "MyApp",
+  "version": "1.2.0",
+  "max_connections": 100
+}"""
+
+
+@mcp.resource("file://readme")
+def get_readme() -> str:
+    """返回项目 README 内容。"""
+    with open("README.md", encoding="utf-8") as f:
+        return f.read()</code></pre>
+
+<p>Client 读取时的报文如下：</p>
+
+<pre><code class="language-json">// 请求
+{ "jsonrpc": "2.0", "id": 2, "method": "resources/read",
+  "params": { "uri": "config://app-settings" } }
+
+// 响应
+{ "jsonrpc": "2.0", "id": 2, "result": {
+    "contents": [{
+      "uri": "config://app-settings",
+      "mimeType": "text/plain",
+      "text": "{\n  \"app_name\": \"MyApp\", ... }"
+    }]
+} }</code></pre>
+
+<h2 id="template">5.3 动态资源与 URI 模板</h2>
+
+<p>更常见的是参数化资源。URI 中用 <code>{param}</code> 占位，函数接收对应参数。因此，一个模板可以生成无限多个具体资源。</p>
+
+<pre><code class="language-python">@mcp.resource("users://{user_id}/profile")
+def get_user_profile(user_id: str) -> str:
+    """根据用户 ID 返回其个人资料。"""
+    # 这里模拟数据库查询
+    profiles = {
+        "1001": {"name": "张三", "role": "管理员"},
+        "1002": {"name": "李四", "role": "普通用户"},
+    }
+    profile = profiles.get(user_id)
+    if profile is None:
+        return f"未找到用户 {user_id}"
+    return f"姓名：{profile['name']}，角色：{profile['role']}"
+
+
+@mcp.resource("logs://{date}")
+def get_logs(date: str) -> str:
+    """返回指定日期（YYYY-MM-DD）的日志内容。"""
+    path = f"/var/log/app/{date}.log"
+    try:
+        with open(path, encoding="utf-8") as f:
+            return f.read()
+    except FileNotFoundError:
+        return f"日期 {date} 没有日志记录。"</code></pre>
+
+<div class="box note">
+  <span class="box-title">模板资源如何被发现</span>
+  <p>模板资源不会出现在 <code>resources/list</code> 的结果中（因为参数值是无限的），而是通过 <code>resources/templates/list</code> 返回模板定义。Client 据此知道 URI 的构造规则，再由用户或应用填入具体参数。</p>
+</div>
+
+<h2 id="binary">5.4 二进制资源与分块</h2>
+
+<p>资源不限于文本。返回 <code>bytes</code> 时，SDK 会自动 Base64 编码并设置 <code>blob</code> 字段。</p>
+
+<pre><code class="language-python">@mcp.resource("image://logo")
+def get_logo() -> bytes:
+    """返回 Logo 图片的二进制内容。"""
+    with open("logo.png", "rb") as f:
+        return f.read()</code></pre>
+
+<p>对应的响应报文使用 <code>blob</code> 而不是 <code>text</code>：</p>
+<pre><code class="language-json">{ "contents": [{
+    "uri": "image://logo",
+    "mimeType": "image/png",
+    "blob": "iVBORw0KGgoAAAANSUhEUgAA..."
+}] }</code></pre>
+
+<p>对于超大资源，应考虑分页或分块。虽然 MCP 协议本身没有强制的分块标准，但是实践中常用 URI 参数携带偏移量：</p>
+
+<pre><code class="language-python">@mcp.resource("bigfile://{name}/chunk/{offset}")
+def read_chunk(name: str, offset: str) -> str:
+    """按 1MB 为单位分块读取大文件。"""
+    CHUNK = 1024 * 1024
+    start = int(offset) * CHUNK
+    with open(f"/data/{name}", "rb") as f:
+        f.seek(start)
+        return f.read(CHUNK).decode("utf-8", errors="replace")</code></pre>
+
+<h2 id="subscribe">5.5 订阅与变更通知</h2>
+
+<p>如果 Server 在 <code>initialize</code> 时声明了 <code>resources.subscribe: true</code>，Client 就可以订阅特定资源。当资源内容变化时，Server 主动发送通知，因此 Client 无需轮询。</p>
+
+<pre><code class="language-text">// Client 订阅
+{ "jsonrpc": "2.0", "id": 5, "method": "resources/subscribe",
+  "params": { "uri": "logs://2025-06-01" } }
+
+// 资源变化时，Server 主动推送通知（无 id）
+{ "jsonrpc": "2.0", "method": "notifications/resources/updated",
+  "params": { "uri": "logs://2025-06-01" } }
+
+// Client 收到通知后，重新调用 resources/read 获取最新内容</code></pre>
+
+<p>此外，如果资源列表本身发生变化（新增或删除资源），Server 发送 <code>notifications/resources/list_changed</code>，因此 Client 知道需要重新调用 <code>resources/list</code>。</p>
+
+<h2 id="tool-vs-resource">5.6 Resource 与 Tool 的边界</h2>
+
+<p>初学者常困惑：查询数据库应该用 Tool 还是 Resource？判断标准如下：</p>
+
+<table>
+  <thead>
+    <tr><th>问题</th><th>用 Resource</th><th>用 Tool</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>是否有副作用</td><td>无副作用（只读）</td><td>有副作用（写、删、发送）</td></tr>
+    <tr><td>由谁决定使用</td><td>用户/应用主动加载</td><td>模型自主决定</td></tr>
+    <tr><td>参数复杂度</td><td>可用 URI 表达的简单参数</td><td>复杂结构化参数</td></tr>
+    <tr><td>典型例子</td><td>读取文件、查看配置</td><td>执行查询、写入记录</td></tr>
+  </tbody>
+</table>
+
+<div class="box warn">
+  <span class="box-title">⚠ 实践中的常见做法</span>
+  <p>因为许多 Host（包括早期的 Claude Desktop）对 Resource 的自动加载支持有限，所以不少 Server 会把「读取类操作」同时实现为 Tool，以确保模型能主动获取数据。因此，如果你的目标 Host 对 Resource 支持不完善，把只读查询实现为 Tool 是一个务实的选择。</p>
+</div>
+
+<div class="box ok">
+  <span class="box-title">✓ 本章小结</span>
+  <p>Resource 是只读数据原语，由 URI 标识，支持静态、模板、二进制三种形式，并可通过订阅机制实现变更推送。它与 Tool 的核心区别在于「有无副作用」和「由谁决定使用」。下一章介绍用户触发的 Prompt 原语。</p>
+</div>

@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="description" content="Java 9 到 Java 27 各大版本升级点、语言特性、JVM 与 GC、并发、安全变化和升级建议。" />
+<title>Java 版本演进指南：Java 9–27</title>
+<style>
+:root{--bg:#f4f7fb;--surface:#fff;--text:#182235;--muted:#66748a;--line:#e2e8f0;--blue:#2864dc;--blue2:#eaf1ff;--green:#13795b;--green-bg:#e7f7f0;--amber:#9a5b00;--amber-bg:#fff3d9;--purple:#7048b8;--purple-bg:#f1eaff;--red:#a33d3d;--shadow:0 12px 35px rgba(28,49,84,.08);--radius:18px}
+*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:var(--bg);color:var(--text);font-family:Inter,"PingFang SC","Microsoft YaHei",system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;line-height:1.65}a{color:var(--blue);text-decoration:none}a:hover{text-decoration:underline}.wrap{max-width:1240px;margin:0 auto;padding:0 24px}.hero{background:radial-gradient(circle at 86% 12%,rgba(117,164,255,.32),transparent 27%),linear-gradient(125deg,#111c35,#173d72 62%,#2767ce);color:#fff;padding:54px 0 42px;overflow:hidden}.eyebrow{font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:#bcd1ff;font-weight:800}.hero h1{font-size:clamp(30px,4.2vw,49px);line-height:1.16;letter-spacing:-.035em;margin:14px 0 15px;max-width:800px}.hero p{font-size:16px;color:#dce7ff;max-width:820px;margin:0}.hero-meta{display:flex;gap:10px;flex-wrap:wrap;margin-top:24px}.hero-chip{padding:7px 12px;border:1px solid rgba(255,255,255,.22);background:rgba(255,255,255,.09);border-radius:999px;font-size:12px;color:#f1f5ff}.hero-grid{display:grid;grid-template-columns:1.2fr .8fr;gap:32px;align-items:end}.hero-aside{border:1px solid rgba(255,255,255,.17);background:rgba(10,24,54,.25);padding:20px;border-radius:18px;backdrop-filter:blur(10px)}.hero-aside small{color:#bdcff3;display:block}.hero-aside strong{font-size:26px;display:block;margin:1px 0 4px}.hero-aside p{font-size:13px;color:#d4e0fb}.quickstats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:16px}.stat{padding:12px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.12);border-radius:12px}.stat strong{font-size:21px}.stat span{display:block;color:#c9d8f7;font-size:11px}
+main{padding:28px 0 60px}.section{margin:22px 0 34px}.section-title{display:flex;align-items:end;justify-content:space-between;gap:14px;margin:0 0 15px}.section-title h2{font-size:22px;letter-spacing:-.02em;margin:0}.section-title p{margin:3px 0 0;color:var(--muted);font-size:13px}.panel{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow)}.overview{padding:22px}.overview-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}.overview-item{padding:15px;border:1px solid var(--line);border-radius:14px;background:linear-gradient(180deg,#fff,#fbfcff)}.overview-item .num{font-size:12px;color:var(--blue);font-weight:800;letter-spacing:.06em}.overview-item h3{font-size:15px;margin:5px 0}.overview-item p{color:var(--muted);font-size:12px;margin:0}.callout{font-size:12px;color:#536078;margin:14px 0 0;padding:12px 14px;background:#f7f9fd;border-left:3px solid #82a6ef;border-radius:8px}
+.toolbar{padding:16px;display:grid;grid-template-columns:minmax(200px,1fr) auto;gap:14px;align-items:center;margin-bottom:15px}.searchbox{position:relative}.searchbox svg{position:absolute;left:13px;top:50%;transform:translateY(-50%);color:#8491a6}.searchbox input{width:100%;padding:12px 14px 12px 40px;border:1px solid #d8e0ec;border-radius:11px;font-size:14px;background:#fbfcff;outline:none;color:var(--text)}.searchbox input:focus{border-color:#75a0f4;box-shadow:0 0 0 3px #e4edff}.filters{display:flex;gap:7px;flex-wrap:wrap;justify-content:flex-end}.filter-btn,.action-btn{border:1px solid #dce3ee;background:#fff;color:#59657a;border-radius:999px;padding:8px 12px;font-size:12px;font-weight:700;cursor:pointer;transition:.15s}.filter-btn:hover,.action-btn:hover{border-color:#9db7ec;color:var(--blue)}.filter-btn.active{background:#e9f0ff;border-color:#bcd0ff;color:#2155b6}.toolbar-bottom{grid-column:1/-1;display:flex;align-items:center;justify-content:space-between;border-top:1px solid #eef1f6;padding-top:11px;gap:10px}.result-count{font-size:12px;color:var(--muted)}.toolbar-actions{display:flex;gap:7px;flex-wrap:wrap}.action-btn{border-radius:8px;padding:6px 10px}.version-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:15px}.version-card{background:var(--surface);border:1px solid var(--line);border-radius:17px;box-shadow:0 6px 20px rgba(28,49,84,.04);overflow:hidden;display:flex;flex-direction:column;min-width:0;transition:transform .18s,box-shadow .18s}.version-card:hover{transform:translateY(-2px);box-shadow:var(--shadow)}.version-card.lts{border-top:3px solid #218764}.version-card.latest{border-top:3px solid #2864dc}.card-head{padding:17px 18px 12px;display:flex;justify-content:space-between;align-items:flex-start;gap:12px}.version-title{display:flex;gap:12px;align-items:center}.version-no{width:51px;height:51px;border-radius:14px;background:#edf2fa;color:#243552;display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:850;letter-spacing:-.04em;flex-shrink:0}.lts .version-no{background:var(--green-bg);color:var(--green)}.latest .version-no{background:var(--blue2);color:var(--blue)}.version-title h3{font-size:17px;margin:0;line-height:1.25}.version-title p{font-size:11px;color:var(--muted);margin:4px 0 0}.badges{display:flex;flex-direction:column;align-items:flex-end;gap:5px}.badge{font-size:10px;font-weight:800;letter-spacing:.02em;padding:4px 8px;border-radius:999px;white-space:nowrap;background:#eff2f7;color:#59677d}.badge.lts{background:var(--green-bg);color:var(--green)}.badge.latest{background:var(--blue2);color:var(--blue)}.badge.preview{background:var(--amber-bg);color:var(--amber)}.card-summary{font-size:13px;color:#56647a;margin:0;padding:0 18px 13px}.feature-list{padding:0 18px 13px;margin:0;list-style:none;display:grid;gap:10px}.feature-list li{font-size:13px;line-height:1.55;padding-left:15px;position:relative}.feature-list li:before{content:"";position:absolute;width:5px;height:5px;border-radius:50%;background:#638be4;left:0;top:.65em}.feature-list strong{color:#202d43}.feature-meta{display:flex;gap:5px;flex-wrap:wrap;margin-top:5px}.tag{font-size:10px;border:1px solid #e4e9f2;border-radius:5px;padding:2px 6px;color:#65738a;background:#fafbfe}.tag.preview{color:var(--amber);border-color:#f3ddb0;background:#fff8e9}.tag.incubator{color:var(--purple);border-color:#e1d4ff;background:#f8f4ff}.tag.removal{color:var(--red);border-color:#f1d4d4;background:#fff7f7}.card-foot{margin-top:auto;border-top:1px solid #edf0f5;padding:11px 18px;display:flex;align-items:center;justify-content:space-between;gap:10px}.source-link{font-size:11px;font-weight:750}.topics{display:flex;gap:5px;flex-wrap:wrap;justify-content:flex-end}.topic{font-size:10px;color:#64718a;background:#f2f5fa;border-radius:5px;padding:3px 6px}.empty{display:none;text-align:center;padding:45px 20px;color:var(--muted)}
+.compare{padding:20px}.compare-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}.compare-col{padding:15px;border:1px solid var(--line);border-radius:13px}.compare-col h3{font-size:15px;margin:0 0 8px}.compare-col p{font-size:12px;color:var(--muted);margin:0 0 10px}.compare-col ul{padding-left:17px;margin:0;font-size:12px}.compare-col li{margin:5px 0}.migration{padding:20px}.migration-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}.migration-item{padding:15px;border:1px solid var(--line);border-radius:13px}.migration-item h3{font-size:14px;margin:0 0 6px}.migration-item p{font-size:12px;color:var(--muted);margin:0}.migration-item code{color:#284e98;background:#eef3ff;border-radius:4px;padding:1px 4px;font-size:11px}.footnote{color:var(--muted);font-size:12px}.sources{padding:17px 20px;display:flex;flex-wrap:wrap;gap:10px 18px}.sources a{font-size:12px;font-weight:700}.footer{padding:22px 0 34px;border-top:1px solid var(--line);color:#738097;font-size:11px}.footer-inner{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}.backtop{position:fixed;right:22px;bottom:22px;border:0;background:#1b3768;color:#fff;padding:11px 14px;border-radius:999px;box-shadow:0 8px 24px rgba(20,45,88,.22);cursor:pointer;font-weight:800;opacity:0;pointer-events:none;transition:.2s}.backtop.show{opacity:1;pointer-events:auto}
+@media(max-width:900px){.hero-grid{grid-template-columns:1fr}.hero-aside{max-width:520px}.overview-grid{grid-template-columns:repeat(2,1fr)}.version-grid{grid-template-columns:1fr}.toolbar{grid-template-columns:1fr}.filters{justify-content:flex-start}.toolbar-bottom{grid-column:1}.compare-grid{grid-template-columns:1fr}.migration-grid{grid-template-columns:1fr}}
+@media(max-width:560px){.wrap{padding:0 14px}.hero{padding:37px 0 30px}.hero h1{font-size:32px}.quickstats{grid-template-columns:repeat(3,1fr)}.stat strong{font-size:17px}.overview-grid{grid-template-columns:1fr 1fr}.overview{padding:13px}.section-title{align-items:flex-start;flex-direction:column}.card-head{padding:14px}.card-summary,.feature-list{padding-left:14px;padding-right:14px}.card-foot{padding:10px 14px}.badges{gap:4px}.version-no{width:45px;height:45px;font-size:20px}.version-title{gap:9px}}
+@media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important;transition:none!important}}
+</style>
+</head>
+<body>
+<header class="hero" id="top">
+  <div class="wrap hero-grid">
+    <div>
+      <div class="eyebrow">JAVA RELEASE EVOLUTION · 2017—2026</div>
+      <h1>Java 版本演进指南<br>从 Java 9 到 Java 27</h1>
+      <p>按版本梳理 Java 语言、集合与 API、并发模型、JVM / GC、性能和安全机制的关键变化。适合 Java 开发者快速建立版本全景，也可用于技术选型与升级评估。</p>
+      <div class="hero-meta"><span class="hero-chip">19 个大版本</span><span class="hero-chip">LTS 版本重点标记</span><span class="hero-chip">支持关键词检索与筛选</span><span class="hero-chip">纯 HTML · 可离线使用</span></div>
+    </div>
+    <aside class="hero-aside">
+      <small>截至 2026 年 10 月</small><strong>JDK 27 最新发布</strong>
+      <p>目前最新的 LTS 版本是 JDK 25。生产选型时，优先结合厂商支持周期、框架兼容性、运行环境和升级成本，而不是只看版本号。</p>
+      <div class="quickstats"><div class="stat"><strong>25</strong><span>最新 LTS</span></div><div class="stat"><strong>21</strong><span>上一代 LTS</span></div><div class="stat"><strong>6 个月</strong><span>常规发布节奏</span></div></div>
+    </aside>
+  </div>
+</header>
+<main class="wrap">
+  <section class="section">
+    <div class="section-title"><div><h2>先建立整体认知</h2><p>Java 8 之后的升级，并不只是语法糖增加，更重要的是并发、运行时、封装与交付方式的演进。</p></div></div>
+    <div class="panel overview"><div class="overview-grid">
+      <article class="overview-item"><div class="num">01 / LANGUAGE</div><h3>代码表达更简洁</h3><p><code>var</code>、文本块、records、sealed classes、模式匹配，以及更轻量的源文件启动方式，逐步减少样板代码。</p></article>
+      <article class="overview-item"><div class="num">02 / CONCURRENCY</div><h3>并发模型升级</h3><p>JDK 21 的虚拟线程是关键节点；Structured Concurrency、Scoped Values 等方向持续演进，但仍需关注预览状态。</p></article>
+      <article class="overview-item"><div class="num">03 / JVM & GC</div><h3>性能与启动优化</h3><p>G1、ZGC、分代 ZGC、紧凑对象头、AOT 缓存和类加载优化，面向吞吐、延迟、启动速度与内存占用。</p></article>
+      <article class="overview-item"><div class="num">04 / SECURITY</div><h3>封装与安全边界更严格</h3><p>JDK 内部 API 强封装、Security Manager 退场、动态加载 Agent 告警等变化，可能影响老项目和诊断工具。</p></article>
+    </div><p class="callout"><strong>阅读口径：</strong>下方每版列的是对日常开发或升级决策最有代表性的变化，不是完整 JEP 清单。标有 Preview / Incubator 的项目仍属于预览或孵化阶段，正式采用前要确认目标 JDK 的状态及编译参数。</p></div>
+  </section>
+
+  <section class="section" id="versions">
+    <div class="section-title"><div><h2>版本时间线与主要升级点</h2><p>默认按新到旧排列。可以输入特性名、JEP 编号或关键词，也可以只看 LTS 或特定主题。</p></div></div>
+    <div class="panel toolbar">
+      <label class="searchbox" aria-label="搜索版本或特性"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-4-4"></path></svg><input id="search" type="search" placeholder="搜索：虚拟线程、G1、HTTP/3、records、JEP 444…" /></label>
+      <div class="filters" id="filters">
+        <button class="filter-btn active" data-filter="all">全部版本</button><button class="filter-btn" data-filter="lts">仅 LTS</button><button class="filter-btn" data-filter="language">语言与 API</button><button class="filter-btn" data-filter="concurrency">并发</button><button class="filter-btn" data-filter="performance">JVM / 性能</button><button class="filter-btn" data-filter="security">安全与兼容</button>
+      </div>
+      <div class="toolbar-bottom"><span class="result-count" id="resultCount" aria-live="polite">显示 19 个版本</span><div class="toolbar-actions"><button class="action-btn" id="sortBtn">切换：旧 → 新</button><button class="action-btn" id="resetBtn">重置筛选</button></div></div>
+    </div>
+    <div class="version-grid" id="versionGrid"></div>
+    <div class="panel empty" id="emptyState">没有找到匹配的版本或特性。尝试其他关键词，或重置筛选。</div>
+  </section>
+
+  <section class="section">
+    <div class="section-title"><div><h2>重点版本怎么理解？</h2><p>以企业后端开发的视角，快速把特性与真实收益对应起来。</p></div></div>
+    <div class="panel compare"><div class="compare-grid">
+      <article class="compare-col"><h3>Java 8 → 11</h3><p>现代 Java 的第一步</p><ul><li>HTTP Client、TLS 1.3、JFR 等能力补齐。</li><li>新增 <code>var</code>（JDK 10），代码表达更简洁。</li><li>需要处理模块化之后的 JDK 内部 API、Java EE / CORBA 模块变更。</li><li>适合作为老系统现代化的初始评估目标，但必须确认应用框架和依赖支持。</li></ul></article>
+      <article class="compare-col"><h3>Java 17 → 21</h3><p>并发与语言模型的显著升级</p><ul><li>records、sealed classes、instanceof / switch 模式匹配让领域模型和分支处理更清晰。</li><li>JDK 21 虚拟线程正式可用，适合大量阻塞式 I/O 请求，但不代表 CPU 密集型任务会自动变快。</li><li>Sequenced Collections 补齐有序集合接口；分代 ZGC 改善低延迟场景。</li><li>迁移时重点验证反射、Agent、序列化、TLS 和容器资源配置。</li></ul></article>
+      <article class="compare-col"><h3>Java 21 → 25</h3><p>面向后续维护的 LTS 升级</p><ul><li>Java 25 是最新 LTS，新增更轻量的源文件 / main 方法入口、模块导入声明等最终特性。</li><li>紧凑对象头、AOT 缓存与启动优化值得在高内存密度、冷启动场景压测。</li><li>部分结构化并发、惰性常量、密码 API 等仍是 Preview，不宜直接当稳定接口设计。</li><li>建立“编译—测试—灰度—观测—回滚”升级闭环，避免只做 JDK 替换。</li></ul></article>
+    </div></div>
+  </section>
+
+  <section class="section">
+    <div class="section-title"><div><h2>从 Java 8 升级的排查清单</h2><p>版本升级往往卡在兼容性与运行参数，而不是新语法本身。</p></div></div>
+    <div class="panel migration"><div class="migration-grid">
+      <article class="migration-item"><h3>1. 盘点依赖与框架</h3><p>核实 Spring / Spring Boot、ORM、JSON、日志、APM、数据库驱动、构建插件与代码生成器的目标 JDK 支持范围；先升级依赖，再切换运行时通常更容易定位问题。</p></article>
+      <article class="migration-item"><h3>2. 检查 JDK 内部 API 与反射</h3><p>Java 9 起模块化和后续强封装逐步收紧。检查对 <code>sun.*</code>、<code>com.sun.*</code>、深反射和旧版字节码工具的依赖；不要把 <code>--add-opens</code> 当永久方案。</p></article>
+      <article class="migration-item"><h3>3. 核查已删除或变化的组件</h3><p>重点检查 Java EE / CORBA 模块、Nashorn、Pack200、Applet API、旧 GC 参数和废弃启动参数；同时确认默认字符集、TLS、安全算法与证书链行为。</p></article>
+      <article class="migration-item"><h3>4. 按实际负载做性能验证</h3><p>记录升级前后的启动耗时、吞吐、P95 / P99 延迟、堆与 RSS、GC pause、线程数和容器 CPU / 内存。虚拟线程、ZGC、AOT 等收益必须基于业务负载测量。</p></article>
+      <article class="migration-item"><h3>5. 处理 Agent 与诊断工具</h3><p>核实 Arthas、APM Agent、覆盖率和字节码增强工具；JDK 21 起动态加载 Agent 会有告警趋势，后续版本可能继续收紧。优先评估启动时加载和工具版本升级。</p></article>
+      <article class="migration-item"><h3>6. 明确 Preview / Incubator 边界</h3><p>预览功能需要显式启用，后续版本可能调整或移除。生产公共 API、持久化格式和跨服务协议尽量不要依赖预览特性，除非团队能承担迁移成本。</p></article>
+    </div><p class="callout">建议策略：先选定受支持的目标 LTS（例如 21 或 25），再按官方迁移指南逐步验证；如果从 Java 8 跨多个大版本升级，最好先在中间版本做依赖扫描与兼容性定位，不必把每个非 LTS 版本都作为生产中转站。</p></div>
+  </section>
+
+  <section class="section">
+    <div class="section-title"><div><h2>官方资料</h2><p>用于核对每个版本的完整发行说明、JEP 状态及支持周期。</p></div></div>
+    <div class="panel sources"><a href="https://www.oracle.com/java/technologies/javase/27all-relnotes.html" target="_blank" rel="noopener">JDK 27 发行说明 ↗</a><a href="https://www.oracle.com/java/technologies/javase/26all-relnotes.html" target="_blank" rel="noopener">JDK 26 发行说明 ↗</a><a href="https://www.oracle.com/java/technologies/javase/25all-relnotes.html" target="_blank" rel="noopener">JDK 25 发行说明 ↗</a><a href="https://www.oracle.com/europe/java/technologies/java-se-support-roadmap.html" target="_blank" rel="noopener">Oracle Java 支持路线图 ↗</a><a href="https://openjdk.org/jeps/0" target="_blank" rel="noopener">OpenJDK JEP 索引 ↗</a><a href="https://dev.java/learn/" target="_blank" rel="noopener">Dev.java 学习资料 ↗</a></div>
+  </section>
+  <p class="footnote">说明：LTS 标记采用 Oracle Java SE 支持路线图的版本划分；不同 JDK 发行商可能有各自的支持政策。版本日期表示正式发布（GA）时间。内容侧重主要升级点，不构成对所有发行商补丁、许可或商业支持条款的判断。</p>
+</main>
+<footer class="footer"><div class="wrap footer-inner"><span>Java 版本演进指南 · 单文件 HTML，无需构建与外部依赖</span><span>适用于学习、技术评审与升级前初步盘点</span></div></footer>
+<button class="backtop" id="backtop" aria-label="返回顶部">↑ 回到顶部</button>
+<script>
+const versions = [
+{v:27,date:'2026-09-15',lts:false,latest:true,title:'JDK 27',summary:'当前最新发布版本；重点集中在运行时效率、安全默认项、TLS 与持续演进中的语言 / 并发 API。',topics:['language','concurrency','performance','security'],features:[
+['紧凑对象头默认启用','64 位环境下对象头由 96 位压缩到 64 位的布局成为默认方案，有望降低堆占用、改善数据局部性。','JEP 519 · JVM / 内存'],
+['G1 成为所有环境的默认 GC','不再只面向服务器环境默认采用 G1；升级后仍应依据延迟和吞吐目标实测 GC 配置。','JEP 523 · GC'],
+['TLS 1.3 后量子混合密钥交换','支持混合式密钥交换，在传统算法基础上引入抗量子算法，为安全通信做长期准备。','JEP 527 · 安全'],
+['JFR 进程内数据脱敏','录制前对命令行参数、环境变量和系统属性初始值等敏感信息进行脱敏，减少诊断数据泄露风险。','JEP 536 · 运维安全'],
+['原始类型模式匹配继续预览','扩展模式匹配以及 instanceof / switch 对原始类型的支持；仍是 Preview，不应视为最终语法。','JEP 532 · Preview','preview'],
+['惰性常量、结构化并发继续预览','分别探索更灵活的常量初始化时机，以及将一组并发任务作为整体进行取消、错误处理和观测。','JEP 531 / 533 · Preview','preview'],
+['Vector API 第十二轮孵化','面向 CPU 向量指令的显式表达能力仍处 Incubator 阶段。','JEP 537 · Incubator','incubator'] ]},
+{v:26,date:'2026-03-17',lts:false,title:'JDK 26',summary:'重点是 HTTP/3、G1 吞吐和 AOT 对象缓存，同时继续预览语言与并发能力。',topics:['language','concurrency','performance','security'],features:[
+['HTTP Client 支持 HTTP/3','标准 HttpClient API 增加 HTTP/3 支持，让客户端访问 HTTP/3 服务时尽量减少代码改动。','JEP 517 · 网络 API'],
+['G1 减少同步以提升吞吐','减少应用线程与 GC 线程之间的同步开销，目标是提高 G1 下的应用吞吐。','JEP 522 · GC'],
+['AOT 对象缓存支持任意 GC','改善启动和预热缓存，使其可与包括 ZGC 在内的不同垃圾收集器配合。','JEP 516 · 启动性能'],
+['移除 Applet API','移除早已过时且在现代浏览器中不再受支持的 Applet API。','JEP 504 · 移除 API','removal'],
+['准备限制修改 final 字段','对通过深反射修改 final 字段的行为发出警告，为未来默认强化完整性做准备。','JEP 500 · 兼容性','preview'],
+['惰性常量、结构化并发继续预览','Lazy Constants 进入第二次预览；Structured Concurrency 进入第六次预览。','JEP 526 / 525 · Preview','preview'],
+['原始类型模式匹配第四次预览','继续完善模式匹配、instanceof 与 switch 的原始类型支持。','JEP 530 · Preview','preview'] ]},
+{v:25,date:'2025-09-16',lts:true,title:'JDK 25',summary:'最新 LTS。语言入门体验、对象布局、启动优化和长期维护性是重点。',topics:['language','concurrency','performance','security'],features:[
+['紧凑源文件与实例 main 正式定稿','可用更少样板代码编写小型程序，适合教学、脚本式工具和快速原型；企业应用仍可保留传统入口。','JEP 512 · 正式'],
+['模块导入声明正式定稿','可导入模块导出的包集合，减少使用模块化库时的 import 样板。','JEP 511 · 正式'],
+['灵活构造器体正式定稿','允许在显式调用 this(...) / super(...) 前执行受限语句，便于在调用父类构造器前完成参数校验等操作。','JEP 513 · 正式'],
+['Scoped Values 正式定稿','为线程内及跨调用链传递不可变上下文提供更合适的机制，适合与虚拟线程等并发模型配合。','JEP 506 · 正式'],
+['紧凑对象头正式定稿','减少普通对象头占用，潜在降低堆内存需求；需结合对象数量、堆布局和运行负载压测。','JEP 519 · 性能'],
+['AOT 启动与预热优化增强','改进 AOT 缓存、命令行流程和方法性能分析，以缩短启动 / 预热时间。','JEP 514 / 515 · 性能'],
+['结构化并发与原始类型模式匹配仍为预览','这些 API / 语法还未最终定型；Stable Values、KDF API、PEM API 等也处于预览阶段。','JEP 505 / 507 等 · Preview','preview'],
+['分代 Shenandoah','为 Shenandoah 引入分代收集能力，面向降低年轻对象回收成本等场景。','JEP 521 · GC'] ]},
+{v:24,date:'2025-03-18',lts:false,title:'JDK 24',summary:'工具链 API、流处理和 AOT 类加载持续完善，同时加强原生访问提示与安全边界。',topics:['language','concurrency','performance','security'],features:[
+['Class-File API 正式定稿','提供操作 class 文件的标准 API，降低字节码工具对内部实现的依赖。','JEP 484 · 工具链'],
+['Stream Gatherers 正式定稿','扩展 Stream 中间操作的构建方式，方便定义窗口、分组扫描等自定义流式处理。','JEP 485 · Stream API'],
+['AOT 类加载与链接','通过提前积累类加载与链接信息，减少后续 JVM 启动时的相关工作。','JEP 483 · 启动性能'],
+['移除传统非分代 ZGC 模式','ZGC 聚焦分代模式，旧参数与运维脚本需要核查。','JEP 490 · GC'],
+['原生方法访问告警','对 JNI 等原生访问发出告警，方便逐步识别和管理本地代码边界。','JEP 472 · 安全 / 兼容'],
+['Security Manager 永久禁用','旧式安全管理器不再可启用；仍依赖其沙箱能力的老系统必须评估替代方案。','JEP 486 · 移除行为','removal'],
+['模式匹配、模块导入等继续预览','原始类型模式匹配、灵活构造器体、模块导入声明、Scoped Values、Structured Concurrency 等继续迭代。','多个 JEP · Preview','preview'],
+['紧凑对象头作为实验特性','探索降低对象头占用，在此版本还不是稳定的默认能力。','JEP 450 · Experimental','preview'] ]},
+{v:23,date:'2024-09-17',lts:false,title:'JDK 23',summary:'文档和 Stream API 得到改进，ZGC 分代模式成为默认方向，更多语法特性继续预览。',topics:['language','concurrency','performance'],features:[
+['Markdown 风格的 Javadoc 注释','可在 API 文档注释中使用更自然的 Markdown 语法，改善文档编写体验。','JEP 467 · 文档'],
+['ZGC 默认采用分代模式','分代收集成为默认模式，目标是更高效处理大多数生命周期较短的对象。','JEP 474 · GC'],
+['Stream Gatherers 第二次预览','扩展 Stream 中间操作的定制能力。','JEP 473 · Preview','preview'],
+['Class-File API 第二次预览','持续提供面向 class 文件处理的标准 API，面向框架、代理、编译器和字节码工具。','JEP 466 · Preview','preview'],
+['模块导入与原始类型模式匹配预览','探索模块级导入和原始类型 pattern matching；属于预览特性。','JEP 476 / 455 · Preview','preview'],
+['隐式声明类与实例 main 方法第三次预览','继续简化初学者和小工具的 Java 程序入口。','JEP 477 · Preview','preview'],
+['结构化并发、Scoped Values 持续预览','为结构化并发任务生命周期管理和上下文传递做迭代。','JEP 480 / 481 · Preview','preview'] ]},
+{v:22,date:'2024-03-19',lts:false,title:'JDK 22',summary:'Foreign Function & Memory API 正式定稿，减少 Java 与原生代码交互的门槛。',topics:['language','concurrency','performance'],features:[
+['Foreign Function & Memory API 正式定稿','以受控 API 调用本地函数、访问原生内存，减少 JNI 样板与内存安全风险。','JEP 454 · 正式'],
+['Unnamed Variables & Patterns 正式定稿','使用下划线表示不需要使用的变量或模式绑定，表达意图更清晰。','JEP 456 · 正式'],
+['Stream Gatherers 首次预览','让开发者可以定义自定义 Stream 中间操作。','JEP 461 · Preview','preview'],
+['多文件源代码启动','可直接运行多个源文件构成的 Java 程序，降低小型项目和示例代码运行门槛。','JEP 458 · 开发体验'],
+['构造器 super 前语句等持续演进','灵活构造器体、字符串模板、Class-File API、Scoped Values 和 Structured Concurrency 等保持预览。','多个 JEP · Preview','preview'] ]},
+{v:21,date:'2023-09-19',lts:true,title:'JDK 21',summary:'关键 LTS 版本。虚拟线程、模式匹配、记录模式和有序集合是现代 Java 开发的重要里程碑。',topics:['language','concurrency','performance'],features:[
+['虚拟线程正式定稿','轻量级线程适合大量阻塞式 I/O 与线程-per-request 服务模型，可提升并发伸缩性；不自动加速 CPU 密集任务。','JEP 444 · 并发'],
+['Record Patterns 与 switch 模式匹配正式定稿','直接解构 record，并在 switch 中进行类型与模式分支匹配，减少 instanceof + 强转样板。','JEP 440 / 441 · 语言'],
+['Sequenced Collections','为有明确 encounter order 的集合提供统一接口，支持首尾元素和逆序视图等操作。','JEP 431 · 集合 API'],
+['分代 ZGC','将年轻对象与老对象分代管理，提升低延迟场景下的回收效率。','JEP 439 · GC'],
+['Foreign Function & Memory API 第三次预览','继续完善 Java 与原生函数、原生内存交互的标准 API；该 API 在 JDK 22 才正式定稿。','JEP 442 · Preview','preview'],
+['Scoped Values / Structured Concurrency 预览','提供上下文传递和并发任务结构化管理的演进方案，仍属 Preview。','JEP 446 / 453 · Preview','preview'],
+['字符串模板等预览特性','字符串模板、未命名类与实例 main 等探索更简洁的表达方式；其中部分特性后来继续调整，采用前需核对目标版本。','JEP 430 / 445 · Preview','preview'] ]},
+{v:20,date:'2023-03-21',lts:false,title:'JDK 20',summary:'主要是 Java 21 重要特性的中间迭代版本，适合了解预览机制和新并发模型的演进。',topics:['language','concurrency','performance'],features:[
+['虚拟线程第二次预览','继续验证轻量线程模型和兼容性。','JEP 436 · Preview','preview'],
+['Record Patterns 第二次预览','继续完善记录解构模式。','JEP 432 · Preview','preview'],
+['Structured Concurrency 第二次孵化','以任务作用域组织并发任务，统一管理生命周期、取消与错误处理。','JEP 437 · Incubator','incubator'],
+['Scoped Values 孵化','探索安全地在调用链 / 线程内传递不可变数据。','JEP 429 · Incubator','incubator'],
+['Foreign Function & Memory API 第二次预览','为后续正式定稿继续收集反馈。','JEP 434 · Preview','preview'],
+['模式匹配和 Vector API 继续迭代','Switch 模式匹配继续预览，Vector API 进入第五轮孵化。','多个 JEP · Preview / Incubator','incubator'] ]},
+{v:19,date:'2022-09-20',lts:false,title:'JDK 19',summary:'虚拟线程与结构化并发进入可试用的早期阶段，外部函数与内存 API 继续发展。',topics:['language','concurrency','performance'],features:[
+['虚拟线程首次预览','允许大量轻量级线程以接近传统线程的编程模型运行，目标是提升高并发阻塞式服务的可扩展性。','JEP 425 · Preview','preview'],
+['Record Patterns 首次预览','为 record 解构提供模式匹配语法。','JEP 405 · Preview','preview'],
+['Structured Concurrency 首次孵化','把多个相关的并发任务视为一个工作单元，便于统一取消和异常处理。','JEP 428 · Incubator','incubator'],
+['Foreign Function & Memory API 预览','逐步替代部分 JNI 交互方式，并改善原生内存访问的安全性。','JEP 424 · Preview','preview'],
+['Scoped Values、Vector API 持续孵化','探索上下文传递及向量化运算 API。','JEP 429 / 426 · Incubator','incubator'] ]},
+{v:18,date:'2022-03-22',lts:false,title:'JDK 18',summary:'统一默认字符集行为、提供轻量 Web Server，并继续推进 JVM 外部交互与并发特性。',topics:['language','performance','security'],features:[
+['默认字符集统一为 UTF-8','默认 charset 不再依赖操作系统配置，减少跨环境编码差异；仍应明确处理协议或文件规定的编码。','JEP 400 · 兼容性'],
+['简单 Web Server','提供用于测试和学习的轻量静态 HTTP 文件服务器，不是生产级应用服务器。','JEP 408 · 工具'],
+['Javadoc 代码片段标签','用标准标签管理文档中的代码示例，提升 API 文档质量。','JEP 413 · 文档'],
+['模式匹配 switch 第二次预览','继续扩展 switch 的类型模式分支能力。','JEP 420 · Preview','preview'],
+['Foreign Function & Memory API 与 Vector API 孵化','持续推进原生交互和向量运算能力。','JEP 419 / 417 · Incubator','incubator'],
+['弃用 finalization 以便未来移除','建议转向 try-with-resources、Cleaner 等明确的资源管理方式。','JEP 421 · 兼容性','removal'] ]},
+{v:17,date:'2021-09-14',lts:true,title:'JDK 17',summary:'关键 LTS。封装更严格、语言建模更现代，是许多 Java 8 系统升级时常见的目标版本。',topics:['language','performance','security'],features:[
+['Sealed Classes 正式定稿','限制允许继承或实现的子类型集合，适合表达封闭的领域模型。','JEP 409 · 语言'],
+['始终严格的浮点语义','恢复一致的严格浮点表达语义，减少平台之间的浮点结果差异。','JEP 306 · 运行时'],
+['强封装 JDK 内部 API 成为默认规则','非法反射访问内部 API 不再能依赖过去的宽松行为，老框架与字节码工具需重点验证。','JEP 403 · 兼容性'],
+['Security Manager 标记为待移除','基于 Security Manager 的沙箱 / 权限设计需要规划替代方案。','JEP 411 · 安全','removal'],
+['移除 RMI Activation','如果应用仍依赖旧的 RMI Activation 机制，需要改造。','JEP 407 · 移除 API','removal'],
+['模式匹配 switch 进入预览','为按类型分支提供更直接的语言支持。','JEP 406 · Preview','preview'] ]},
+{v:16,date:'2021-03-16',lts:false,title:'JDK 16',summary:'records 与 instanceof 模式匹配正式定稿，工具打包和本地 IPC 能力增强。',topics:['language','performance','security'],features:[
+['Records 正式定稿','简化以数据承载为主的类，自动提供常见构造、访问器、equals/hashCode/toString。','JEP 395 · 语言'],
+['instanceof 模式匹配正式定稿','把类型判断和变量绑定合并为更简洁的语法。','JEP 394 · 语言'],
+['jpackage 正式定稿','可把 Java 应用打包为平台原生安装包，便于交付桌面或独立应用。','JEP 392 · 交付'],
+['Unix-domain socket 通道','提供本机进程间通信支持，适用于同一主机上的服务通信。','JEP 380 · 网络'],
+['Stream.toList() 与弹性 Metaspace','简化流结果收集，并改进类元数据内存归还机制。','JEP 376 / API'],
+['更强的内部 API 封装','继续收紧对 JDK 内部元素的访问，升级前应扫描反射和依赖。','JEP 396 · 兼容性'] ]},
+{v:15,date:'2020-09-15',lts:false,title:'JDK 15',summary:'文本块正式落地，隐藏类和生产级 ZGC / Shenandoah 是值得关注的运行时进展。',topics:['language','performance','security'],features:[
+['Text Blocks 正式定稿','使用三引号编写多行字符串，适合 SQL、JSON、HTML 等内嵌文本。','JEP 378 · 语言'],
+['Hidden Classes','支持框架生成但不适合被其他类直接链接的隐藏类，利于动态语言、代理和运行时代码生成工具。','JEP 371 · JVM'],
+['ZGC 与 Shenandoah 成为生产可用功能','提供低停顿 GC 选项，但实际效果依赖堆大小、延迟 SLA 和吞吐要求。','JEP 377 / 379 · GC'],
+['Sealed Classes 进入预览','为控制继承层次提供语言级机制。','JEP 360 · Preview','preview'],
+['移除 Nashorn JavaScript 引擎','仍依赖 JDK 内置 Nashorn 的工具或脚本需要迁移至其他方案。','JEP 372 · 移除组件','removal'],
+['偏向锁默认禁用','为后续移除做准备，依赖旧锁优化行为的性能测试需要重新评估。','JEP 374 · JVM'] ]},
+{v:14,date:'2020-03-17',lts:false,title:'JDK 14',summary:'switch 表达式正式定稿，records、instanceof 模式匹配与更易读的异常诊断值得关注。',topics:['language','performance'],features:[
+['Switch Expressions 正式定稿','switch 可以作为表达式返回值，配合箭头语法减少 fall-through 和样板代码。','JEP 361 · 语言'],
+['Helpful NullPointerExceptions','异常信息可更具体地指出表达式中哪个引用为空，有利于排查线上问题。','JEP 358 · 诊断'],
+['Records 与 instanceof 模式匹配首次预览','分别简化数据载体类和类型判断后的变量使用。','JEP 359 / 305 · Preview','preview'],
+['ZGC 支持 macOS 与 Windows','扩展低延迟垃圾收集器的可用平台范围。','JEP 364 / 365 · GC'],
+['移除 CMS 垃圾收集器','仍配置 CMS 参数的启动脚本需要调整。','JEP 363 · 移除组件','removal'],
+['G1 NUMA 感知内存分配等优化','针对特定硬件 / 大堆场景持续改进内存和 GC 行为。','JVM / GC'] ]},
+{v:13,date:'2019-09-17',lts:false,title:'JDK 13',summary:'文本块第二次预览、ZGC 内存归还和动态 CDS 档案是本版的主要方向。',topics:['language','performance'],features:[
+['Text Blocks 第二次预览','多行字符串继续迭代，后在 JDK 15 正式定稿。','JEP 355 · Preview','preview'],
+['Switch Expressions 第二次预览','继续完善 switch 作为表达式的写法。','JEP 354 · Preview','preview'],
+['动态 CDS 档案','在应用运行时创建类数据共享归档，减少后续启动的类加载开销。','JEP 350 · 启动性能'],
+['ZGC 可归还未使用内存','空闲时把部分未使用的堆内存归还操作系统，改善资源使用。','JEP 351 · GC'],
+['重新实现旧版 Socket API','改进可维护性，并为后续网络实现演进打基础。','JEP 353 · 网络'] ]},
+{v:12,date:'2019-03-19',lts:false,title:'JDK 12',summary:'switch 表达式首次预览，GC 和类数据共享继续优化。',topics:['language','performance'],features:[
+['Switch Expressions 首次预览','引入箭头 case 与 yield 等能力，后在 JDK 14 正式定稿。','JEP 325 · Preview','preview'],
+['Shenandoah GC','引入低停顿 GC 实现（当时为实验 / 特定发行版状态），主要面向降低停顿时间。','JEP 189 · GC'],
+['G1 可中止混合回收','在特定条件下更灵活地中止混合回收，以更好控制停顿目标。','JEP 344 · GC'],
+['JVM 常量 API 预览','提供描述关键 class 文件和运行时常量结构的 API，为字节码工具打基础。','JEP 334 · Preview','preview'],
+['CDS 归档增强','改进默认类数据共享归档，帮助减少启动时间和内存占用。','JEP  improved CDS · 启动'] ]},
+{v:11,date:'2018-09-25',lts:true,title:'JDK 11',summary:'LTS。标准 HTTP Client、TLS 1.3、Flight Recorder 和单文件源码运行是最常被使用的升级点。',topics:['language','performance','security'],features:[
+['HTTP Client 正式定稿','标准 API 支持 HTTP/2 与 WebSocket，可用于替代部分第三方客户端场景。','JEP 321 · 网络 API'],
+['TLS 1.3','更新传输层安全协议支持，改善握手流程与安全性；需同时确认服务器和证书兼容性。','JEP 332 · 安全'],
+['var 可用于 lambda 参数','允许在 lambda 形参中使用 var，利于显式类型注解及注解场景。','JEP 323 · 语言'],
+['Java Flight Recorder 开放','提供低开销的 JVM / 应用事件记录能力，适用于性能分析与线上问题诊断。','JEP 328 · 诊断'],
+['直接运行单文件源码','可通过 <code>java Hello.java</code> 运行简单源码，适合脚本、示例和工具。','JEP 330 · 开发体验'],
+['移除 Java EE 与 CORBA 模块','JAXB、JAX-WS、CORBA 等不再由 JDK 自带；需显式引入依赖或替代实现。','JEP  removed modules · 迁移','removal'] ]},
+{v:10,date:'2018-03-20',lts:false,title:'JDK 10',summary:'最具代表性的更新是局部变量类型推断 var，另外包含 GC 与应用类数据共享的改进。',topics:['language','performance'],features:[
+['局部变量类型推断 var','编译器根据初始化表达式推断局部变量类型，减少冗长声明；不是动态类型，也不能用于所有变量声明位置。','JEP 286 · 语言'],
+['G1 Full GC 并行化','改善 G1 在 Full GC 时的表现，降低部分极端场景下的停顿。','JEP 307 · GC'],
+['应用类数据共享','扩展 CDS 使用范围，帮助多个 JVM 进程共享部分类元数据。','JEP 310 · 启动 / 内存'],
+['根证书与容器感知等改进','增强证书库与 Linux 容器环境识别，对容器部署和 TLS 使用有帮助。','运行时与运维'] ]},
+{v:9,date:'2017-09-21',lts:false,title:'JDK 9',summary:'平台架构转折点：模块系统落地，也带来 JShell、集合工厂方法和多项 API 改进。',topics:['language','performance','security'],features:[
+['Java Platform Module System（JPMS）','通过 module-info.java 声明模块依赖与导出边界，提升大型 JDK / 应用的可组合性和封装性。','JEP 261 · 模块系统'],
+['JShell','交互式 Java REPL，可逐条执行表达式和语句，适合学习、验证 API 与排查问题。','JEP 222 · 开发体验'],
+['集合工厂方法','<code>List.of</code>、<code>Set.of</code>、<code>Map.of</code> 等快速创建不可变集合。','JEP 269 · 集合 API'],
+['Stream API 与接口增强','新增 takeWhile、dropWhile、ofNullable、改进 iterate；接口允许定义 private 方法。','语言与标准库'],
+['Process API、HTTP/2 客户端孵化与多版本 JAR','改进进程控制，探索现代 HTTP 客户端，并支持同一 JAR 为不同运行时提供不同类实现。','运行时 / 打包'],
+['JDK 内部 API 封装开启','为后续版本逐步收紧内部 API 访问奠定基础，老框架升级需要重点关注。','JEP 260 · 兼容性'] ]}
+];
+const tagMap={preview:'Preview',incubator:'Incubator',removal:'兼容 / 移除提醒'};
+const grid=document.getElementById('versionGrid'), search=document.getElementById('search'), count=document.getElementById('resultCount'), empty=document.getElementById('emptyState');
+let activeFilter='all', newestFirst=true;
+function esc(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+function versionCard(x){
+ const klass=['version-card',x.lts?'lts':'',x.latest?'latest':''].filter(Boolean).join(' ');
+ const badges=(x.latest?'<span class="badge latest">最新发布</span>':'')+(x.lts?'<span class="badge lts">LTS 长期支持</span>':'<span class="badge">非 LTS</span>');
+ const features=x.features.map(f=>`<li><strong>${f[0]}</strong><div>${f[1]}</div><div class="feature-meta"><span class="tag ${f[3]||''}">${tagMap[f[3]]||'主要变化'}</span><span class="tag">${f[2]}</span></div></li>`).join('');
+ const topics=x.topics.map(t=>`<span class="topic">${({language:'语言 / API',concurrency:'并发',performance:'性能 / JVM',security:'安全 / 兼容'})[t]||t}</span>`).join('');
+ return `<article class="${klass}" data-version="${x.v}" data-search="${esc((x.v+' '+x.title+' '+x.date+' '+x.summary+' '+x.topics.join(' ')+' '+x.features.map(f=>f.join(' ')).join(' ')).toLowerCase())}" data-topics="${x.topics.join(' ')}" data-lts="${x.lts}">
+ <div class="card-head"><div class="version-title"><div class="version-no">${x.v}</div><div><h3>${x.title}</h3><p>正式发布 · ${x.date}</p></div></div><div class="badges">${badges}</div></div>
+ <p class="card-summary">${x.summary}</p><ul class="feature-list">${features}</ul><div class="card-foot"><a class="source-link" href="https://www.oracle.com/java/technologies/javase/${x.v}-relnote-issues.html" target="_blank" rel="noopener">查看官方发行说明 ↗</a><div class="topics">${topics}</div></div></article>`;
+}
+function render(){let q=search.value.trim().toLowerCase();let arr=[...versions].sort((a,b)=>newestFirst?b.v-a.v:a.v-b.v);grid.innerHTML=arr.map(versionCard).join('');let visible=0;
+ [...grid.children].forEach(card=>{const hay=card.dataset.search;let ok=(!q||hay.includes(q));if(activeFilter==='lts')ok=ok&&card.dataset.lts==='true';else if(['language','concurrency','performance','security'].includes(activeFilter))ok=ok&&card.dataset.topics.split(' ').includes(activeFilter);card.style.display=ok?'flex':'none';if(ok)visible++;});count.textContent=`显示 ${visible} / ${versions.length} 个版本`;empty.style.display=visible?'none':'block';}
+document.getElementById('filters').addEventListener('click',e=>{const b=e.target.closest('button[data-filter]');if(!b)return;activeFilter=b.dataset.filter;document.querySelectorAll('.filter-btn').forEach(x=>x.classList.toggle('active',x===b));render();});
+search.addEventListener('input',render);document.getElementById('sortBtn').addEventListener('click',()=>{newestFirst=!newestFirst;document.getElementById('sortBtn').textContent=newestFirst?'切换：旧 → 新':'切换：新 → 旧';render();});document.getElementById('resetBtn').addEventListener('click',()=>{search.value='';activeFilter='all';newestFirst=true;document.querySelectorAll('.filter-btn').forEach(x=>x.classList.toggle('active',x.dataset.filter==='all'));document.getElementById('sortBtn').textContent='切换：旧 → 新';render();});
+const backtop=document.getElementById('backtop');window.addEventListener('scroll',()=>backtop.classList.toggle('show',window.scrollY>420));backtop.addEventListener('click',()=>window.scrollTo({top:0,behavior:'smooth'}));
+render();
+</script>
+</body>
+</html>

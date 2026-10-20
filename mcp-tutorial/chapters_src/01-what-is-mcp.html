@@ -1,0 +1,79 @@
+<div class="toc-inline">
+  <div class="toc-title">本章目录</div>
+  <ol>
+    <li><a href="#background">背景：LLM 工具调用的碎片化问题</a></li>
+    <li><a href="#definition">MCP 的定义与定位</a></li>
+    <li><a href="#vs-function-calling">与 Function Calling 的关系</a></li>
+    <li><a href="#ecosystem">生态现状</a></li>
+    <li><a href="#when-to-use">什么时候应该用 MCP</a></li>
+  </ol>
+</div>
+
+<h1>第 1 章：MCP 是什么</h1>
+
+<h2 id="background">1.1 背景：LLM 工具调用的碎片化问题</h2>
+
+<p>大型语言模型（LLM）单独使用时，能力边界止于训练数据。它无法查询实时天气，无法读取你的数据库，也无法向外部系统写入数据。因此，几乎所有生产级 LLM 应用都需要把模型与外部工具或数据源连接起来。</p>
+
+<p>但是，这种连接的实现方式在 2024 年之前高度碎片化。每个 LLM 提供商都有自己的 Function Calling 格式：OpenAI 是一套 JSON Schema，Anthropic 是另一套，Google Gemini 又是另一套。开发者要适配多个模型提供商，就必须为每个平台分别维护工具定义。与此同时，每个 AI 应用也需要独立实现与工具的连接逻辑，这导致大量重复代码，且工具无法跨应用复用。</p>
+
+<p>这个问题的本质是：<strong>缺乏一个通用的、模型无关的工具接口标准</strong>。</p>
+
+<h2 id="definition">1.2 MCP 的定义与定位</h2>
+
+<p>MCP（Model Context Protocol）是 Anthropic 于 2024 年 11 月发布并开源的协议规范。它定义了 LLM 应用（Host）与外部能力提供方（Server）之间的标准化通信接口。</p>
+
+<p>MCP 的核心目标是：<strong>让任何 LLM 应用都能用同一套协议接入任何工具或数据源</strong>，而无需关心具体实现细节。工具的定义与工具的消费方由此完全解耦。</p>
+
+<div class="box note">
+  <span class="box-title">MCP 的三个核心设计原则</span>
+  <p><strong>1. 模型无关</strong>：协议本身不依赖任何特定的 LLM 提供商，任何支持工具调用的模型都可以作为消费者。</p>
+  <p><strong>2. 传输无关</strong>：MCP 的消息格式基于 JSON-RPC 2.0，底层可以承载于 stdio、HTTP/SSE 或任何其他传输层。</p>
+  <p><strong>3. 能力渐进</strong>：Server 可以只实现 Tools，也可以同时实现 Tools + Resources + Prompts，Client 在握手阶段通过能力协商确认双方支持的功能集合。</p>
+</div>
+
+<h2 id="vs-function-calling">1.3 与 Function Calling 的关系</h2>
+
+<p>Function Calling（或 Tool Use）是 LLM 的一项能力：模型在生成回复时，可以决定调用某个预定义的函数，并输出结构化的调用参数，而不是直接输出文本。这是模型侧的能力。</p>
+
+<p>MCP 则是一个协议层，它定义了工具如何被发现、如何被调用、如何返回结果。两者的关系如下：</p>
+
+<table>
+  <thead>
+    <tr><th>维度</th><th>Function Calling</th><th>MCP</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>层次</td><td>模型能力（LLM 内部）</td><td>通信协议（应用层）</td></tr>
+    <tr><td>定义位置</td><td>随每次请求传入</td><td>由 Server 主动暴露，Client 按需发现</td></tr>
+    <tr><td>跨应用复用</td><td>否，每个应用单独定义</td><td>是，一个 Server 可被多个 Host 使用</td></tr>
+    <tr><td>传输方式</td><td>内嵌于 LLM API 请求</td><td>独立的双向通信通道</td></tr>
+    <tr><td>服务端状态</td><td>无状态</td><td>有状态会话（Session）</td></tr>
+    <tr><td>资源与模板</td><td>不支持</td><td>支持（Resources、Prompts）</td></tr>
+  </tbody>
+</table>
+
+<p>因此，MCP 并不是 Function Calling 的替代品，而是一个构建在 Function Calling 之上的更高层抽象。在实际实现中，MCP Client 会把从 Server 发现的 Tools 转换为当前 LLM 所需的 Function Calling 格式，再传给模型。</p>
+
+<h2 id="ecosystem">1.4 生态现状</h2>
+
+<p>截至 2025 年初，MCP 已经形成了初步的生态：</p>
+
+<ul>
+  <li><strong>官方参考实现</strong>：Anthropic 提供了 Python SDK（<code>mcp</code>）和 TypeScript SDK，以及一批官方 Server（文件系统、Git、数据库、Slack 等）。</li>
+  <li><strong>Host 支持</strong>：Claude Desktop、Cursor、Zed、Continue.dev、Cline 等 AI 开发工具已内置 MCP 支持。</li>
+  <li><strong>社区 Server</strong>：GitHub 上已有数千个社区实现的 MCP Server，覆盖 AWS、Kubernetes、PostgreSQL、Notion、GitHub 等主流服务。</li>
+  <li><strong>其他模型接入</strong>：OpenAI 于 2025 年 3 月宣布在其 Agents SDK 中支持 MCP。</li>
+</ul>
+
+<h2 id="when-to-use">1.5 什么时候应该用 MCP</h2>
+
+<p>MCP 引入了协议握手、会话管理、进程间通信等额外复杂度。因此，并非所有场景都需要它。以下场景适合引入 MCP：</p>
+
+<ul>
+  <li>你有多个 LLM 应用（或多个模型），需要访问同一批工具，希望工具的定义只维护一份。</li>
+  <li>工具需要维护连接状态（例如数据库连接池、文件系统监听），希望把这部分逻辑封装在 Server 进程内。</li>
+  <li>工具需要主动向模型推送数据（Resource 订阅 / 通知）。</li>
+  <li>你希望工具可以由第三方独立开发和分发，而不需要修改主应用。</li>
+</ul>
+
+<p>反之，如果你只有一个简单的单模型应用，工具逻辑简单且不需要跨应用复用，那么直接使用 LLM 提供商的 Function Calling 即可，不必引入 MCP。</p>

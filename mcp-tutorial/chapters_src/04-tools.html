@@ -1,0 +1,193 @@
+<div class="toc-inline">
+  <div class="toc-title">本章目录</div>
+  <ol>
+    <li><a href="#concept">Tool 的语义与生命周期</a></li>
+    <li><a href="#schema">参数定义与 JSON Schema</a></li>
+    <li><a href="#return">返回类型：文本、图片、结构化数据</a></li>
+    <li><a href="#error">错误处理</a></li>
+    <li><a href="#async-progress">异步与进度通知</a></li>
+    <li><a href="#idempotent">幂等性与副作用设计</a></li>
+  </ol>
+</div>
+
+<h1>第 4 章：Tools（工具）——让模型执行动作</h1>
+
+<h2 id="concept">4.1 Tool 的语义与生命周期</h2>
+
+<p>Tool 是三大原语中最常用的一种。它表示一个「模型可以决定调用的动作」，通常带有副作用（写数据库、调用外部 API、执行命令）。</p>
+
+<p>一次 Tool 调用的完整生命周期如下：</p>
+
+<ol>
+  <li><strong>发现</strong>：Client 发送 <code>tools/list</code>，Server 返回所有 Tool 的名称、描述、参数 Schema。</li>
+  <li><strong>注入</strong>：Client 把 Tool 列表转换为当前 LLM 的 Function Calling 格式，随对话上下文一起传给模型。</li>
+  <li><strong>决策</strong>：模型根据用户请求，决定是否调用某个 Tool 以及传入什么参数。</li>
+  <li><strong>调用</strong>：Client 发送 <code>tools/call</code>，Server 执行并返回结果。</li>
+  <li><strong>回填</strong>：Client 把结果附加到上下文，再次请求模型生成最终回复。</li>
+</ol>
+
+<h2 id="schema">4.2 参数定义与 JSON Schema</h2>
+
+<p>FastMCP 会根据 Python 函数的类型注解自动生成 JSON Schema。因此，参数定义得越精确，模型调用得越准确。</p>
+
+<pre><code class="language-python">from mcp.server.fastmcp import FastMCP
+from pydantic import Field
+from typing import Literal
+
+mcp = FastMCP("weather-server")
+
+
+@mcp.tool()
+def get_weather(
+    city: str = Field(description="城市名称，例如 '北京' 或 'Tokyo'"),
+    unit: Literal["celsius", "fahrenheit"] = Field(
+        default="celsius", description="温度单位"
+    ),
+    days: int = Field(default=1, ge=1, le=7, description="预报天数，1 到 7 之间"),
+) -> str:
+    """查询指定城市未来若干天的天气预报。"""
+    # 这里省略真实 API 调用
+    return f"{city} 未来 {days} 天：晴，25°C（{unit}）"</code></pre>
+
+<p>上面的类型注解会被转换为如下 JSON Schema，随 <code>tools/list</code> 返回给 Client：</p>
+
+<pre><code class="language-json">{
+  "name": "get_weather",
+  "description": "查询指定城市未来若干天的天气预报。",
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "city": { "type": "string", "description": "城市名称，例如 '北京' 或 'Tokyo'" },
+      "unit": { "type": "string", "enum": ["celsius", "fahrenheit"], "default": "celsius" },
+      "days": { "type": "integer", "minimum": 1, "maximum": 7, "default": 1 }
+    },
+    "required": ["city"]
+  }
+}</code></pre>
+
+<div class="box warn">
+  <span class="box-title">⚠ 参数描述直接影响调用准确率</span>
+  <p>模型是根据 <code>description</code> 字段来理解每个参数的含义的。因此，描述越具体（含示例值、取值范围、单位），模型出错的概率越低。空描述或含糊描述会显著降低调用准确率。</p>
+</div>
+
+<h2 id="return">4.3 返回类型：文本、图片、结构化数据</h2>
+
+<p>Tool 的返回值会被封装为 <code>content</code> 数组。MCP 支持多种内容类型。</p>
+
+<h3>返回纯文本</h3>
+<pre><code class="language-python">@mcp.tool()
+def echo(text: str) -> str:
+    """回显输入文本。"""
+    return text  # 自动封装为 TextContent</code></pre>
+
+<h3>返回图片</h3>
+<pre><code class="language-python">from mcp.server.fastmcp import Image
+import io
+from PIL import Image as PILImage
+
+
+@mcp.tool()
+def generate_chart(data: list[int]) -> Image:
+    """根据数据生成柱状图并返回 PNG 图片。"""
+    img = PILImage.new("RGB", (200, 100), "white")
+    # ... 绘图逻辑省略 ...
+    buf = io.BytesIO()
+    img.save(buf, format="PNG")
+    return Image(data=buf.getvalue(), format="png")</code></pre>
+
+<h3>返回结构化数据（structuredContent）</h3>
+<p>从协议 2025-03-26 版起，Tool 可以返回结构化数据，Client 能直接解析为对象而无需再解析文本。</p>
+
+<pre><code class="language-python">from pydantic import BaseModel
+
+
+class WeatherResult(BaseModel):
+    city: str
+    temperature: float
+    condition: str
+
+
+@mcp.tool()
+def get_weather_structured(city: str) -> WeatherResult:
+    """返回结构化的天气数据。"""
+    return WeatherResult(city=city, temperature=25.0, condition="晴")</code></pre>
+
+<p>返回的报文会同时包含供人阅读的 <code>content</code> 和供程序解析的 <code>structuredContent</code>：</p>
+
+<pre><code class="language-json">{
+  "content": [{ "type": "text", "text": "{\"city\":\"北京\",\"temperature\":25.0,\"condition\":\"晴\"}" }],
+  "structuredContent": { "city": "北京", "temperature": 25.0, "condition": "晴" }
+}</code></pre>
+
+<h2 id="error">4.4 错误处理</h2>
+
+<p>Tool 内部出错时，有两种表达方式，语义不同：</p>
+
+<table>
+  <thead>
+    <tr><th>方式</th><th>报文表现</th><th>模型是否可见</th><th>适用场景</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>抛出异常</td><td>返回 <code>isError: true</code> 的结果</td><td>可见，模型会看到错误信息</td><td>业务错误，希望模型据此调整（如参数无效）</td></tr>
+    <tr><td>协议级错误</td><td>返回 JSON-RPC <code>error</code> 对象</td><td>不可见，Client 侧处理</td><td>协议错误，如方法不存在</td></tr>
+  </tbody>
+</table>
+
+<pre><code class="language-python">@mcp.tool()
+def divide(a: float, b: float) -> float:
+    """两数相除。除数为零时返回业务错误。"""
+    if b == 0:
+        # 抛出异常会被封装为 isError:true 的结果，模型可以看到并据此调整
+        raise ValueError("除数不能为零，请提供非零的 b。")
+    return a / b</code></pre>
+
+<div class="box note">
+  <span class="box-title">设计建议</span>
+  <p>对于「模型可以通过修改参数来纠正」的错误（例如参数超范围、资源不存在），应抛出异常让模型看到，因此模型能自主重试。对于「模型无法纠正」的系统级错误（数据库宕机），也应返回明确的错误信息，避免模型反复无效重试。</p>
+</div>
+
+<h2 id="async-progress">4.5 异步与进度通知</h2>
+
+<p>对于耗时较长的 Tool，应使用异步函数，并通过 Context 发送进度通知，因此 Client 可以向用户展示进度。</p>
+
+<pre><code class="language-python">from mcp.server.fastmcp import Context
+
+
+@mcp.tool()
+async def process_files(count: int, ctx: Context) -> str:
+    """处理若干文件，并实时上报进度。"""
+    for i in range(count):
+        # 上报进度：当前 i+1，总数 count
+        await ctx.report_progress(progress=i + 1, total=count)
+        await ctx.info(f"已处理第 {i + 1} 个文件")
+        # ... 实际处理逻辑 ...
+    return f"完成，共处理 {count} 个文件。"</code></pre>
+
+<h2 id="idempotent">4.6 幂等性与副作用设计</h2>
+
+<p>因为模型可能重复调用同一个 Tool（例如在多轮对话中，或因超时重试），所以有副作用的 Tool 应尽量设计为幂等的，或者引入去重机制。</p>
+
+<pre><code class="language-python">import hashlib
+_processed = set()
+
+
+@mcp.tool()
+def send_email(to: str, subject: str, body: str, idempotency_key: str = "") -> str:
+    """发送邮件。传入 idempotency_key 可避免重复发送。"""
+    if not idempotency_key:
+        # 用内容哈希作为默认幂等键
+        idempotency_key = hashlib.sha256(
+            f"{to}|{subject}|{body}".encode()
+        ).hexdigest()
+
+    if idempotency_key in _processed:
+        return "该邮件已发送过（命中幂等键），本次跳过。"
+
+    # ... 实际发送逻辑 ...
+    _processed.add(idempotency_key)
+    return f"邮件已发送至 {to}。"</code></pre>
+
+<div class="box ok">
+  <span class="box-title">✓ 本章小结</span>
+  <p>Tool 是让模型执行动作的原语。参数用类型注解 + Field 描述精确定义，返回值支持文本、图片、结构化数据三类。错误应通过抛异常让模型可见并自主纠正。有副作用的 Tool 要考虑幂等性。下一章介绍只读的 Resource 原语。</p>
+</div>

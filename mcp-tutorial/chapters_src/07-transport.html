@@ -1,0 +1,144 @@
+<div class="toc-inline">
+  <div class="toc-title">本章目录</div>
+  <ol>
+    <li><a href="#stdio">stdio 传输</a></li>
+    <li><a href="#http">Streamable HTTP 传输</a></li>
+    <li><a href="#sse">SSE 与会话管理</a></li>
+    <li><a href="#reconnect">断线重连与超时</a></li>
+    <li><a href="#choose">如何选择传输方式</a></li>
+  </ol>
+</div>
+
+<h1>第 7 章：传输层</h1>
+
+<p>MCP 协议本身与传输层解耦——所有消息都是 JSON-RPC 2.0，但它们可以通过不同的通道传递。目前规范定义了两种标准传输：<strong>stdio</strong> 和 <strong>Streamable HTTP</strong>。</p>
+
+<h2 id="stdio">7.1 stdio 传输</h2>
+
+<p>stdio 传输通过进程的标准输入/输出流传递消息，是本地部署最简单也最可靠的方式。</p>
+
+<p>工作方式：</p>
+<ul>
+  <li>Host 把 Server 作为子进程启动。</li>
+  <li>每条 JSON-RPC 消息是一行 JSON（以 <code>\n</code> 结尾），Client 写入子进程的 stdin，Server 从 stdin 读取并把响应写入 stdout。</li>
+  <li>Host 从子进程的 stdout 读取响应。</li>
+  <li>进程退出即代表连接关闭。</li>
+</ul>
+
+<pre><code class="language-python"># Server 端（FastMCP 默认即为 stdio）
+mcp.run()  # 等价于 mcp.run(transport="stdio")
+
+# Client 端连接
+from mcp import ClientSession, StdioServerParameters
+from mcp.client.stdio import stdio_client
+
+params = StdioServerParameters(
+    command="python",
+    args=["server.py"],
+    env={"MY_API_KEY": "secret"},  # 传递环境变量
+)
+
+async with stdio_client(params) as (read, write):
+    async with ClientSession(read, write) as session:
+        await session.initialize()</code></pre>
+
+<div class="box note">
+  <span class="box-title">stdio 的适用场景</span>
+  <p>stdio 适合本机运行的 Server（如 Claude Desktop 的插件场景）。因为 Server 与 Client 在同一台机器上，所以进程启动开销很低，也不需要网络配置。但是，stdio Server 无法被远程 Client 访问，也无法同时服务多个 Client。</p>
+</div>
+
+<h2 id="http">7.2 Streamable HTTP 传输</h2>
+
+<p>Streamable HTTP 是 2025-03-26 版规范引入的新传输方式，取代了旧版的 HTTP+SSE 模式。它的核心是一个单一 HTTP 端点，同时支持标准 HTTP 请求/响应和 SSE 流式推送。</p>
+
+<pre><code class="language-python"># Server 端：以 HTTP 模式启动
+from mcp.server.fastmcp import FastMCP
+
+mcp = FastMCP("my-server")
+
+# ... 注册 Tool / Resource / Prompt ...
+
+if __name__ == "__main__":
+    mcp.run(transport="streamable-http", host="0.0.0.0", port=8000)</code></pre>
+
+<pre><code class="language-bash"># 也可以挂载到现有的 ASGI 应用（如 Starlette / FastAPI）
+# mcp.streamable_http_app() 返回一个 ASGI app</code></pre>
+
+<pre><code class="language-python"># Client 端连接 HTTP Server
+from mcp.client.streamable_http import streamablehttp_client
+from mcp import ClientSession
+
+async with streamablehttp_client("http://localhost:8000/mcp") as (read, write, _):
+    async with ClientSession(read, write) as session:
+        await session.initialize()
+        tools = await session.list_tools()
+        print([t.name for t in tools.tools])</code></pre>
+
+<h2 id="sse">7.3 SSE 与会话管理</h2>
+
+<p>Streamable HTTP 允许 Server 在响应中使用 SSE（Server-Sent Events）流式推送多条消息，因此 Server 可以在一次调用中发送进度通知，而不需要 Client 轮询。</p>
+
+<p>会话通过 HTTP 头 <code>Mcp-Session-Id</code> 标识。Client 在首次 <code>initialize</code> 时，Server 会在响应头中设置 Session ID；后续请求带上这个 ID，Server 据此恢复会话状态。</p>
+
+<pre><code class="language-text">POST /mcp HTTP/1.1
+Content-Type: application/json
+
+{"jsonrpc":"2.0","id":1,"method":"initialize","params":{...}}
+
+---
+
+HTTP/1.1 200 OK
+Content-Type: text/event-stream
+Mcp-Session-Id: sess_abc123
+
+data: {"jsonrpc":"2.0","id":1,"result":{...}}
+
+data: {"jsonrpc":"2.0","method":"notifications/initialized"}
+</code></pre>
+
+<h2 id="reconnect">7.4 断线重连与超时</h2>
+
+<p>HTTP 连接可能因为网络抖动或服务器重启而中断。因此，Client 应实现指数退避重连逻辑：</p>
+
+<pre><code class="language-python">import asyncio
+import random
+
+
+async def connect_with_retry(url: str, max_attempts: int = 5):
+    """带指数退避的重连示例。"""
+    for attempt in range(max_attempts):
+        try:
+            async with streamablehttp_client(url) as (read, write, _):
+                async with ClientSession(read, write) as session:
+                    await session.initialize()
+                    # 正常业务逻辑
+                    return session
+        except Exception as e:
+            if attempt == max_attempts - 1:
+                raise
+            wait = (2 ** attempt) + random.uniform(0, 1)
+            print(f"连接失败（{e}），{wait:.1f}s 后重试…")
+            await asyncio.sleep(wait)</code></pre>
+
+<p>对于 stdio 传输，进程退出意味着连接不可恢复，因此 Host 需要重新启动子进程。</p>
+
+<h2 id="choose">7.5 如何选择传输方式</h2>
+
+<table>
+  <thead>
+    <tr><th>维度</th><th>stdio</th><th>Streamable HTTP</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>部署位置</td><td>本机，与 Client 同进程组</td><td>任意，可远程</td></tr>
+    <tr><td>多 Client</td><td>不支持（进程独占）</td><td>支持（会话隔离）</td></tr>
+    <tr><td>配置复杂度</td><td>低（无需网络配置）</td><td>中（需要端口、TLS、鉴权）</td></tr>
+    <tr><td>流式推送</td><td>支持（通过 stdout）</td><td>支持（SSE）</td></tr>
+    <tr><td>安全边界</td><td>操作系统进程隔离</td><td>需要显式鉴权（OAuth / API Key）</td></tr>
+    <tr><td>典型场景</td><td>本地开发工具插件</td><td>SaaS 平台、多用户服务</td></tr>
+  </tbody>
+</table>
+
+<div class="box ok">
+  <span class="box-title">✓ 本章小结</span>
+  <p>MCP 支持 stdio（本地子进程）和 Streamable HTTP（远程服务）两种传输。前者简单可靠适合本地部署，后者支持多 Client 和远程访问，但需要额外的鉴权与会话管理。下一章深入连接生命周期与 JSON-RPC 报文细节。</p>
+</div>

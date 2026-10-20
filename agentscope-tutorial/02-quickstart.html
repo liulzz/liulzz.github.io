@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>第 2 章 环境搭建与第一个智能体 · AgentScope Java 2.0 新手入门教程</title>
+<meta name="description" content="场景驱动的 AgentScope Java 2.0 中文新手教程：由浅入深，先理论后实践，Java 代码示例。">
+<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/java.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/xml.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/markdown.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/yaml.min.js"></script>
+</head>
+<body>
+<header class="site-header">
+  <button id="nav-toggle" aria-label="打开目录">☰</button>
+  <a class="logo" href="index.html"><span class="dot"></span>AgentScope Java 2.0 入门教程</a>
+  <span class="tagline">第 2 章 · 环境搭建与第一个智能体</span>
+  <span class="spacer"></span>
+  <a class="gh-link" href="https://github.com/agentscope-ai/agentscope-java" target="_blank" rel="noopener">GitHub ↗</a>
+</header>
+<div class="layout">
+<nav class="sidebar" id="sidebar">
+  <div class="group">
+    <div class="group-title">开始</div>
+    <a class="item" href="index.html"><span class="no">序</span>教程导读与特性全景</a>
+  </div>
+  <div class="group">
+    <div class="group-title">第一部分 · 理论筑基</div>
+    <a class="item" href="01-overview.html"><span class="no">第1章</span>认识 AgentScope 2.0</a>
+    <a class="item" href="02-quickstart.html"><span class="no">第2章</span>环境搭建与第一个智能体</a>
+    <a class="item" href="03-message-model.html"><span class="no">第3章</span>消息与模型接入</a>
+  </div>
+  <div class="group">
+    <div class="group-title">第二部分 · 核心构件</div>
+    <a class="item" href="04-agent.html"><span class="no">第4章</span>ReActAgent 深入</a>
+    <a class="item" href="05-tool.html"><span class="no">第5章</span>工具</a>
+    <a class="item" href="06-permission.html"><span class="no">第6章</span>权限系统与 HITL</a>
+    <a class="item" href="07-middleware.html"><span class="no">第7章</span>中间件</a>
+  </div>
+  <div class="group">
+    <div class="group-title">第三部分 · Harness 能力</div>
+    <a class="item" href="08-harness.html"><span class="no">第8章</span>Harness 与工作区</a>
+    <a class="item" href="09-memory.html"><span class="no">第9章</span>记忆与上下文压缩</a>
+    <a class="item" href="10-subagent-plan.html"><span class="no">第10章</span>子智能体与计划模式</a>
+    <a class="item" href="11-skill.html"><span class="no">第11章</span>技能系统</a>
+    <a class="item" href="12-sandbox.html"><span class="no">第12章</span>文件系统与沙箱</a>
+  </div>
+  <div class="group">
+    <div class="group-title">第四部分 · 工程化</div>
+    <a class="item" href="13-channel.html"><span class="no">第13章</span>Channel 与 Gateway</a>
+    <a class="item" href="14-production.html"><span class="no">第14章</span>上生产</a>
+    <a class="item" href="15-project.html"><span class="no">结业</span>综合实战项目</a>
+  </div>
+</nav>
+<main class="content">
+<h1><span class="chapter-no">第 2 章</span>环境搭建与第一个智能体</h1>
+<h2>2.1 本章场景：会议准备助理</h2>
+<div class="box box-scenario">
+  <div class="box-title"><span class="ico">🎬</span>场景任务</div>
+  <p>天宇明天要做一场关于 ReAct 的技术分享，但是准备工作千头万绪。因此，我们要构建一个助理 <code>note-taker</code>：它记住用户告诉它的信息，回答关于准备事项的追问，并且能够流式输出长回答。这个场景虽小，但是覆盖了智能体应用的三个基本要素：<b>模型调用、会话状态、流式响应</b>。</p>
+</div>
+
+<h2>2.2 理论：最小可用智能体的构成</h2>
+<p>第 1 章提到，智能体 = 模型 + 工具 + 行为准则。本章先不引入工具，因此最小智能体只需要三步：引入依赖、提供模型密钥、构建 Agent 实例。其中有一个关键设计需要先理解——<b>模型字符串</b>。</p>
+<p>AgentScope 使用 <code>"厂商:模型名"</code> 格式的字符串来寻址模型，例如 <code>"dashscope:qwen-plus"</code>。框架内部的 ModelRegistry 会解析这个字符串，并且自动读取对应的环境变量（如 <code>DASHSCOPE_API_KEY</code>）。因此，切换供应商时不需要改动 Java 代码，只需要更换字符串与密钥。</p>
+
+<h2>2.3 实践：创建项目</h2>
+<h3>步骤 1：初始化 Maven 项目并添加依赖</h3>
+<pre><code class="code-title">pom.xml（关键部分）</code><code class="language-xml">&lt;properties&gt;
+    &lt;maven.compiler.source&gt;17&lt;/maven.compiler.source&gt;
+    &lt;maven.compiler.target&gt;17&lt;/maven.compiler.target&gt;
+    &lt;agentscope.version&gt;2.0.3&lt;/agentscope.version&gt;
+&lt;/properties&gt;
+
+&lt;dependencies&gt;
+    &lt;!-- 智能体核心（含 HarnessAgent / ReActAgent） --&gt;
+    &lt;dependency&gt;
+        &lt;groupId&gt;io.agentscope&lt;/groupId&gt;
+        &lt;artifactId&gt;agentscope-harness&lt;/artifactId&gt;
+        &lt;version&gt;${agentscope.version}&lt;/version&gt;
+    &lt;/dependency&gt;
+    &lt;!-- DashScope（通义千问）模型扩展 --&gt;
+    &lt;dependency&gt;
+        &lt;groupId&gt;io.agentscope&lt;/groupId&gt;
+        &lt;artifactId&gt;agentscope-extensions-model-dashscope&lt;/artifactId&gt;
+        &lt;version&gt;${agentscope.version}&lt;/version&gt;
+    &lt;/dependency&gt;
+&lt;/dependencies&gt;</code></pre>
+
+<h3>步骤 2：配置模型密钥</h3>
+<pre><code class="code-title">终端</code><code class="language-bash">export DASHSCOPE_API_KEY="sk-你的密钥"</code></pre>
+<p>如果你使用 OpenAI 兼容服务，那么改用 <code>openai:</code> 前缀并设置 <code>OPENAI_API_KEY</code> 与自定义 base URL 即可（详见第 3 章）。</p>
+
+<h3>步骤 3：编写第一个智能体</h3>
+<pre><code class="code-title">src/main/java/com/example/FirstAgent.java</code><code class="language-java">import io.agentscope.core.agent.RuntimeContext;
+import io.agentscope.core.message.UserMessage;
+import io.agentscope.harness.agent.HarnessAgent;
+
+import java.nio.file.Paths;
+
+public class FirstAgent {
+    public static void main(String[] args) {
+        HarnessAgent agent = HarnessAgent.builder()
+                .name("note-taker")
+                .sysPrompt("你是天宇的会议准备助理，帮助他整理 ReAct 技术分享的要点。")
+                // 模型字符串由 ModelRegistry 解析，自动读取 DASHSCOPE_API_KEY
+                .model("dashscope:qwen-plus")
+                // 工作区目录：状态、记忆、会话日志都存放在这里
+                .workspace(Paths.get(".agentscope/workspace"))
+                // 上下文压缩：超过 30 条消息时触发，保留最近 10 条
+                .compaction(CompactionConfig.builder()
+                        .triggerMessages(30)
+                        .keepMessages(10)
+                        .build())
+                .build();
+
+        RuntimeContext ctx = RuntimeContext.builder()
+                .sessionId("demo-session")
+                .userId("tianyu")
+                .build();
+
+        // 第一轮：告诉助理两件事
+        agent.call(new UserMessage("我叫天宇，今天准备一个关于 ReAct 的技术分享。"), ctx).block();
+
+        // 第二轮：同一个 sessionId，助理自动恢复上一轮的状态
+        agent.call(new UserMessage("我叫什么？我今天要干什么？"), ctx).block();
+    }
+}</code></pre>
+<p>运行后，第二轮回答会包含“天宇”和“ReAct 技术分享”。也就是说，<b>跨请求的状态恢复已经自动完成</b>——这正是 AgentState 在起作用（原理见第 4 章）。</p>
+
+<h2>2.4 实践：流式输出</h2>
+<p><code>call()</code> 会等待完整回答。但是用户界面通常需要“边生成边显示”，因此框架提供 <code>streamEvents()</code>：它返回一个事件流，每个事件是一个 <code>AgentEvent</code> 对象。</p>
+<pre><code class="code-title">流式消费事件</code><code class="language-java">agent.streamEvents(new UserMessage("user", "帮我把今天的关键点列三条。"), ctx)
+    .doOnNext(event -&gt; {
+        if (event instanceof TextBlockDeltaEvent delta) {
+            // 只输出文本增量，即可实现打字机效果
+            System.out.print(delta.getDelta());
+        }
+    })
+    .blockLast();</code></pre>
+<p>事件类型不止文本增量一种：工具调用的开始与结束、需要用户确认的请求等都有对应事件。第 4 章会给出完整的事件类型清单。</p>
+
+<h2>2.5 观察：工作区里发生了什么</h2>
+<p>运行结束后，查看 <code>.agentscope/workspace/</code> 目录：</p>
+<pre><code class="language-bash">.agentscope/workspace/
+├── AGENTS.md                 # 智能体人格文件（可选，手写后自动生效）
+└── agents/note-taker/
+    └── sessions/             # 每个会话一份 JSONL 日志，永不压缩</code></pre>
+<p>两个要点值得注意。其一，<code>AGENTS.md</code> 是 HarnessAgent 的工作区人格文件——把行为准则写在这里，比把长提示词堆在代码里更易维护（第 8 章展开）。其二，<code>sessions/</code> 保存原始对话日志，压缩只影响进入模型上下文的内容，不会破坏日志，因此随时可以审计历史。</p>
+
+<div class="box box-practice">
+  <div class="box-title"><span class="ico">✍️</span>动手练习 2</div>
+  <p>在 2.3 代码的基础上完成三个改动：</p>
+  <ol>
+    <li>把 <code>sessionId</code> 改为 <code>"session-b"</code> 再运行，观察助理是否还记得“天宇”——思考为什么；</li>
+    <li>修改 <code>sysPrompt</code>，让助理在每次回答末尾附加一条备会建议；</li>
+    <li>把 <code>.model("dashscope:qwen-plus")</code> 换成你能访问的其他模型字符串，验证模型无关性。</li>
+  </ol>
+  <p>验证标准：第 1 项中助理应当表示不知道，因为不同 sessionId 对应不同会话状态。</p>
+</div>
+
+<h2>2.6 本章小结</h2>
+<p>本章用不到 40 行 Java 代码构建了一个具备会话记忆与流式输出能力的助理。你已经接触了五个核心 API：<code>HarnessAgent.builder()</code>、<code>.model()</code>、<code>RuntimeContext</code>、<code>call()</code>、<code>streamEvents()</code>。下一章我们深入消息模型与模型层，理解多模态输入与多厂商切换的完整机制。</p>
+
+<nav class="pager">
+<a href="01-overview.html"><span class="dir">← 上一章</span><span class="pt">认识 AgentScope 2.0</span></a>
+<a class="next" href="03-message-model.html"><span class="dir">下一章 →</span><span class="pt">消息、多模态与模型接入</span></a>
+</nav>
+</main>
+</div>
+<footer class="site-footer">
+  AgentScope Java 2.0 新手入门教程 · 基于 AgentScope Java v2.0.3 官方文档编写 · 2026
+  <br>官网 <a href="https://java.agentscope.io" target="_blank" rel="noopener">java.agentscope.io</a>
+  ｜仓库 <a href="https://github.com/agentscope-ai/agentscope-java" target="_blank" rel="noopener">agentscope-ai/agentscope-java</a>
+</footer>
+<script>
+document.getElementById('nav-toggle').addEventListener('click', function () {
+  document.getElementById('sidebar').classList.toggle('open');
+});
+window.addEventListener('DOMContentLoaded', function () {
+  document.querySelectorAll('pre code').forEach(function (el) {
+    try { hljs.highlightElement(el); } catch (e) {}
+  });
+});
+</script>
+</body>
+</html>
