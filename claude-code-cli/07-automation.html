@@ -145,7 +145,7 @@ jobs:
   <ul class="checklist">
     <li><code>claude -p "..." --output-format json | jq -r .result</code> 能取到文本</li>
     <li>带 <code>--max-budget-usd</code> 的任务超限后会停止</li>
-    <li>CI 步骤在无交互环境下能跑完，不等待输入</li>
+    <li>CI 步骤在无交互环境下能执行完，不等待输入</li>
     <li>失败时退出码非 0，流水线能正确标记</li>
   </ul>
 
