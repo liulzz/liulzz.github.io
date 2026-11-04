@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>第 8 章 权限、成本与排错 · Claude Code CLI 实战</title>
+<meta name="description" content="权限规则、设置优先级、上下文与成本控制，以及 Claude Code 出问题时的排查顺序。">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="site-header">
+  <button id="nav-toggle" type="button" aria-label="打开目录" aria-expanded="false">☰</button>
+  <a class="logo" href="index.html"><span class="dot"></span>Claude Code CLI 实战</a>
+  <span class="tagline">第 8 章 · 生产实践</span>
+  <span class="spacer"></span>
+  <a class="gh-link" href="https://code.claude.com/docs/en/permissions" target="_blank" rel="noopener">官方权限文档 ↗</a>
+</header>
+
+<div class="layout">
+<nav class="sidebar" id="sidebar">
+  <div class="group"><div class="group-title">开始</div><a href="index.html"><span class="no">序</span>教程导读</a></div>
+  <div class="group">
+    <div class="group-title">第一部分 · 上手</div>
+    <a href="01-install.html"><span class="no">第 1 章</span>安装与第一次会话</a>
+    <a href="02-context.html"><span class="no">第 2 章</span>让 Claude 懂你的项目</a>
+    <a href="03-change.html"><span class="no">第 3 章</span>改代码的完整闭环</a>
+  </div>
+  <div class="group">
+    <div class="group-title">第二部分 · 长期使用</div>
+    <a href="04-sessions.html"><span class="no">第 4 章</span>会话、分支与回滚</a>
+    <a href="05-customize.html"><span class="no">第 5 章</span>命令、技能与子代理</a>
+  </div>
+  <div class="group">
+    <div class="group-title">第三部分 · 扩展</div>
+    <a href="06-hooks-mcp.html"><span class="no">第 6 章</span>Hooks 与 MCP</a>
+    <a href="07-automation.html"><span class="no">第 7 章</span>无头模式与 CI</a>
+  </div>
+  <div class="group"><div class="group-title">第四部分 · 生产</div><a href="08-production.html"><span class="no">第 8 章</span>权限、成本与排错</a></div>
+</nav>
+
+<main class="content">
+  <span class="chapter-no">第 8 章</span>
+  <h1>权限、成本与排错</h1>
+  <p class="lede">前七章解决「怎么用」。这一章解决「怎么放心地用」：哪些动作必须拦、钱花在哪、出问题先看什么。</p>
+
+  <div class="scene">
+    <div class="label">场景</div>
+    <p>团队准备把 Claude Code 推广到十几个人。你需要一份能提交到仓库的权限配置，一套成本观察方法，以及新同事遇到问题时能自查的顺序。</p>
+  </div>
+
+  <h2>8.1 权限规则写在设置里</h2>
+  <p>项目级配置放在 <code>.claude/settings.json</code>，随仓库共享：</p>
+  <div class="cmd"><div class="cmd-head"><span>.claude/settings.json</span><button type="button">复制</button></div><pre><code>{
+  "permissions": {
+    "defaultMode": "acceptEdits",
+    "allow": [
+      "Read",
+      "Bash(pnpm test:*)",
+      "Bash(pnpm typecheck)",
+      "Bash(git status)",
+      "Bash(git diff:*)"
+    ],
+    "ask": [
+      "Bash(git commit:*)",
+      "Bash(git push:*)"
+    ],
+    "deny": [
+      "Read(./.env)",
+      "Read(./secrets/**)",
+      "Bash(rm -rf:*)",
+      "Bash(git push --force:*)"
+    ]
+  }
+}</code></pre></div>
+
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>规则</th><th>含义</th></tr></thead>
+      <tbody>
+        <tr><td><code>allow</code></td><td>直接执行，不再询问</td></tr>
+        <tr><td><code>ask</code></td><td>每次执行前询问</td></tr>
+        <tr><td><code>deny</code></td><td>拒绝，并从 Claude 的工具上下文中移除</td></tr>
+        <tr><td><code>Tool</code></td><td>匹配该工具的所有调用，例如 <code>Read</code></td></tr>
+        <tr><td><code>Tool(specifier)</code></td><td>匹配具体输入，例如 <code>Read(./.env)</code>、<code>WebFetch(domain:example.com)</code></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <p>命令规则使用前缀匹配：<code>Bash(pnpm test:*)</code> 允许所有以 <code>pnpm test</code> 开头的命令。<code>deny</code> 优先级高于 <code>allow</code>，同一条命令同时命中时以拒绝为准。</p>
+
+  <p>查看和临时调整用：</p>
+  <div class="cmd"><div class="cmd-head"><span>Claude Code 会话</span><button type="button">复制</button></div><pre><code>&gt; /permissions</code></pre></div>
+
+  <h2>8.2 设置文件的优先级</h2>
+  <p>同一个键出现在多个文件时，高优先级覆盖低优先级：</p>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>优先级</th><th>来源</th><th>谁控制</th></tr></thead>
+      <tbody>
+        <tr><td>1（最高）</td><td>组织托管设置</td><td>IT / 安全团队</td></tr>
+        <tr><td>2</td><td>命令行参数</td><td>本次启动</td></tr>
+        <tr><td>3</td><td><code>.claude/settings.local.json</code></td><td>你个人，不提交</td></tr>
+        <tr><td>4</td><td><code>.claude/settings.json</code></td><td>项目团队，提交共享</td></tr>
+        <tr><td>5（最低）</td><td><code>~/.claude/settings.json</code></td><td>你个人，所有项目</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p>托管设置的优先级最高，个人文件改不动它。用 <code>/status</code> 可以看到当前生效的设置来源。</p>
+
+  <h2>8.3 成本：先看，再控</h2>
+  <p>交互会话里：</p>
+  <div class="cmd"><div class="cmd-head"><span>Claude Code 会话</span><button type="button">复制</button></div><pre><code>&gt; /usage</code></pre></div>
+  <p><code>/usage</code> 显示当前会话的 token 使用；订阅用户还能看到计划用量条和剩余额度。API 计费用户关注的会话成本也可以在状态栏或 <code>/cost</code> 里查看。</p>
+
+  <p>无头运行加硬上限：</p>
+  <div class="cmd"><div class="cmd-head"><span>bash</span><button type="button">复制</button></div><pre><code>claude -p "重构这个模块" --max-budget-usd 2.00 --max-turns 15</code></pre></div>
+  <p>预算是客户端估算，可能略有偏差，但足以防止失控。任务越大，越应该拆成多个有上限的小调用。</p>
+
+  <h3>成本通常花在哪</h3>
+  <ul>
+    <li>反复读大文件：一次读取几千行，几轮就占满上下文；</li>
+    <li>把整仓库或整个日志贴进提示；</li>
+    <li>一个会话处理多个不相关任务，历史越拖越长；</li>
+    <li>审查类任务没有限制输出条数，模型不断展开。</li>
+  </ul>
+  <p>对应的做法：用 <code>@文件</code> 精确指定、只传 diff、一个任务一个会话、在提示里写「最多 10 条」。</p>
+
+  <h2>8.4 上下文管理</h2>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>命令</th><th>作用</th><th>什么时候用</th></tr></thead>
+      <tbody>
+        <tr><td><code>/context</code></td><td>查看系统提示、工具、CLAUDE.md、对话各占多少</td><td>回答变慢或开始忘事</td></tr>
+        <tr><td><code>/compact</code></td><td>压缩历史，保留摘要</td><td>同一任务还要继续，但上下文快满</td></tr>
+        <tr><td><code>/clear</code></td><td>开新会话，旧会话仍可恢复</td><td>换任务</td></tr>
+        <tr><td><code>/rewind</code></td><td>回到某一轮之前</td><td>改错方向</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h2>8.5 出问题先查这四步</h2>
+  <ol class="steps">
+    <li>
+      <h3><code>claude doctor</code></h3>
+      <p>在终端执行，检查安装路径、设置文件语法、登录状态。它不启动会话，适合先排除环境问题。</p>
+    </li>
+    <li>
+      <h3><code>/status</code> 与 <code>/context</code></h3>
+      <p>会话内确认当前模型、目录、设置来源，以及 CLAUDE.md 和技能是否真的加载。</p>
+    </li>
+    <li>
+      <h3><code>--debug</code></h3>
+      <p>怀疑 Hook、MCP 或启动流程时，用 <code>claude --debug</code> 启动，或加分类过滤：<code>--debug='mcp,startup'</code>。</p>
+    </li>
+    <li>
+      <h3>最小复现</h3>
+      <p>换一个空目录、去掉项目配置再试。能复现就是 Claude Code 本身；不能复现就是项目配置或 Hook 的问题。</p>
+    </li>
+  </ol>
+
+  <h2>8.6 常见症状对照</h2>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>症状</th><th>先检查</th><th>处理</th></tr></thead>
+      <tbody>
+        <tr><td>CLAUDE.md 不生效</td><td><code>/context all</code> 的 Memory files</td><td>确认路径与文件名；重启会话</td></tr>
+        <tr><td>技能找不到</td><td><code>/skills</code>，目录是否为 <code>.claude/skills/&lt;name&gt;/SKILL.md</code></td><td>修正路径；避免与内置命令重名</td></tr>
+        <tr><td>Hook 不触发</td><td><code>claude doctor</code> 的设置语法；<code>/hooks</code></td><td>修正 JSON；确认 matcher 与工具名匹配</td></tr>
+        <tr><td>MCP 工具不出现</td><td><code>claude mcp list</code>、<code>/mcp</code></td><td>检查传输类型、令牌、服务是否启动</td></tr>
+        <tr><td>回答开始丢细节</td><td><code>/context</code></td><td><code>/compact</code> 或换新会话</td></tr>
+        <tr><td>运行被权限阻断</td><td><code>/permissions</code></td><td>补 allow 规则，或临时切换权限模式</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h2>8.7 一页速查</h2>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>需求</th><th>命令</th></tr></thead>
+      <tbody>
+        <tr><td>启动会话</td><td><code>claude</code></td></tr>
+        <tr><td>带初始提示启动</td><td><code>claude "解释这个项目"</code></td></tr>
+        <tr><td>继续最近会话</td><td><code>claude -c</code></td></tr>
+        <tr><td>恢复命名会话</td><td><code>claude --resume &lt;name&gt;</code></td></tr>
+        <tr><td>只读计划</td><td><code>claude --permission-mode plan</code></td></tr>
+        <tr><td>一次性调用</td><td><code>claude -p "..."</code></td></tr>
+        <tr><td>JSON 输出</td><td><code>claude -p "..." --output-format json</code></td></tr>
+        <tr><td>结构化输出</td><td><code>--json-schema '...'</code></td></tr>
+        <tr><td>限制预算</td><td><code>--max-budget-usd 2.00</code></td></tr>
+        <tr><td>查看上下文</td><td><code>/context</code></td></tr>
+        <tr><td>压缩上下文</td><td><code>/compact here 5</code></td></tr>
+        <tr><td>回滚</td><td><code>/rewind</code> 或 <code>Esc Esc</code></td></tr>
+        <tr><td>查看用量</td><td><code>/usage</code></td></tr>
+        <tr><td>检查安装</td><td><code>claude doctor</code></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h2>8.8 团队落地清单</h2>
+  <ul class="checklist">
+    <li>仓库里有 CLAUDE.md，写了构建、测试、目录与禁止事项</li>
+    <li><code>.claude/settings.json</code> 提交了 allow / ask / deny 规则</li>
+    <li>至少一个 PreToolUse Hook 保护密钥文件</li>
+    <li>重复流程已经固化成技能，而不是靠口头约定</li>
+    <li>CI 里的调用有 <code>--max-turns</code> 和 <code>--max-budget-usd</code></li>
+    <li>新同事按第 1–3 章能独立完成一次可验证的改动</li>
+  </ul>
+
+  <div class="callout ok">
+    <div class="label">最后一条建议</div>
+    <p>把 Claude Code 当成一个需要明确边界的新同事：给它项目说明、给它工具、给它验收标准，也给它明确的禁止项。边界越清楚，审查成本越低。</p>
+  </div>
+
+  <div class="chapter-nav">
+    <a href="07-automation.html"><span class="dir">← 上一章</span>无头模式与 CI</a>
+    <a class="next" href="index.html"><span class="dir">回到目录 →</span>教程导读</a>
+  </div>
+</main>
+</div>
+<script src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>第 7 章 无头模式与 CI · Claude Code CLI 实战</title>
+<meta name="description" content="用 claude -p、JSON 输出、结构化 schema 与预算上限，把 Claude Code 接进脚本和流水线。">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="site-header">
+  <button id="nav-toggle" type="button" aria-label="打开目录" aria-expanded="false">☰</button>
+  <a class="logo" href="index.html"><span class="dot"></span>Claude Code CLI 实战</a>
+  <span class="tagline">第 7 章 · 无头模式与 CI</span>
+  <span class="spacer"></span>
+  <a class="gh-link" href="https://code.claude.com/docs/en/headless" target="_blank" rel="noopener">官方 Headless 文档 ↗</a>
+</header>
+
+<div class="layout">
+<nav class="sidebar" id="sidebar">
+  <div class="group"><div class="group-title">开始</div><a href="index.html"><span class="no">序</span>教程导读</a></div>
+  <div class="group">
+    <div class="group-title">第一部分 · 上手</div>
+    <a href="01-install.html"><span class="no">第 1 章</span>安装与第一次会话</a>
+    <a href="02-context.html"><span class="no">第 2 章</span>让 Claude 懂你的项目</a>
+    <a href="03-change.html"><span class="no">第 3 章</span>改代码的完整闭环</a>
+  </div>
+  <div class="group">
+    <div class="group-title">第二部分 · 长期使用</div>
+    <a href="04-sessions.html"><span class="no">第 4 章</span>会话、分支与回滚</a>
+    <a href="05-customize.html"><span class="no">第 5 章</span>命令、技能与子代理</a>
+  </div>
+  <div class="group">
+    <div class="group-title">第三部分 · 扩展</div>
+    <a href="06-hooks-mcp.html"><span class="no">第 6 章</span>Hooks 与 MCP</a>
+    <a href="07-automation.html"><span class="no">第 7 章</span>无头模式与 CI</a>
+  </div>
+  <div class="group"><div class="group-title">第四部分 · 生产</div><a href="08-production.html"><span class="no">第 8 章</span>权限、成本与排错</a></div>
+</nav>
+
+<main class="content">
+  <span class="chapter-no">第 7 章</span>
+  <h1>无头模式与 CI</h1>
+  <p class="lede">交互模式适合探索，脚本和流水线需要另一种形态：一次调用、明确输出、可设上限、跑完退出。</p>
+
+  <div class="scene">
+    <div class="label">场景</div>
+    <p>每次提 PR，你都想先跑一遍自动审查：找出真实缺陷、输出固定格式、在 CI 里作为检查项。同时不能让一次失控的运行烧掉整月预算。</p>
+  </div>
+
+  <h2>7.1 一次调用就跑完</h2>
+  <div class="cmd"><div class="cmd-head"><span>bash</span><button type="button">复制</button></div><pre><code>claude -p "用三句话说明这个项目的架构"</code></pre></div>
+  <p><code>-p</code>（<code>--print</code>）表示非交互：读取提示、执行、把结果写到标准输出、退出。它不会打开会话界面。</p>
+
+  <p>管道输入同样可用：</p>
+  <div class="cmd"><div class="cmd-head"><span>bash</span><button type="button">复制</button></div><pre><code>cat build-error.txt | claude -p "用一句话说明根因，再给修复命令"</code></pre></div>
+  <div class="cmd"><div class="cmd-head"><span>bash</span><button type="button">复制</button></div><pre><code>git diff origin/main...HEAD | claude -p "审查这个 diff，只报告逻辑错误和安全问题"</code></pre></div>
+
+  <h2>7.2 让输出可被程序读取</h2>
+  <p>默认输出纯文本。需要脚本处理时换成 JSON：</p>
+  <div class="cmd"><div class="cmd-head"><span>bash</span><button type="button">复制</button></div><pre><code>claude -p "总结这个项目" --output-format json | jq -r '.result'</code></pre></div>
+
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>格式</th><th>内容</th><th>用途</th></tr></thead>
+      <tbody>
+        <tr><td><code>text</code></td><td>纯文本结果</td><td>人工阅读、写入文件</td></tr>
+        <tr><td><code>json</code></td><td>结果、session ID、耗时、成本等</td><td>脚本解析</td></tr>
+        <tr><td><code>stream-json</code></td><td>逐行 JSON 事件</td><td>实时进度、对接其他工具</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>固定字段：用 JSON Schema 约束</h3>
+  <div class="cmd"><div class="cmd-head"><span>bash</span><button type="button">复制</button></div><pre><code>claude -p "从 auth.py 提取主要函数名" \
+  --output-format json \
+  --json-schema '{"type":"object","properties":{"functions":{"type":"array","items":{"type":"string"}}},"required":["functions"]}' \
+  | jq '.structured_output'</code></pre></div>
+  <p>结果在 <code>structured_output</code> 字段。运行没有产出合法结构时，这个字段可能不存在，脚本要先判断再取值。</p>
+
+  <h2>7.3 控制权限与成本</h2>
+  <p>无头运行没人点「允许」，必须提前声明哪些工具可以直接用：</p>
+  <div class="cmd"><div class="cmd-head"><span>bash</span><button type="button">复制</button></div><pre><code>claude -p "运行测试并修复失败" \
+  --allowedTools "Bash,Read,Edit" \
+  --max-turns 20 \
+  --max-budget-usd 3.00</code></pre></div>
+  <p>三个上限各自管一件事：<code>--allowedTools</code> 管能做什么，<code>--max-turns</code> 管最多几轮，<code>--max-budget-usd</code> 管最多花多少（客户端估算，不等于最终账单）。</p>
+
+  <p>完全无人值守的任务再加两个参数：</p>
+  <div class="cmd"><div class="cmd-head"><span>bash</span><button type="button">复制</button></div><pre><code>claude -p "更新依赖版本并运行测试" \
+  --permission-mode auto \
+  --permission-prompts none \
+  --max-budget-usd 5.00</code></pre></div>
+  <p><code>--permission-prompts none</code> 让需要人工确认的请求直接拒绝，避免流水线卡住等一个永远不会来的回答。</p>
+
+  <div class="callout warn">
+    <div class="label">不要用 bypassPermissions 跑不可信代码</div>
+    <p>CI 里更稳的做法是 <code>auto</code> 或 <code>dontAsk</code> 加白名单。容器里运行、限制网络、挂载只读凭据，比放宽权限更有效。</p>
+  </div>
+
+  <h2>7.4 启动更快：--bare</h2>
+  <p>脚本化调用不需要加载项目的 Hooks、技能、MCP 和 CLAUDE.md 时：</p>
+  <div class="cmd"><div class="cmd-head"><span>bash</span><button type="button">复制</button></div><pre><code>claude --bare -p "把这个 JSON 转成 CSV"</code></pre></div>
+  <p>减少启动时的自动发现，代价是它不再了解项目约定。适合纯文本处理，不适合代码修改。</p>
+
+  <h2>7.5 一个可用的 CI 步骤</h2>
+  <div class="cmd"><div class="cmd-head"><span>.github/workflows/ai-review.yml</span><button type="button">复制</button></div><pre><code>name: AI review
+on:
+  pull_request:
+
+jobs:
+  review:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install Claude Code
+        run: curl -fsSL https://claude.ai/install.sh | bash
+
+      - name: Review diff
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: |
+          git diff origin/${{ github.base_ref }}...HEAD &gt; /tmp/pr.diff
+          claude -p "审查 /tmp/pr.diff。只报告逻辑错误、安全问题、缺失测试。
+          每条给出文件、行号、原因、建议。没有发现就输出 NO_FINDINGS。
+          输出 JSON，字段 findings 为数组。" \
+            --allowedTools "Read" \
+            --max-turns 10 \
+            --max-budget-usd 2.00 \
+            --output-format json &gt; /tmp/review.json
+
+      - name: Fail on findings
+        run: |
+          jq -e '.structured_output.findings | length == 0' /tmp/review.json</code></pre></div>
+  <p>这段流程的关键不是 YAML，而是三件事：diff 只包含本次改动、工具权限只给只读、预算有上限。审查结果是否阻塞合并，由你决定。</p>
+
+  <h2>7.6 验证</h2>
+  <ul class="checklist">
+    <li><code>claude -p "..." --output-format json | jq -r .result</code> 能取到文本</li>
+    <li>带 <code>--max-budget-usd</code> 的任务超限后会停止</li>
+    <li>CI 步骤在无交互环境下能跑完，不等待输入</li>
+    <li>失败时退出码非 0，流水线能正确标记</li>
+  </ul>
+
+  <h2>7.7 常见坑</h2>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>坑</th><th>后果</th><th>改法</th></tr></thead>
+      <tbody>
+        <tr><td>无头运行没有声明 allowedTools</td><td>需要确认的调用被拒绝，任务半途而废</td><td>明确白名单，或用 <code>dontAsk</code> 接受拒绝语义</td></tr>
+        <tr><td>把整仓库塞进提示</td><td>超上下文，成本失控</td><td>只传 diff 或相关文件</td></tr>
+        <tr><td>依赖 <code>structured_output</code> 一定存在</td><td>脚本报空指针</td><td>先判断字段是否存在，再解析</td></tr>
+        <tr><td>在 CI 里用主账号长期令牌</td><td>泄露后影响面大</td><td>用专用密钥或 <code>claude setup-token</code> 生成 CI 令牌</td></tr>
+        <tr><td>以为 <code>-p</code> 会话能在 <code>-c</code> 里恢复</td><td>找不到会话</td><td><code>-p</code> 会话默认不进选择器，用 session ID 显式恢复</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="chapter-nav">
+    <a href="06-hooks-mcp.html"><span class="dir">← 上一章</span>Hooks 与 MCP</a>
+    <a class="next" href="08-production.html"><span class="dir">下一章 →</span>权限、成本与排错</a>
+  </div>
+</main>
+</div>
+<script src="app.js"></script>
+</body>
+</html>
