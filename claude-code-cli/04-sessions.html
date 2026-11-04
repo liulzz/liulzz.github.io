@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>第 4 章 会话、分支与回滚 · Claude Code CLI 实战</title>
+<meta name="description" content="继续昨天的会话、给会话命名、开分支试另一种方案，以及改坏了如何回滚。">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="site-header">
+  <button id="nav-toggle" type="button" aria-label="打开目录" aria-expanded="false">☰</button>
+  <a class="logo" href="index.html"><span class="dot"></span>Claude Code CLI 实战</a>
+  <span class="tagline">第 4 章 · 会话与回滚</span>
+  <span class="spacer"></span>
+  <a class="gh-link" href="https://code.claude.com/docs/en/sessions" target="_blank" rel="noopener">官方 Sessions 文档 ↗</a>
+</header>
+
+<div class="layout">
+<nav class="sidebar" id="sidebar">
+  <div class="group"><div class="group-title">开始</div><a href="index.html"><span class="no">序</span>教程导读</a></div>
+  <div class="group">
+    <div class="group-title">第一部分 · 上手</div>
+    <a href="01-install.html"><span class="no">第 1 章</span>安装与第一次会话</a>
+    <a href="02-context.html"><span class="no">第 2 章</span>让 Claude 懂你的项目</a>
+    <a href="03-change.html"><span class="no">第 3 章</span>改代码的完整闭环</a>
+  </div>
+  <div class="group">
+    <div class="group-title">第二部分 · 长期使用</div>
+    <a href="04-sessions.html"><span class="no">第 4 章</span>会话、分支与回滚</a>
+    <a href="05-customize.html"><span class="no">第 5 章</span>命令、技能与子代理</a>
+  </div>
+  <div class="group">
+    <div class="group-title">第三部分 · 扩展</div>
+    <a href="06-hooks-mcp.html"><span class="no">第 6 章</span>Hooks 与 MCP</a>
+    <a href="07-automation.html"><span class="no">第 7 章</span>无头模式与 CI</a>
+  </div>
+  <div class="group"><div class="group-title">第四部分 · 生产</div><a href="08-production.html"><span class="no">第 8 章</span>权限、成本与排错</a></div>
+</nav>
+
+<main class="content">
+  <span class="chapter-no">第 4 章</span>
+  <h1>会话、分支与回滚</h1>
+  <p class="lede">一个任务很少在一次会话里结束。这一章解决三件事：接着昨天的活、在不破坏原方案的前提下试新路、改坏了退回去。</p>
+
+  <div class="scene">
+    <div class="label">场景</div>
+    <p>昨天的 bug 修到一半下班了。今天要接着做；同时你想试另一种实现方案，但不希望弄乱已经调通的那条路。</p>
+  </div>
+
+  <h2>4.1 接着上一次</h2>
+  <p>在同一个项目目录下：</p>
+  <div class="cmd"><div class="cmd-head"><span>bash</span><button type="button">复制</button></div><pre><code>claude -c</code></pre></div>
+  <p><code>-c</code> 会加载当前目录最近的一次会话，包括消息历史和之前的状态。它不会把 <code>claude -p</code> 创建的会话算进来。</p>
+
+  <p>如果同时有几个任务，给会话起名字，恢复时更明确：</p>
+  <div class="cmd"><div class="cmd-head"><span>bash</span><button type="button">复制</button></div><pre><code>claude --name coupon-fix
+# 下次直接恢复
+claude --resume coupon-fix</code></pre></div>
+  <p>会话中改名用 <code>/rename coupon-fix-v2</code>。不带名字执行 <code>claude --resume</code> 会打开会话选择器，方向键选择，适合记不住名字的时候。</p>
+
+  <h2>4.2 开一条分支试另一种方案</h2>
+  <p>分支会复制当前对话，然后把你切到副本里。原来的会话不变。会话内执行：</p>
+  <div class="cmd"><div class="cmd-head"><span>Claude Code 会话</span><button type="button">复制</button></div><pre><code>&gt; /branch try-streaming</code></pre></div>
+  <p>从命令行恢复时开分支：</p>
+  <div class="cmd"><div class="cmd-head"><span>bash</span><button type="button">复制</button></div><pre><code>claude --continue --fork-session</code></pre></div>
+  <p>区别要记住：<code>/branch</code> 在同一个进程内复制，之前的「本次会话允许」权限继续有效；<code>--fork-session</code> 起的是新进程，权限需要重新批准。两条分支共享同一份工作区文件，所以不要同时让它们改同一批文件。</p>
+
+  <div class="callout warn">
+    <div class="label">分支不是 Git 分支</div>
+    <p>会话分支只隔离对话，不隔离代码。要同时试两种实现，仍然应该配合 Git 工作树或至少 <code>git stash</code>。</p>
+  </div>
+
+  <h2>4.3 改坏了：回滚</h2>
+  <p>Claude Code 在你每发起一轮对话时自动记录检查点，保留最近 100 个。回滚方式：</p>
+  <div class="cmd"><div class="cmd-head"><span>Claude Code 会话</span><button type="button">复制</button></div><pre><code>&gt; /rewind</code></pre></div>
+  <p>输入框为空时连按两次 <code>Esc</code> 也能打开。菜单里可以只恢复对话、只恢复代码，或两者都恢复。</p>
+
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>操作</th><th>恢复内容</th><th>注意</th></tr></thead>
+      <tbody>
+        <tr><td>Restore conversation</td><td>对话历史回到那一轮之前</td><td>不回滚文件</td></tr>
+        <tr><td>Restore code</td><td>恢复 Claude 编辑过的文件</td><td>只覆盖 Claude 通过编辑工具改的文件</td></tr>
+        <tr><td>Restore conversation and code</td><td>两者都回滚</td><td>最常用</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <p>只用 Bash 命令修改的文件不在检查点里，例如 <code>sed -i</code>、代码生成器输出。这类改动只能靠 Git 恢复。</p>
+
+  <h2>4.4 上下文快满了怎么办</h2>
+  <p>先看占用：</p>
+  <div class="cmd"><div class="cmd-head"><span>Claude Code 会话</span><button type="button">复制</button></div><pre><code>&gt; /context</code></pre></div>
+  <p>能看到系统提示、工具定义、CLAUDE.md、对话各占多少。三种处理方式：</p>
+  <ul>
+    <li><code>/compact</code>：压缩对话，保留摘要。可以加 <code>here 5</code> 保留最近 5 轮原文；</li>
+    <li><code>/clear</code>：直接开一个空上下文的新会话，旧会话仍可用 <code>/resume</code> 找回；</li>
+    <li>换任务就换会话。不要让一个会话同时处理三个不相关的问题。</li>
+  </ul>
+
+  <div class="cmd"><div class="cmd-head"><span>Claude Code 会话</span><button type="button">复制</button></div><pre><code>&gt; /compact here 5</code></pre></div>
+
+  <h2>4.5 验收</h2>
+  <ul class="checklist">
+    <li><code>claude -c</code> 能恢复昨天的上下文，且知道当前分支</li>
+    <li><code>claude --resume &lt;name&gt;</code> 能直接进入指定会话</li>
+    <li><code>/rewind</code> 能把代码和对话退回到指定轮次</li>
+    <li><code>/context</code> 里各项占用清楚，知道该压缩还是该换会话</li>
+  </ul>
+
+  <h2>4.6 常见坑</h2>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>坑</th><th>后果</th><th>改法</th></tr></thead>
+      <tbody>
+        <tr><td>在错误目录执行 <code>-c</code></td><td>恢复的是另一个项目的会话</td><td>先 <code>pwd</code> 确认目录，或使用 <code>--resume &lt;name&gt;</code></td></tr>
+        <tr><td>两个终端恢复同一会话</td><td>两边消息交叉写入同一份记录</td><td>需要并行就用 <code>--fork-session</code></td></tr>
+        <tr><td>以为 <code>/rewind</code> 能撤销所有改动</td><td>Bash 改的文件没被回滚</td><td>关键改动走 Git，或在编辑工具里完成</td></tr>
+        <tr><td>会话拖得太长</td><td>上下文变慢、回答开始丢细节</td><td>一个任务一个会话，阶段结束时 <code>/clear</code></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="chapter-nav">
+    <a href="03-change.html"><span class="dir">← 上一章</span>改代码的完整闭环</a>
+    <a class="next" href="05-customize.html"><span class="dir">下一章 →</span>命令、技能与子代理</a>
+  </div>
+</main>
+</div>
+<script src="app.js"></script>
+</body>
+</html>

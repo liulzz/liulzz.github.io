@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>第 5 章 命令、技能与子代理 · Claude Code CLI 实战</title>
+<meta name="description" content="把重复流程写成技能，把独立任务交给子代理：SKILL.md 与 .claude/agents 的写法与边界。">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="site-header">
+  <button id="nav-toggle" type="button" aria-label="打开目录" aria-expanded="false">☰</button>
+  <a class="logo" href="index.html"><span class="dot"></span>Claude Code CLI 实战</a>
+  <span class="tagline">第 5 章 · 命令、技能与子代理</span>
+  <span class="spacer"></span>
+  <a class="gh-link" href="https://code.claude.com/docs/en/skills" target="_blank" rel="noopener">官方 Skills 文档 ↗</a>
+</header>
+
+<div class="layout">
+<nav class="sidebar" id="sidebar">
+  <div class="group"><div class="group-title">开始</div><a href="index.html"><span class="no">序</span>教程导读</a></div>
+  <div class="group">
+    <div class="group-title">第一部分 · 上手</div>
+    <a href="01-install.html"><span class="no">第 1 章</span>安装与第一次会话</a>
+    <a href="02-context.html"><span class="no">第 2 章</span>让 Claude 懂你的项目</a>
+    <a href="03-change.html"><span class="no">第 3 章</span>改代码的完整闭环</a>
+  </div>
+  <div class="group">
+    <div class="group-title">第二部分 · 长期使用</div>
+    <a href="04-sessions.html"><span class="no">第 4 章</span>会话、分支与回滚</a>
+    <a href="05-customize.html"><span class="no">第 5 章</span>命令、技能与子代理</a>
+  </div>
+  <div class="group">
+    <div class="group-title">第三部分 · 扩展</div>
+    <a href="06-hooks-mcp.html"><span class="no">第 6 章</span>Hooks 与 MCP</a>
+    <a href="07-automation.html"><span class="no">第 7 章</span>无头模式与 CI</a>
+  </div>
+  <div class="group"><div class="group-title">第四部分 · 生产</div><a href="08-production.html"><span class="no">第 8 章</span>权限、成本与排错</a></div>
+</nav>
+
+<main class="content">
+  <span class="chapter-no">第 5 章</span>
+  <h1>命令、技能与子代理</h1>
+  <p class="lede">同一段流程解释到第三遍，就该把它写下来。这一章把「你重复说的话」变成命令，把「会污染主对话的任务」交给子代理。</p>
+
+  <div class="scene">
+    <div class="label">场景</div>
+    <p>每次发版前，你都要重复同一套检查：跑测试、看迁移、确认版本号、生成变更说明。另外，代码审查会让主对话塞满大段 diff，之后的修改开始丢上下文。</p>
+  </div>
+
+  <h2>5.1 技能就是带说明的命令</h2>
+  <p>在项目里新建一个目录和文件：</p>
+  <div class="cmd"><div class="cmd-head"><span>bash</span><button type="button">复制</button></div><pre><code>mkdir -p .claude/skills/release-check</code></pre></div>
+
+  <div class="cmd"><div class="cmd-head"><span>.claude/skills/release-check/SKILL.md</span><button type="button">复制</button></div><pre><code>---
+name: release-check
+description: 发版前检查。用于准备发布、生成变更说明、确认版本号与迁移状态时。
+---
+
+# 发版前检查
+
+按顺序执行，任何一步失败就停下来报告，不要继续后面的步骤。
+
+1. 运行 `pnpm test -- --run`，记录失败用例。
+2. 运行 `pnpm typecheck`。
+3. 检查 `packages/db/migrations/` 是否有未提交的新迁移。
+4. 对比 `package.json` 的版本号与最新 Git tag，确认是否已递增。
+5. 汇总最近一次 tag 到 HEAD 的提交，按 feat / fix / chore 分类生成变更说明。
+6. 输出一份检查结果表：项目、结果、证据（命令输出或文件路径）。</code></pre></div>
+
+  <p>保存后，Claude Code 会自动发现这个技能。两种调用方式：</p>
+  <div class="cmd"><div class="cmd-head"><span>Claude Code 会话</span><button type="button">复制</button></div><pre><code>&gt; /release-check</code></pre></div>
+  <p>或者直接说「准备发版，帮我检查一下」，它根据 <code>description</code> 判断是否加载。</p>
+
+  <div class="callout">
+    <div class="label">SKILL.md 的两个部分</div>
+    <p><code>description</code> 决定「什么时候用」，正文决定「怎么做」。描述里写清楚触发场景，正文写可执行的步骤和验收标准。名字会成为命令名。</p>
+  </div>
+
+  <h2>5.2 老格式：.claude/commands</h2>
+  <p>已有 <code>.claude/commands/deploy.md</code> 的项目不需要迁移，它仍然生成 <code>/deploy</code>。新写的流程建议放 <code>.claude/skills/</code>，因为技能支持附带脚本、模板等辅助文件。</p>
+
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>位置</th><th>作用范围</th><th>适合</th></tr></thead>
+      <tbody>
+        <tr><td><code>.claude/skills/&lt;name&gt;/SKILL.md</code></td><td>当前仓库，随代码共享</td><td>团队流程、发版检查、项目规范</td></tr>
+        <tr><td><code>~/.claude/skills/&lt;name&gt;/SKILL.md</code></td><td>你的所有项目</td><td>个人习惯，例如提交信息风格</td></tr>
+        <tr><td><code>.claude/commands/&lt;name&gt;.md</code></td><td>当前仓库</td><td>旧格式，简单一次性命令</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h2>5.3 子代理：独立上下文干一件事</h2>
+  <p>子代理有自己的上下文窗口，只把结论带回主对话。适合「读很多文件、只回一个结论」的任务，例如代码审查、日志排查、依赖升级评估。</p>
+
+  <div class="cmd"><div class="cmd-head"><span>.claude/agents/reviewer.md</span><button type="button">复制</button></div><pre><code>---
+name: reviewer
+description: 审查当前分支相对 main 的改动，只报告真实缺陷。用于提交前检查、PR 自查。
+tools: Read, Grep, Glob, Bash
+model: sonnet
+---
+
+你是代码审查者。只审查 `git diff main...HEAD` 的改动。
+
+关注顺序：
+1. 逻辑错误与边界条件
+2. 安全与权限问题
+3. 数据一致性与事务边界
+4. 缺失或变弱的测试
+
+不报告纯风格问题。每条发现给出文件路径、行号、复现条件、建议修改。
+超过 10 条时，按严重程度排序，只保留前 10 条。</code></pre></div>
+
+  <p>使用时不需要记名字，直接描述任务：</p>
+  <div class="cmd"><div class="cmd-head"><span>Claude Code 会话</span><button type="button">复制</button></div><pre><code>&gt; 用 reviewer 子代理审查当前分支，重点看金额计算和权限判断</code></pre></div>
+
+  <h2>5.4 技能和子代理怎么选</h2>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th></th><th>技能（Skill）</th><th>子代理（Subagent）</th></tr></thead>
+      <tbody>
+        <tr><td>上下文</td><td>在主对话里执行</td><td>独立上下文，只回摘要</td></tr>
+        <tr><td>适合</td><td>流程、规范、检查清单</td><td>大量阅读、独立调查、并行任务</td></tr>
+        <tr><td>调用</td><td><code>/name</code> 或自动匹配</td><td>描述任务，主代理委派</td></tr>
+        <tr><td>典型例子</td><td>发版检查、提交信息规范</td><td>代码审查、日志分析、迁移评估</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h2>5.5 验证</h2>
+  <div class="cmd"><div class="cmd-head"><span>Claude Code 会话</span><button type="button">复制</button></div><pre><code>&gt; /skills
+&gt; 列出当前可用的子代理</code></pre></div>
+  <p>再实际跑一次 <code>/release-check</code>，看它是否按顺序执行、失败时是否停下、最后是否输出了结果表。技能写得对不对，跑一次就知道。</p>
+
+  <h2>5.6 常见坑</h2>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>坑</th><th>后果</th><th>改法</th></tr></thead>
+      <tbody>
+        <tr><td>技能名和内置命令重名</td><td>技能不加载，或命令被覆盖</td><td>用项目特有的前缀，例如 <code>acme-release</code></td></tr>
+        <tr><td>description 写成功能介绍</td><td>该用的时候不触发</td><td>写「用于……时」的触发条件</td></tr>
+        <tr><td>子代理给太多工具</td><td>审查者也能改代码，风险变大</td><td>只给 <code>Read, Grep, Glob</code> 等必要工具</td></tr>
+        <tr><td>把临时任务写成技能</td><td>技能目录越来越乱</td><td>只固化重复三次以上的流程</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="chapter-nav">
+    <a href="04-sessions.html"><span class="dir">← 上一章</span>会话、分支与回滚</a>
+    <a class="next" href="06-hooks-mcp.html"><span class="dir">下一章 →</span>Hooks 与 MCP</a>
+  </div>
+</main>
+</div>
+<script src="app.js"></script>
+</body>
+</html>

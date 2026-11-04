@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>第 6 章 Hooks 与 MCP · Claude Code CLI 实战</title>
+<meta name="description" content="用 Hooks 自动格式化与拦截危险改动，用 MCP 接入内部系统与第三方服务。">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="site-header">
+  <button id="nav-toggle" type="button" aria-label="打开目录" aria-expanded="false">☰</button>
+  <a class="logo" href="index.html"><span class="dot"></span>Claude Code CLI 实战</a>
+  <span class="tagline">第 6 章 · Hooks 与 MCP</span>
+  <span class="spacer"></span>
+  <a class="gh-link" href="https://code.claude.com/docs/en/hooks-guide" target="_blank" rel="noopener">官方 Hooks 文档 ↗</a>
+</header>
+
+<div class="layout">
+<nav class="sidebar" id="sidebar">
+  <div class="group"><div class="group-title">开始</div><a href="index.html"><span class="no">序</span>教程导读</a></div>
+  <div class="group">
+    <div class="group-title">第一部分 · 上手</div>
+    <a href="01-install.html"><span class="no">第 1 章</span>安装与第一次会话</a>
+    <a href="02-context.html"><span class="no">第 2 章</span>让 Claude 懂你的项目</a>
+    <a href="03-change.html"><span class="no">第 3 章</span>改代码的完整闭环</a>
+  </div>
+  <div class="group">
+    <div class="group-title">第二部分 · 长期使用</div>
+    <a href="04-sessions.html"><span class="no">第 4 章</span>会话、分支与回滚</a>
+    <a href="05-customize.html"><span class="no">第 5 章</span>命令、技能与子代理</a>
+  </div>
+  <div class="group">
+    <div class="group-title">第三部分 · 扩展</div>
+    <a href="06-hooks-mcp.html"><span class="no">第 6 章</span>Hooks 与 MCP</a>
+    <a href="07-automation.html"><span class="no">第 7 章</span>无头模式与 CI</a>
+  </div>
+  <div class="group"><div class="group-title">第四部分 · 生产</div><a href="08-production.html"><span class="no">第 8 章</span>权限、成本与排错</a></div>
+</nav>
+
+<main class="content">
+  <span class="chapter-no">第 6 章</span>
+  <h1>Hooks 与 MCP</h1>
+  <p class="lede">Hooks 管「发生动作时自动做什么」，MCP 管「Claude 能访问哪些外部系统」。两者都不改变主流程，但决定了它能不能融进你的工程体系。</p>
+
+  <div class="scene">
+    <div class="label">场景</div>
+    <p>团队要求提交前必须格式化，且任何人不能改 <code>.env</code>。同时你希望 Claude 能查 Jira 需求和 Sentry 报错，而不是你手动复制粘贴。</p>
+  </div>
+
+  <h2>6.1 Hook 是什么</h2>
+  <p>Hook 是绑定在 Claude Code 生命周期事件上的 shell 命令。配置写在 <code>.claude/settings.json</code>（项目级）或 <code>~/.claude/settings.json</code>（个人级）。</p>
+
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>事件</th><th>触发时机</th><th>常见用途</th></tr></thead>
+      <tbody>
+        <tr><td><code>PreToolUse</code></td><td>工具调用之前</td><td>拦截危险命令、保护文件</td></tr>
+        <tr><td><code>PostToolUse</code></td><td>工具调用成功之后</td><td>格式化、lint、记录日志</td></tr>
+        <tr><td><code>Notification</code></td><td>Claude 发出通知时</td><td>桌面提醒、发消息</td></tr>
+        <tr><td><code>SessionStart</code></td><td>会话开始</td><td>注入环境信息、检查依赖</td></tr>
+        <tr><td><code>Stop</code></td><td>Claude 完成一次回复</td><td>汇总结果、触发后续检查</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h2>6.2 编辑后自动格式化</h2>
+  <p>把下面这段合并进 <code>.claude/settings.json</code>。文件里已有 <code>hooks</code> 时，把 <code>PostToolUse</code> 作为同级键加进去，不要覆盖整个对象。</p>
+
+  <div class="cmd"><div class="cmd-head"><span>.claude/settings.json</span><button type="button">复制</button></div><pre><code>{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "jq -r '.tool_input.file_path' | xargs npx prettier --write"
+          }
+        ]
+      }
+    ]
+  }
+}</code></pre></div>
+
+  <p><code>matcher</code> 决定对哪些工具生效；<code>command</code> 从标准输入拿到事件 JSON，用 <code>jq</code> 取文件路径。Prettier 不存在时这条命令会报错，所以先把依赖装好，或者改成项目已有的格式化命令。</p>
+
+  <h2>6.3 拦截对 .env 的修改</h2>
+  <p>先写脚本：</p>
+  <div class="cmd"><div class="cmd-head"><span>.claude/hooks/protect-files.sh</span><button type="button">复制</button></div><pre><code>#!/usr/bin/env bash
+set -euo pipefail
+
+file_path="$(jq -r '.tool_input.file_path // empty')"
+
+case "$file_path" in
+  *.env|*/.env|*/.env.*|*secrets*)
+    echo "Blocked: 不允许修改环境变量与密钥文件" &gt;&amp;2
+    exit 2
+    ;;
+esac
+
+exit 0</code></pre></div>
+
+  <div class="cmd"><div class="cmd-head"><span>bash</span><button type="button">复制</button></div><pre><code>chmod +x .claude/hooks/protect-files.sh</code></pre></div>
+
+  <p>再注册：</p>
+  <div class="cmd"><div class="cmd-head"><span>.claude/settings.json</span><button type="button">复制</button></div><pre><code>{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/protect-files.sh"
+          }
+        ]
+      }
+    ]
+  }
+}</code></pre></div>
+
+  <p>退出码的含义：<code>0</code> 表示不反对，<code>2</code> 表示阻止本次调用，并把 stderr 作为反馈交给 Claude。其他非零退出码通常只记为错误，不阻止动作。</p>
+
+  <div class="callout warn">
+    <div class="label">Hook 是强制约束，CLAUDE.md 不是</div>
+    <p>写在 CLAUDE.md 里的「不要修改 .env」只是上下文，Claude 仍可能判断错误。需要确定性拦截时，用 <code>PreToolUse</code> Hook 或第 8 章的权限拒绝规则。</p>
+  </div>
+
+  <h2>6.4 接入 MCP 服务</h2>
+  <p>MCP 让 Claude 调用外部工具。远程 HTTP 服务：</p>
+  <div class="cmd"><div class="cmd-head"><span>bash</span><button type="button">复制</button></div><pre><code>claude mcp add --transport http notion https://mcp.notion.com/mcp</code></pre></div>
+
+  <p>本地 stdio 服务：</p>
+  <div class="cmd"><div class="cmd-head"><span>bash</span><button type="button">复制</button></div><pre><code>claude mcp add --env AIRTABLE_API_KEY=YOUR_KEY --transport stdio airtable \
+  -- npx -y airtable-mcp-server</code></pre></div>
+  <p><code>--</code> 之后的内容原样传给 MCP 服务进程，Claude Code 自己的选项必须写在 <code>--</code> 之前。</p>
+
+  <p>查看与调试：</p>
+  <div class="cmd"><div class="cmd-head"><span>bash</span><button type="button">复制</button></div><pre><code>claude mcp list</code></pre></div>
+  <div class="cmd"><div class="cmd-head"><span>Claude Code 会话</span><button type="button">复制</button></div><pre><code>&gt; /mcp</code></pre></div>
+
+  <h2>6.5 团队共享 MCP 配置</h2>
+  <p>把服务写进项目根目录的 <code>.mcp.json</code>，提交到仓库，团队成员启动时就会看到：</p>
+  <div class="cmd"><div class="cmd-head"><span>.mcp.json</span><button type="button">复制</button></div><pre><code>{
+  "mcpServers": {
+    "sentry": {
+      "type": "http",
+      "url": "https://mcp.sentry.dev/mcp"
+    },
+    "jira": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "jira-mcp-server"],
+      "env": {
+        "JIRA_TOKEN": "${JIRA_TOKEN}"
+      }
+    }
+  }
+}</code></pre></div>
+  <p>密钥不要写死在文件里，用环境变量展开。首次加载项目级 MCP 服务时会要求确认信任。</p>
+
+  <h2>6.6 验证</h2>
+  <ul class="checklist">
+    <li>修改一个 <code>.ts</code> 文件后，Prettier 自动执行，文件格式变化</li>
+    <li>要求 Claude 修改 <code>.env</code>，被 Hook 拦截并说明原因</li>
+    <li><code>claude mcp list</code> 能看到服务，<code>/mcp</code> 里工具列表正常</li>
+    <li>让 Claude 调用一次 MCP 工具，返回真实数据而不是占位内容</li>
+  </ul>
+
+  <h2>6.7 常见坑</h2>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>坑</th><th>后果</th><th>改法</th></tr></thead>
+      <tbody>
+        <tr><td>整个 <code>hooks</code> 对象被覆盖</td><td>原有 Hook 全部失效</td><td>合并键，不要替换整个对象</td></tr>
+        <tr><td>Hook 命令依赖当前目录</td><td>换目录后找不到脚本</td><td>用 <code>$CLAUDE_PROJECT_DIR</code> 拼绝对路径</td></tr>
+        <tr><td>Hook 里输出大量日志</td><td>污染对话上下文</td><td>只输出必要信息，调试用 <code>--debug</code></td></tr>
+        <tr><td>无条件信任第三方 MCP 服务</td><td>提示注入、数据外泄</td><td>只接入可信服务，限制工具范围</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="chapter-nav">
+    <a href="05-customize.html"><span class="dir">← 上一章</span>命令、技能与子代理</a>
+    <a class="next" href="07-automation.html"><span class="dir">下一章 →</span>无头模式与 CI</a>
+  </div>
+</main>
+</div>
+<script src="app.js"></script>
+</body>
+</html>
