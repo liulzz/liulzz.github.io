@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>第 1 章 安装与第一次会话 · Claude Code CLI 实战</title>
+<meta name="description" content="安装 Claude Code、登录、在陌生仓库里完成第一次提问与第一次代码修改。">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="site-header">
+  <button id="nav-toggle" type="button" aria-label="打开目录" aria-expanded="false">☰</button>
+  <a class="logo" href="index.html"><span class="dot"></span>Claude Code CLI 实战</a>
+  <span class="tagline">第 1 章 · 安装与第一次会话</span>
+  <span class="spacer"></span>
+  <a class="gh-link" href="https://code.claude.com/docs/en/quickstart" target="_blank" rel="noopener">官方 Quickstart ↗</a>
+</header>
+
+<div class="layout">
+<nav class="sidebar" id="sidebar">
+  <div class="group"><div class="group-title">开始</div><a href="index.html"><span class="no">序</span>教程导读</a></div>
+  <div class="group">
+    <div class="group-title">第一部分 · 上手</div>
+    <a href="01-install.html"><span class="no">第 1 章</span>安装与第一次会话</a>
+    <a href="02-context.html"><span class="no">第 2 章</span>让 Claude 懂你的项目</a>
+    <a href="03-change.html"><span class="no">第 3 章</span>改代码的完整闭环</a>
+  </div>
+  <div class="group">
+    <div class="group-title">第二部分 · 长期使用</div>
+    <a href="04-sessions.html"><span class="no">第 4 章</span>会话、分支与回滚</a>
+    <a href="05-customize.html"><span class="no">第 5 章</span>命令、技能与子代理</a>
+  </div>
+  <div class="group">
+    <div class="group-title">第三部分 · 扩展</div>
+    <a href="06-hooks-mcp.html"><span class="no">第 6 章</span>Hooks 与 MCP</a>
+    <a href="07-automation.html"><span class="no">第 7 章</span>无头模式与 CI</a>
+  </div>
+  <div class="group"><div class="group-title">第四部分 · 生产</div><a href="08-production.html"><span class="no">第 8 章</span>权限、成本与排错</a></div>
+</nav>
+
+<main class="content">
+  <span class="chapter-no">第 1 章</span>
+  <h1>安装与第一次会话</h1>
+  <p class="lede">目标是 15 分钟内完成三件事：装好 CLI、让它在陌生仓库里讲清楚项目结构、改掉第一行代码。</p>
+
+  <div class="scene">
+    <div class="label">场景</div>
+    <p>你刚接手一个别人的仓库，下午要修一个 bug。README 只写了三行，目录很深，构建命令不确定。先让 Claude 把项目讲清楚，再动手。</p>
+  </div>
+
+  <h2>1.1 安装</h2>
+  <p>官方推荐原生安装脚本，装完自动更新。macOS、Linux、WSL 用同一条命令：</p>
+  <div class="cmd"><div class="cmd-head"><span>bash</span><button type="button">复制</button></div><pre><code>curl -fsSL https://claude.ai/install.sh | bash</code></pre></div>
+
+  <p>其他安装方式：</p>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>平台</th><th>命令</th><th>更新方式</th></tr></thead>
+      <tbody>
+        <tr><td>macOS（Homebrew）</td><td><code>brew install --cask claude-code</code></td><td><code>brew upgrade claude-code</code></td></tr>
+        <tr><td>Windows（PowerShell）</td><td><code>irm https://claude.ai/install.ps1 | iex</code></td><td>自动</td></tr>
+        <tr><td>Windows（WinGet）</td><td><code>winget install Anthropic.ClaudeCode</code></td><td><code>winget upgrade Anthropic.ClaudeCode</code></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <p>确认安装：</p>
+  <div class="cmd"><div class="cmd-head"><span>bash</span><button type="button">复制</button></div><pre><code>claude --version
+claude doctor</code></pre></div>
+  <p><code>--version</code> 打印版本号；<code>doctor</code> 检查安装路径、设置文件、登录状态。装完提示 <code>command not found</code>，通常是 <code>~/.local/bin</code> 不在 PATH，重新开一个终端再看。</p>
+
+  <h2>1.2 登录</h2>
+  <p>进入项目目录，直接启动：</p>
+  <div class="cmd"><div class="cmd-head"><span>bash</span><button type="button">复制</button></div><pre><code>cd /path/to/repo
+claude</code></pre></div>
+  <p>首次运行会要求登录。支持 Claude 订阅（Pro / Max / Team / Enterprise）、Claude Console（API 计费）以及 Bedrock、Vertex 等云厂商。按提示在浏览器完成授权即可。</p>
+  <p>已经设置 <code>ANTHROPIC_API_KEY</code> 的环境，会询问是否使用这个 Key。想换账号，在会话里输入 <code>/login</code>。</p>
+
+  <div class="callout warn">
+    <div class="label">第一次启动会问「是否信任这个目录」</div>
+    <p>这是工作区信任机制：不同意为当前项目加载 <code>.claude/</code> 下的配置、Hooks 和 MCP 服务。只在你确认来源可靠的仓库里同意。不同意也能对话，但项目级配置不生效。</p>
+  </div>
+
+  <h2>1.3 先问，不改</h2>
+  <p>启动后先做三件事，不要急着让它改代码：</p>
+  <div class="cmd"><div class="cmd-head"><span>Claude Code 会话</span><button type="button">复制</button></div><pre><code>&gt; 这个项目是做什么的？入口文件在哪？
+&gt; 构建、测试、启动分别用什么命令？
+&gt; 列出目录结构，标出核心模块和它们的关系</code></pre></div>
+
+  <p>再补一个更具体的问题，用来验证它真的读了代码，而不是猜：</p>
+  <div class="cmd"><div class="cmd-head"><span>Claude Code 会话</span><button type="button">复制</button></div><pre><code>&gt; 用户登录的请求从哪个路由进来，经过哪些文件，最后写哪张表？给出文件路径和行号</code></pre></div>
+
+  <div class="callout">
+    <div class="label">为什么先问</div>
+    <p>这一步同时完成两件事：你确认它理解了项目；它把相关文件读进上下文，后续修改的准确率更高。回答里如果没有具体文件路径，说明它没读到位，换一种问法或直接 <code>@文件</code> 指定。</p>
+  </div>
+
+  <h2>1.4 第一次修改</h2>
+  <p>从最小改动开始，例如修一个明显的文案或日志问题：</p>
+  <div class="cmd"><div class="cmd-head"><span>Claude Code 会话</span><button type="button">复制</button></div><pre><code>&gt; 把 src/auth/login.ts 里登录失败的提示改成中文，只改这一处，不要动其他逻辑</code></pre></div>
+  <p>Claude 会先读文件，再发起编辑。终端会显示 diff 并请求确认：</p>
+  <ul>
+    <li><code>Yes</code>：本次允许；</li>
+    <li><code>Yes, allow all edits during this session</code>：本次会话内不再询问编辑；</li>
+    <li><code>No</code>：拒绝，让它换方案。</li>
+  </ul>
+  <p>改完自己看一遍：</p>
+  <div class="cmd"><div class="cmd-head"><span>bash</span><button type="button">复制</button></div><pre><code>git diff</code></pre></div>
+
+  <h2>1.5 不进入交互模式也能用</h2>
+  <p>适合脚本和快速检查：</p>
+  <div class="cmd"><div class="cmd-head"><span>bash</span><button type="button">复制</button></div><pre><code>claude -p "用三句话说明这个项目的架构" --output-format json | jq -r '.result'</code></pre></div>
+  <p>这条命令跑完就退出，不进入会话。第 7 章会展开。</p>
+
+  <h2>1.6 这一步的验收</h2>
+  <ul class="checklist">
+    <li><code>claude --version</code> 能打印版本号</li>
+    <li>能在项目根目录启动会话，并看到当前模型与工作目录</li>
+    <li>三个问题都得到了带文件路径的回答</li>
+    <li><code>git diff</code> 里只有你要求改的那一处</li>
+  </ul>
+
+  <h2>1.7 常见问题</h2>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>现象</th><th>处理</th></tr></thead>
+      <tbody>
+        <tr><td><code>command not found: claude</code></td><td>把安装目录加入 PATH，或重新打开终端；<code>claude doctor</code> 会指出路径问题</td></tr>
+        <tr><td>一直停在登录页</td><td>在会话里执行 <code>/login</code>；检查浏览器是否能打开授权页</td></tr>
+        <tr><td>回答很泛，没有文件路径</td><td>明确要求「给出文件路径和行号」，或用 <code>@src/xxx.ts</code> 指定文件</td></tr>
+        <tr><td>每次编辑都要确认</td><td>选择「allow all edits during this session」，或在第 8 章配置权限规则</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="chapter-nav">
+    <a href="index.html"><span class="dir">← 上一页</span>教程导读</a>
+    <a class="next" href="02-context.html"><span class="dir">下一章 →</span>让 Claude 懂你的项目</a>
+  </div>
+</main>
+</div>
+<script src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Claude Code CLI 实战教程 · 场景驱动</title>
+<meta name="description" content="面向开发者的 Claude Code CLI 中文教程：安装、项目上下文、改代码闭环、会话回滚、技能与子代理、Hooks 与 MCP、自动化与生产实践。">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="site-header">
+  <button id="nav-toggle" type="button" aria-label="打开目录" aria-expanded="false">☰</button>
+  <a class="logo" href="index.html"><span class="dot"></span>Claude Code CLI 实战</a>
+  <span class="tagline">8 章 · 场景驱动</span>
+  <span class="spacer"></span>
+  <a class="gh-link" href="https://code.claude.com/docs/en/overview" target="_blank" rel="noopener">官方文档 ↗</a>
+</header>
+
+<div class="layout">
+<nav class="sidebar" id="sidebar">
+  <div class="group">
+    <div class="group-title">开始</div>
+    <a href="index.html"><span class="no">序</span>教程导读</a>
+  </div>
+  <div class="group">
+    <div class="group-title">第一部分 · 上手</div>
+    <a href="01-install.html"><span class="no">第 1 章</span>安装与第一次会话</a>
+    <a href="02-context.html"><span class="no">第 2 章</span>让 Claude 懂你的项目</a>
+    <a href="03-change.html"><span class="no">第 3 章</span>改代码的完整闭环</a>
+  </div>
+  <div class="group">
+    <div class="group-title">第二部分 · 长期使用</div>
+    <a href="04-sessions.html"><span class="no">第 4 章</span>会话、分支与回滚</a>
+    <a href="05-customize.html"><span class="no">第 5 章</span>命令、技能与子代理</a>
+  </div>
+  <div class="group">
+    <div class="group-title">第三部分 · 扩展</div>
+    <a href="06-hooks-mcp.html"><span class="no">第 6 章</span>Hooks 与 MCP</a>
+    <a href="07-automation.html"><span class="no">第 7 章</span>无头模式与 CI</a>
+  </div>
+  <div class="group">
+    <div class="group-title">第四部分 · 生产</div>
+    <a href="08-production.html"><span class="no">第 8 章</span>权限、成本与排错</a>
+  </div>
+</nav>
+
+<main class="content">
+  <span class="chapter-no">教程导读</span>
+  <h1>Claude Code CLI 实战</h1>
+  <p class="lede">
+    不按功能清单讲，按你每天真正会遇到的事讲：接手陌生仓库、修一个 bug、第二天接着昨天的活、把重复流程固化、让它在 CI 里自动跑。
+    每章一个场景，命令可以直接复制。
+  </p>
+
+  <div class="scene">
+    <div class="label">读完能做到</div>
+    <p>用 <code>claude</code> 在终端里完成一次可验证的代码修改；用 CLAUDE.md 和技能把项目规范固定下来；用 <code>-p</code> 把 Claude Code 接进脚本和 CI；知道什么时候该限制权限、怎么控制成本。</p>
+  </div>
+
+  <h2>适合谁</h2>
+  <ul>
+    <li>已经会用命令行和 Git，想把 AI 编码工具真正接进日常工作的开发者。</li>
+    <li>团队里要推广 Claude Code，需要一套可复制的配置与规范的人。</li>
+    <li>想把 Claude Code 用到 CI、日志分析、批量重构里的工程师。</li>
+  </ul>
+  <p>不适合：完全没碰过终端的人；只想看产品介绍、不打算动手的人。</p>
+
+  <h2>章节</h2>
+  <div class="card-grid">
+    <a class="card" href="01-install.html">
+      <div class="k">第 1 章 · 15 分钟</div>
+      <h3>安装与第一次会话</h3>
+      <p>装好、登录、让 Claude 用五分钟讲清楚一个陌生仓库，然后改一行代码。</p>
+    </a>
+    <a class="card" href="02-context.html">
+      <div class="k">第 2 章 · 20 分钟</div>
+      <h3>让 Claude 懂你的项目</h3>
+      <p>用 <code>/init</code> 和 CLAUDE.md 把构建命令、代码规范、目录约定固定下来。</p>
+    </a>
+    <a class="card" href="03-change.html">
+      <div class="k">第 3 章 · 25 分钟</div>
+      <h3>改代码的完整闭环</h3>
+      <p>计划模式、权限、执行测试、检查 diff：从需求到可提交的改动。</p>
+    </a>
+    <a class="card" href="04-sessions.html">
+      <div class="k">第 4 章 · 15 分钟</div>
+      <h3>会话、分支与回滚</h3>
+      <p>第二天接着干、开分支试另一种方案、改坏了怎么退回去。</p>
+    </a>
+    <a class="card" href="05-customize.html">
+      <div class="k">第 5 章 · 25 分钟</div>
+      <h3>命令、技能与子代理</h3>
+      <p>把重复出现的流程写成 <code>/deploy</code>，把独立任务交给子代理。</p>
+    </a>
+    <a class="card" href="06-hooks-mcp.html">
+      <div class="k">第 6 章 · 20 分钟</div>
+      <h3>Hooks 与 MCP</h3>
+      <p>编辑后自动格式化、拦截危险改动；接入内部系统和第三方服务。</p>
+    </a>
+    <a class="card" href="07-automation.html">
+      <div class="k">第 7 章 · 20 分钟</div>
+      <h3>无头模式与 CI</h3>
+      <p>用 <code>claude -p</code>、JSON 输出和预算上限，把审查与批处理接进流水线。</p>
+    </a>
+    <a class="card" href="08-production.html">
+      <div class="k">第 8 章 · 20 分钟</div>
+      <h3>权限、成本与排错</h3>
+      <p>权限规则、上下文管理、账单控制，以及出问题时先查什么。</p>
+    </a>
+  </div>
+
+  <h2>怎么读</h2>
+  <ol>
+    <li>按顺序读前 3 章，先把「问 → 计划 → 改 → 验证」这条闭环走通。</li>
+    <li>第 4–6 章按需看：如果你每天只用一个会话，先看第 4 章。</li>
+    <li>第 7 章开始涉及脚本和流水线，建议先在测试仓库里试。</li>
+    <li>第 8 章当手册，遇到权限、成本、上下文问题随时回来查。</li>
+  </ol>
+
+  <div class="callout warn">
+    <div class="label">版本说明</div>
+    <p>本教程依据 2026 年 11 月的官方文档编写，对应 Claude Code 2.1.x。CLI 的旗标和子命令更新较快，执行前用 <code>claude --help</code> 或 <code>claude doctor</code> 确认当前版本的行为。</p>
+  </div>
+
+  <h2>约定</h2>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>写法</th><th>含义</th></tr></thead>
+      <tbody>
+        <tr><td><code>$</code> 开头的代码块</td><td>在系统终端执行</td></tr>
+        <tr><td><code>&gt;</code> 开头的代码块</td><td>在 Claude Code 会话内输入</td></tr>
+        <tr><td>不带前缀的代码块</td><td>文件内容或示例配置</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <footer class="site-footer">
+    <p>场景驱动的 Claude Code CLI 教程 · 2026-11 · 官方文档：<a href="https://code.claude.com/docs/en/overview" target="_blank" rel="noopener">code.claude.com/docs</a></p>
+  </footer>
+</main>
+</div>
+<script src="app.js"></script>
+</body>
+</html>

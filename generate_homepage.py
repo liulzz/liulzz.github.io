@@ -9,6 +9,7 @@ INDEX_PATH = ROOT / "index.html"
 CATEGORY_ORDER = [
     "📖 速查手册",
     "🤖 AgentScope 智能体框架",
+    "🤖 Claude Code",
     "🔌 MCP 模型上下文协议",
     "🌐 建站 / 部署",
     "🛒 消费分析",
@@ -30,11 +31,13 @@ DEFAULT_META = {
     "mcp-learning-guide": {"ico": "📘", "name": "MCP 学习指南", "desc": "从协议基础到生产实现 · 含示例与源码"},
     "github-pages-tutorial": {"ico": "🚀", "name": "GitHub Pages 教程", "desc": "由浅入深 · 10 分钟拥有免费网站"},
     "mojimac-price": {"ico": "💻", "name": "摩集电商 MacBook 价格分析", "desc": "MacBook Pro 价格全景分析 · V2EX"},
+    "claude-code-cli": {"ico": "⌨️", "name": "Claude Code CLI 实战", "desc": "8 章场景驱动 · 从安装到 CI"},
 }
 
 CATEGORY_MAP = {
     "📖 速查手册": {"wsl-cheatsheet", "log-cheatsheet", "kubectl-cheatsheet", "java-vscode-cheatsheet", "auth-token-storage"},
     "🤖 AgentScope 智能体框架": {"agentscope-tutorial", "agentscope-tutorial-ds", "agentscope-tutorial-glm", "agentscope-harness", "agentscope-2-tutorial"},
+    "🤖 Claude Code": {"claude-code-cli"},
     "🔌 MCP 模型上下文协议": {"mcp-tutorial", "mcp-tutorial-2026", "mcp-learning-guide"},
     "🌐 建站 / 部署": {"github-pages-tutorial"},
     "🛒 消费分析": {"mojimac-price"},
@@ -54,6 +57,8 @@ def detect_category(repo: str) -> str:
         return "🛒 消费分析"
     if repo.startswith("agentscope"):
         return "🤖 AgentScope 智能体框架"
+    if repo.startswith("claude-code"):
+        return "🤖 Claude Code"
     if repo.startswith("mcp"):
         return "🔌 MCP 模型上下文协议"
     if "cheatsheet" in repo or "guide" in repo:

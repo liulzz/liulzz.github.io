@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>第 2 章 让 Claude 懂你的项目 · Claude Code CLI 实战</title>
+<meta name="description" content="用 /init、CLAUDE.md、导入文件与路径规则，把项目约定固定下来，避免每次会话重复解释。">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="site-header">
+  <button id="nav-toggle" type="button" aria-label="打开目录" aria-expanded="false">☰</button>
+  <a class="logo" href="index.html"><span class="dot"></span>Claude Code CLI 实战</a>
+  <span class="tagline">第 2 章 · 项目上下文</span>
+  <span class="spacer"></span>
+  <a class="gh-link" href="https://code.claude.com/docs/en/memory" target="_blank" rel="noopener">官方 Memory 文档 ↗</a>
+</header>
+
+<div class="layout">
+<nav class="sidebar" id="sidebar">
+  <div class="group"><div class="group-title">开始</div><a href="index.html"><span class="no">序</span>教程导读</a></div>
+  <div class="group">
+    <div class="group-title">第一部分 · 上手</div>
+    <a href="01-install.html"><span class="no">第 1 章</span>安装与第一次会话</a>
+    <a href="02-context.html"><span class="no">第 2 章</span>让 Claude 懂你的项目</a>
+    <a href="03-change.html"><span class="no">第 3 章</span>改代码的完整闭环</a>
+  </div>
+  <div class="group">
+    <div class="group-title">第二部分 · 长期使用</div>
+    <a href="04-sessions.html"><span class="no">第 4 章</span>会话、分支与回滚</a>
+    <a href="05-customize.html"><span class="no">第 5 章</span>命令、技能与子代理</a>
+  </div>
+  <div class="group">
+    <div class="group-title">第三部分 · 扩展</div>
+    <a href="06-hooks-mcp.html"><span class="no">第 6 章</span>Hooks 与 MCP</a>
+    <a href="07-automation.html"><span class="no">第 7 章</span>无头模式与 CI</a>
+  </div>
+  <div class="group"><div class="group-title">第四部分 · 生产</div><a href="08-production.html"><span class="no">第 8 章</span>权限、成本与排错</a></div>
+</nav>
+
+<main class="content">
+  <span class="chapter-no">第 2 章</span>
+  <h1>让 Claude 懂你的项目</h1>
+  <p class="lede">每次新会话都要重复「用 pnpm、测试命令是这个、不要改 generated 目录」，说明项目上下文还没写下来。</p>
+
+  <div class="scene">
+    <div class="label">场景</div>
+    <p>第三天，你开了一个新会话，Claude 又用了错误的包管理器，还试图修改自动生成的代码。你需要的不是再解释一遍，而是一份会随仓库走的说明文件。</p>
+  </div>
+
+  <h2>2.1 先生成，再修改</h2>
+  <p>在项目根目录启动会话，执行：</p>
+  <div class="cmd"><div class="cmd-head"><span>Claude Code 会话</span><button type="button">复制</button></div><pre><code>&gt; /init</code></pre></div>
+  <p><code>/init</code> 会扫描仓库，生成一份 <code>CLAUDE.md</code>，通常包含构建命令、测试方式、目录说明和它能推断出的约定。已经存在 <code>CLAUDE.md</code> 时，它提出改进建议，不会直接覆盖。</p>
+  <p>生成后不要直接提交，先删掉三类内容：它猜错的、重复的、以及只对一次任务有效的。</p>
+
+  <h2>2.2 一份能用的 CLAUDE.md</h2>
+  <p>目标是 200 行以内，每条都能被验证。示例：</p>
+  <div class="cmd"><div class="cmd-head"><span>CLAUDE.md</span><button type="button">复制</button></div><pre><code># 项目说明
+
+B2B 订单系统。前端 React，后端 Fastify，数据库 PostgreSQL。
+
+## 构建与测试
+
+- 安装依赖：`pnpm install`
+- 本地开发：`pnpm dev`
+- 单元测试：`pnpm test -- --run`
+- 类型检查：`pnpm typecheck`
+- 提交前必须通过：`pnpm lint &amp;&amp; pnpm test -- --run`
+
+## 目录
+
+- `apps/web`：管理后台
+- `apps/api`：HTTP 接口
+- `packages/domain`：订单与优惠券领域逻辑
+- `packages/db`：数据库访问层
+- `generated/`：自动生成，禁止手改
+
+## 约定
+
+- TypeScript 严格模式，不用 `any`
+- 金额统一用整数分表示，禁止浮点运算
+- 新增接口必须同步更新 `openapi.yaml`
+- 组件里不直接发请求，统一走 `packages/api-client`
+
+## 禁止
+
+- 不提交 `.env`、密钥、真实用户数据
+- 不修改 `generated/` 与数据库迁移历史
+- 不为了通过测试而删除或跳过测试</code></pre></div>
+
+  <p>写法上注意两点：</p>
+  <ul>
+    <li>写「跑 <code>pnpm test -- --run</code>」，不要写「记得测试」；</li>
+    <li>写「金额用整数分」，不要写「注意精度」。</li>
+  </ul>
+  <p>Claude 把 CLAUDE.md 当作上下文而不是强制配置。要真正阻止某个动作，用第 6 章的 <code>PreToolUse</code> Hook，或第 8 章的权限拒绝规则。</p>
+
+  <h2>2.3 放在哪一层</h2>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>范围</th><th>位置</th><th>适合写什么</th></tr></thead>
+      <tbody>
+        <tr><td>组织策略</td><td>系统目录下的 <code>CLAUDE.md</code>（由 IT 部署）</td><td>安全规范、合规要求</td></tr>
+        <tr><td>个人全局</td><td><code>~/.claude/CLAUDE.md</code></td><td>你个人的偏好：提交信息风格、常用命令</td></tr>
+        <tr><td>项目共享</td><td><code>./CLAUDE.md</code> 或 <code>./.claude/CLAUDE.md</code></td><td>团队共享的构建、规范、目录说明</td></tr>
+        <tr><td>本地私有</td><td><code>./CLAUDE.local.md</code></td><td>你自己的测试账号、沙箱地址；加入 <code>.gitignore</code></td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p>加载顺序从宽到窄。项目文件里不要写个人偏好，个人文件里不要写只有这个仓库才成立的规则。</p>
+
+  <h2>2.4 文件太长就拆开</h2>
+  <p>两种拆法，按用途选：</p>
+  <ul>
+    <li><strong>导入</strong>：在 CLAUDE.md 里写 <code>@docs/architecture.md</code>，内容会一起进入上下文。适合架构说明、接口约定。最多四层嵌套。</li>
+    <li><strong>路径规则</strong>：把规则放到 <code>.claude/rules/</code>，用 <code>paths</code> 限定生效范围，只在处理匹配文件时加载。</li>
+  </ul>
+
+  <div class="cmd"><div class="cmd-head"><span>.claude/rules/api.md</span><button type="button">复制</button></div><pre><code>---
+paths:
+  - "apps/api/**/*.ts"
+---
+
+# API 规则
+
+- 所有入参必须用 zod 校验
+- 错误响应统一为 `{ code, message, requestId }`
+- 新增或修改接口必须更新 `openapi.yaml`</code></pre></div>
+
+  <p>拆分的判断标准：这条规则是否只对一个目录成立。是，就放路径规则；对整个项目都成立，才留在 CLAUDE.md。</p>
+
+  <h2>2.5 验证它真的加载了</h2>
+  <div class="cmd"><div class="cmd-head"><span>Claude Code 会话</span><button type="button">复制</button></div><pre><code>&gt; /context all</code></pre></div>
+  <p>在输出里找到 <strong>Memory files</strong>，确认 <code>CLAUDE.md</code> 和规则文件都在列表里。再看 token 占用：如果项目说明占了很大一块，说明写得太长，该拆了。</p>
+  <p>另一个验证方式：新开一个会话，直接问「提交前要执行哪些命令」。回答正确，说明上下文生效。</p>
+
+  <h2>2.6 自动记忆</h2>
+  <p>除了你写的 CLAUDE.md，Claude 还会自己记笔记（auto memory）：当你纠正它、或它发现稳定的项目模式时，会写入按仓库隔离的记忆文件，下次会话自动加载前 200 行或 25KB。它适合记「你纠正过的偏好」，不适合替代团队规范。</p>
+  <p>觉得它记错了，直接在会话里说「忘掉关于 X 的记忆」，或者查看 <code>~/.claude/</code> 下的记忆文件。</p>
+
+  <h2>2.7 验收</h2>
+  <ul class="checklist">
+    <li>项目根目录有 CLAUDE.md，且不超过 200 行</li>
+    <li>里面写的是命令和可验证的规则，不是空泛要求</li>
+    <li><code>/context all</code> 的 Memory files 里能看到它</li>
+    <li>新会话能正确回答构建与测试命令</li>
+  </ul>
+
+  <h2>2.8 常见坑</h2>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>坑</th><th>后果</th><th>改法</th></tr></thead>
+      <tbody>
+        <tr><td>把 CLAUDE.md 写成百科</td><td>占上下文，关键规则被淹没</td><td>压到 200 行内，细节放 rules 或 skills</td></tr>
+        <tr><td>写「写好一点」这类要求</td><td>无法执行，也无法验证</td><td>改成具体命令或具体约束</td></tr>
+        <tr><td>两条规则互相矛盾</td><td>Claude 随机选一条</td><td>定期用 <code>/doctor prompt-audit</code> 检查</td></tr>
+        <tr><td>把密钥写进 CLAUDE.md</td><td>随仓库泄露</td><td>密钥只放环境变量或本地文件</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="chapter-nav">
+    <a href="01-install.html"><span class="dir">← 上一章</span>安装与第一次会话</a>
+    <a class="next" href="03-change.html"><span class="dir">下一章 →</span>改代码的完整闭环</a>
+  </div>
+</main>
+</div>
+<script src="app.js"></script>
+</body>
+</html>

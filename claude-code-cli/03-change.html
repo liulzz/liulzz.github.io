@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>第 3 章 改代码的完整闭环 · Claude Code CLI 实战</title>
+<meta name="description" content="用计划模式、权限控制、测试与 diff 检查，完成一次可提交的代码修改。">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="site-header">
+  <button id="nav-toggle" type="button" aria-label="打开目录" aria-expanded="false">☰</button>
+  <a class="logo" href="index.html"><span class="dot"></span>Claude Code CLI 实战</a>
+  <span class="tagline">第 3 章 · 改代码闭环</span>
+  <span class="spacer"></span>
+  <a class="gh-link" href="https://code.claude.com/docs/en/common-workflows" target="_blank" rel="noopener">官方 Common workflows ↗</a>
+</header>
+
+<div class="layout">
+<nav class="sidebar" id="sidebar">
+  <div class="group"><div class="group-title">开始</div><a href="index.html"><span class="no">序</span>教程导读</a></div>
+  <div class="group">
+    <div class="group-title">第一部分 · 上手</div>
+    <a href="01-install.html"><span class="no">第 1 章</span>安装与第一次会话</a>
+    <a href="02-context.html"><span class="no">第 2 章</span>让 Claude 懂你的项目</a>
+    <a href="03-change.html"><span class="no">第 3 章</span>改代码的完整闭环</a>
+  </div>
+  <div class="group">
+    <div class="group-title">第二部分 · 长期使用</div>
+    <a href="04-sessions.html"><span class="no">第 4 章</span>会话、分支与回滚</a>
+    <a href="05-customize.html"><span class="no">第 5 章</span>命令、技能与子代理</a>
+  </div>
+  <div class="group">
+    <div class="group-title">第三部分 · 扩展</div>
+    <a href="06-hooks-mcp.html"><span class="no">第 6 章</span>Hooks 与 MCP</a>
+    <a href="07-automation.html"><span class="no">第 7 章</span>无头模式与 CI</a>
+  </div>
+  <div class="group"><div class="group-title">第四部分 · 生产</div><a href="08-production.html"><span class="no">第 8 章</span>权限、成本与排错</a></div>
+</nav>
+
+<main class="content">
+  <span class="chapter-no">第 3 章</span>
+  <h1>改代码的完整闭环</h1>
+  <p class="lede">让 Claude 改代码不难，难的是改完能证明它是对的。这一章用一条完整的链路：先计划，再改，再验证。</p>
+
+  <div class="scene">
+    <div class="label">场景</div>
+    <p>订单系统有一个金额 bug：优惠券叠加满减时，应付金额比预期少 10 元。你能稳定复现，但不确定计算顺序应该改哪一层。改动会涉及公共方法，不能让它顺手重构整个模块。</p>
+  </div>
+
+  <h2>3.1 先开分支</h2>
+  <p>无论 Claude 多可靠，改动前先隔离：</p>
+  <div class="cmd"><div class="cmd-head"><span>bash</span><button type="button">复制</button></div><pre><code>git switch -c fix/coupon-stacking
+git status</code></pre></div>
+  <p>工作区有未提交的改动时，先提交或 stash。否则 <code>/rewind</code> 和 <code>git diff</code> 都会混在一起，很难判断哪些是 Claude 改的。</p>
+
+  <h2>3.2 用计划模式开始</h2>
+  <p>计划模式下，Claude 可以读文件、跑只读命令，但不能改源码。两种进入方式：</p>
+  <div class="cmd"><div class="cmd-head"><span>bash</span><button type="button">复制</button></div><pre><code>claude --permission-mode plan</code></pre></div>
+  <p>或者进入会话后按 <code>Shift+Tab</code> 循环权限模式，切到 <code>plan</code>。模式会显示在输入框附近。</p>
+
+  <h2>3.3 把需求写成四段</h2>
+  <p>不要只说「修一下优惠券 bug」。给它现象、复现、边界、验收：</p>
+  <div class="cmd"><div class="cmd-head"><span>Claude Code 会话（plan 模式）</span><button type="button">复制</button></div><pre><code>&gt; 现象：订单同时使用满减和优惠券时，应付金额少 10 元。
+&gt; 复现：订单 300 元，满 300 减 50，优惠券 9 折，期望 225，实际 215。
+&gt; 范围：只改 packages/domain/coupon 和调用它的金额计算，不要重构其他模块，不要改数据库结构。
+&gt; 验收：补一个覆盖「满减 + 折扣券叠加」的单测；`pnpm test -- --run coupon` 通过；给出修改前后的计算顺序对比。
+&gt; 先给方案，不要改代码。</code></pre></div>
+
+  <p>这段提示做了四件事：给出可复现输入、限定修改范围、定义验收标准、明确当前只要方案。</p>
+
+  <h2>3.4 审计划</h2>
+  <p>计划通常包含：涉及的文件、修改点、测试方案、风险。逐条检查：</p>
+  <ul>
+    <li>文件列表是否只覆盖该覆盖的地方？出现无关模块就要求删掉。</li>
+    <li>是否说明了计算顺序？金额问题多数错在顺序，而不是公式。</li>
+    <li>测试是否包含边界：无券、单券、叠加、退款？</li>
+    <li>有没有「顺便重命名」「顺便升级依赖」这类范围外动作？</li>
+  </ul>
+  <p>计划不对就继续讨论，不要急着批准。计划模式下的来回修改不产生代码 diff，成本最低。</p>
+
+  <h2>3.5 批准并切到可编辑模式</h2>
+  <p>计划确认后，Claude 会请求退出计划模式。选择接受后，按 <code>Shift+Tab</code> 切到 <code>acceptEdits</code>，文件编辑不再逐次询问，但执行命令仍会请求确认。</p>
+
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>模式</th><th>行为</th><th>适合</th></tr></thead>
+      <tbody>
+        <tr><td><code>default</code> / <code>manual</code></td><td>每个工具首次使用时询问</td><td>第一次在某仓库工作</td></tr>
+        <tr><td><code>plan</code></td><td>只读探索，不改源码</td><td>需求不清楚、改动范围大</td></tr>
+        <tr><td><code>acceptEdits</code></td><td>自动接受工作目录内的文件编辑</td><td>计划已确认，进入执行</td></tr>
+        <tr><td><code>auto</code></td><td>常规操作不询问，由分类器判断风险</td><td>信任度较高的日常开发</td></tr>
+        <tr><td><code>bypassPermissions</code></td><td>跳过权限提示</td><td>只在容器或虚拟机里用</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="callout warn">
+    <div class="label">不要默认开 bypassPermissions</div>
+    <p>它会跳过包括 <code>.git</code>、<code>.claude</code> 在内的写入提示。这个模式适合一次性、可丢弃的环境，不适合你的主工作区。</p>
+  </div>
+
+  <h2>3.6 让它自己验证</h2>
+  <p>改完后，把验证动作写进同一轮对话，而不是自己再猜：</p>
+  <div class="cmd"><div class="cmd-head"><span>Claude Code 会话</span><button type="button">复制</button></div><pre><code>&gt; 运行 `pnpm test -- --run coupon`，失败就继续修，直到通过。
+&gt; 然后运行 `pnpm typecheck`，把结果贴出来。</code></pre></div>
+  <p>测试通过后，再让它解释改动：</p>
+  <div class="cmd"><div class="cmd-head"><span>Claude Code 会话</span><button type="button">复制</button></div><pre><code>&gt; 用三句话说明：改了什么、为什么这样改、哪些场景没有覆盖</code></pre></div>
+  <p>最后一句很关键。它主动说出的未覆盖场景，往往就是你上线后遇到的第一个问题。</p>
+
+  <h2>3.7 自己看 diff</h2>
+  <div class="cmd"><div class="cmd-head"><span>bash</span><button type="button">复制</button></div><pre><code>git diff
+git diff --stat</code></pre></div>
+  <p>重点看三处：公共方法的签名有没有变、错误处理有没有被吞掉、测试是不是只改了断言而没有真正覆盖新逻辑。</p>
+
+  <h2>3.8 改坏了怎么退</h2>
+  <p>Claude Code 每次你发起一轮对话时都会记录检查点。改坏了有两个选择：</p>
+  <ul>
+    <li><code>/rewind</code>，或连按两次 <code>Esc</code>：选择恢复到某一轮之前的代码与对话；</li>
+    <li><code>git checkout -- &lt;file&gt;</code>：只丢弃某个文件，前提是你之前已经提交过。</li>
+  </ul>
+  <p>检查点只跟踪 Claude 通过编辑工具改过的文件。只用 Bash 命令改的文件不在其中，这类改动仍然要靠 Git。</p>
+
+  <h2>3.9 提交</h2>
+  <div class="cmd"><div class="cmd-head"><span>Claude Code 会话</span><button type="button">复制</button></div><pre><code>&gt; 根据 diff 写一条提交信息，说明根因和修复方式，不要写「fix bug」</code></pre></div>
+  <p>提交信息让它生成，提交动作你自己执行，或者明确批准它执行 <code>git commit</code>。</p>
+
+  <h2>3.10 验收</h2>
+  <ul class="checklist">
+    <li>计划阶段就限定了文件范围，diff 里没有无关改动</li>
+    <li>新增测试能在修复前失败、修复后通过</li>
+    <li><code>pnpm test</code> 与 <code>pnpm typecheck</code> 都通过</li>
+    <li>能用自己的话解释根因，而不是只复述 diff</li>
+  </ul>
+
+  <h2>3.11 常见坑</h2>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>坑</th><th>后果</th><th>改法</th></tr></thead>
+      <tbody>
+        <tr><td>需求只写「修一下」</td><td>它按自己的理解大改</td><td>给现象、复现、范围、验收</td></tr>
+        <tr><td>跳过计划直接改</td><td>方案错了，diff 已经很大</td><td>复杂改动先 <code>plan</code></td></tr>
+        <tr><td>只看「测试通过」</td><td>测试可能被改弱</td><td>检查测试是否覆盖新逻辑，是否删了断言</td></tr>
+        <tr><td>在工作区有未提交改动时开工</td><td>回滚和 diff 混在一起</td><td>先提交或 stash，再开分支</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="chapter-nav">
+    <a href="02-context.html"><span class="dir">← 上一章</span>让 Claude 懂你的项目</a>
+    <a class="next" href="04-sessions.html"><span class="dir">下一章 →</span>会话、分支与回滚</a>
+  </div>
+</main>
+</div>
+<script src="app.js"></script>
+</body>
+</html>
