@@ -55,7 +55,7 @@ git status</code></pre></div>
   <p>工作区有未提交的改动时，先提交或 stash。否则 <code>/rewind</code> 和 <code>git diff</code> 都会混在一起，很难判断哪些是 Claude 改的。</p>
 
   <h2>3.2 用计划模式开始</h2>
-  <p>计划模式下，Claude 可以读文件、跑只读命令，但不能改源码。两种进入方式：</p>
+  <p>计划模式下，Claude 可以读文件、执行只读命令，但不能改源码。两种进入方式：</p>
   <div class="cmd"><div class="cmd-head"><span>bash</span><button type="button">复制</button></div><pre><code>claude --permission-mode plan</code></pre></div>
   <p>或者进入会话后按 <code>Shift+Tab</code> 循环权限模式，切到 <code>plan</code>。模式会显示在输入框附近。</p>
 
@@ -64,7 +64,7 @@ git status</code></pre></div>
   <div class="cmd"><div class="cmd-head"><span>Claude Code 会话（plan 模式）</span><button type="button">复制</button></div><pre><code>&gt; 现象：订单同时使用满减和优惠券时，应付金额少 10 元。
 &gt; 复现：订单 300 元，满 300 减 50，优惠券 9 折，期望 225，实际 215。
 &gt; 范围：只改 packages/domain/coupon 和调用它的金额计算，不要重构其他模块，不要改数据库结构。
-&gt; 验收：补一个覆盖「满减 + 折扣券叠加」的单测；`pnpm test -- --run coupon` 通过；给出修改前后的计算顺序对比。
+&gt; 验收：添加一个覆盖「满减 + 折扣券叠加」的单测；`pnpm test -- --run coupon` 通过；给出修改前后的计算顺序对比。
 &gt; 先给方案，不要改代码。</code></pre></div>
 
   <p>这段提示做了四件事：给出可复现输入、限定修改范围、定义验收标准、明确当前只要方案。</p>

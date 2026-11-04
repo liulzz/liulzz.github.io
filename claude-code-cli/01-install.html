@@ -45,7 +45,7 @@
 
   <div class="scene">
     <div class="label">场景</div>
-    <p>你刚接手一个别人的仓库，下午要修一个 bug。README 只写了三行，目录很深，构建命令不确定。先让 Claude 把项目讲清楚，再动手。</p>
+    <p>你刚接管一个别人的仓库，下午要修一个 bug。README 只写了三行，目录很深，构建命令不确定。先让 Claude 把项目讲清楚，再动手。</p>
   </div>
 
   <h2>1.1 安装</h2>
@@ -87,7 +87,7 @@ claude</code></pre></div>
 &gt; 构建、测试、启动分别用什么命令？
 &gt; 列出目录结构，标出核心模块和它们的关系</code></pre></div>
 
-  <p>再补一个更具体的问题，用来验证它真的读了代码，而不是猜：</p>
+  <p>再追加一个更具体的问题，用来验证它真的读了代码，而不是猜：</p>
   <div class="cmd"><div class="cmd-head"><span>Claude Code 会话</span><button type="button">复制</button></div><pre><code>&gt; 用户登录的请求从哪个路由进来，经过哪些文件，最后写哪张表？给出文件路径和行号</code></pre></div>
 
   <div class="callout">
@@ -110,7 +110,7 @@ claude</code></pre></div>
   <h2>1.5 不进入交互模式也能用</h2>
   <p>适合脚本和快速检查：</p>
   <div class="cmd"><div class="cmd-head"><span>bash</span><button type="button">复制</button></div><pre><code>claude -p "用三句话说明这个项目的架构" --output-format json | jq -r '.result'</code></pre></div>
-  <p>这条命令跑完就退出，不进入会话。第 7 章会展开。</p>
+  <p>这条命令执行完就退出，不进入会话。第 7 章会展开。</p>
 
   <h2>1.6 这一步的验收</h2>
   <ul class="checklist">

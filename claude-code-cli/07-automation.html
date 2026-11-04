@@ -41,14 +41,14 @@
 <main class="content">
   <span class="chapter-no">第 7 章</span>
   <h1>无头模式与 CI</h1>
-  <p class="lede">交互模式适合探索，脚本和流水线需要另一种形态：一次调用、明确输出、可设上限、跑完退出。</p>
+  <p class="lede">交互模式适合探索，脚本和流水线需要另一种形态：一次调用、明确输出、可设上限、执行完退出。</p>
 
   <div class="scene">
     <div class="label">场景</div>
-    <p>每次提 PR，你都想先跑一遍自动审查：找出真实缺陷、输出固定格式、在 CI 里作为检查项。同时不能让一次失控的运行烧掉整月预算。</p>
+    <p>每次提 PR，你都想先执行一遍自动审查：找出真实缺陷、输出固定格式、在 CI 里作为检查项。同时不能让一次失控的运行烧掉整月预算。</p>
   </div>
 
-  <h2>7.1 一次调用就跑完</h2>
+  <h2>7.1 一次调用就完成</h2>
   <div class="cmd"><div class="cmd-head"><span>bash</span><button type="button">复制</button></div><pre><code>claude -p "用三句话说明这个项目的架构"</code></pre></div>
   <p><code>-p</code>（<code>--print</code>）表示非交互：读取提示、执行、把结果写到标准输出、退出。它不会打开会话界面。</p>
 
@@ -94,7 +94,7 @@
   <p><code>--permission-prompts none</code> 让需要人工确认的请求直接拒绝，避免流水线卡住等一个永远不会来的回答。</p>
 
   <div class="callout warn">
-    <div class="label">不要用 bypassPermissions 跑不可信代码</div>
+    <div class="label">不要用 bypassPermissions 执行不可信代码</div>
     <p>CI 里更稳的做法是 <code>auto</code> 或 <code>dontAsk</code> 加白名单。容器里运行、限制网络、挂载只读凭据，比放宽权限更有效。</p>
   </div>
 
@@ -133,6 +133,7 @@ jobs:
             --allowedTools "Read" \
             --max-turns 10 \
             --max-budget-usd 2.00 \
+            --json-schema '{"type":"object","properties":{"findings":{"type":"array","items":{"type":"object"}}},"required":["findings"]}' \
             --output-format json &gt; /tmp/review.json
 
       - name: Fail on findings
